@@ -231,7 +231,7 @@ Concrete reuse map — what is *already there* and what each piece becomes:
 | Hook bundling | `ManifestHook{Event,Command,Priority}` | `manifest_v2.go:32` |
 | MCP server bundling | MCP client/loader | `hawk/internal/mcp/mcp.go`, `hawk/internal/tool/mcp_tool.go` |
 | Sub-agent bundling | Persona system (YAML frontmatter MD) | `hawk/internal/multiagent/agents/` (cf. `TOP20_COMPARISON.md:62`) |
-| Rule/skill discovery precedence | `DefaultRuleSources`, `RuleDiscoverer` | `hawk/internal/context/rules.go:20`, `:46` |
+| Rule/skill discovery precedence | `DefaultRuleSources`, `RuleDiscoverer` | `hawk/internal/plugin/` rule discovery |
 | Trust — static scan | `malware_check.go` (blocked/suspicious regex) | `hawk/internal/plugin/malware_check.go:19` |
 | Trust — unicode/homoglyph | `audit.go` (`AuditFinding`, severities) | `hawk/internal/plugin/audit.go:12-22` |
 | Registry generators/validators | Python tooling | `starling/tools/{update_registry,registry_schema,validate_skill,package_skill,sync_marketplace}.py` |
@@ -366,7 +366,7 @@ The estimate is bounded on the low side because the hardest plumbing — the reg
 - `hawk/internal/plugin/malware_check.go:19`
 - `hawk/internal/plugin/audit.go:12`
 - `hawk/internal/tool/skill.go:62,91`
-- `hawk/internal/context/rules.go:20,46,97`
+- `hawk/internal/plugin/` rule discovery
 - `hawk/cmd/skills_cmd.go:16-211`
 - `hawk/internal/mcp/mcp.go`, `hawk/internal/tool/mcp_tool.go`
 - `TOP20_COMPARISON.md:65,74,83,181,227,232,240,241`

@@ -16,7 +16,7 @@ Verified from source in this repo:
 - Custom providers: supported — `internal/config/settings.go:50` (`custom_providers`), `internal/config/eyrie_engine.go:32-50`.
 - Unwired backends: `internal/tool/computer_use.go:67-94` (`SetComputerBackend`, nil default), `internal/tool/media_generation.go:69-71` (`SetMediaEngine`, nil default).
 - Terminal detect covers kitty/ghostty/wezterm/alacritty names (`internal/ui/icons/detect_test.go:56`); Kitty graphics protocol not implemented (see `docs/plans/pi-adoption-plan.md:25`).
-- Bench infra exists (`internal/bench/suite.go`, `internal/feature/eval/`, `make bench`) but README publishes no numbers.
+- Bench infra exists (`internal/feature/eval/`, `make bench`) but README publishes no numbers.
 
 External star counts below are approximate web-search snapshots (2026-09-08), not repo-verified. Treat as order-of-magnitude traction, not exact rankings. hawk is pre-release (`VERSION`: `0.0.1`, `README.md:40-44` source-build primary) — it competes on architecture, not stars.
 

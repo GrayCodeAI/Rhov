@@ -269,9 +269,6 @@ Features adopted from open-source agent projects. All are off by default unless 
 | App verification | `AppVerify` tool | Boot-smoke check with readiness polling and evidence artifacts |
 | Media generation | `GenerateMedia` tool | Image/video generation with local persistence. Backend via `tool.SetMediaEngine`; an OpenAI-compatible client ships in `eyrie/client` (`ImageClient`), wired by the host (boundary-guarded — hawk routes through the eyrie facade) |
 | Voice transcription | Telegram voice notes + `stt` package | Transcribe Telegram voice/audio into the prompt. Backend via `stt.SetTranscriber`; an OpenAI-compatible client ships in `eyrie/client` (`AudioClient`), wired by the host |
-| Git-tree file snapshots | `internal/gitsnapshot` | Content-addressed tree capture/diff/preview/restore |
-| Turn-boundary rewind | `internal/filestate` | Per-prompt before/after snapshots with durable store |
-| Continual harness | `internal/intelligence/harness` | Versioned, evidence-backed refinement of supplemental prompts/memories/skills/subagents with rollback |
 | Bounded autonomous budgets | `internal/engine` (`AutonomousBudget`) | Track turns/tokens/time/continuations; report why a run stopped (budget vs gate-passed vs error) |
 | Agent family messaging | `internal/multiagent` (`FamilyMessenger`) | Direct parent/sibling/child messages with pending caps + rate limits |
 | Path reservations | `internal/multiagent` ledger | Detect overlapping-file changes between parallel branches |
@@ -281,7 +278,6 @@ Features adopted from open-source agent projects. All are off by default unless 
 | Token-cheaper file views | `Read` tool `--minify` | Read-only, comment-stripped, whitespace-dense file view (Go via `go/parser`; other languages string-aware; never touches disk) — fewer tokens per read |
 | Classified provider hints | `internal/errhint` | Buckets provider errors (Auth/RateLimit/Connectivity/ModelNotFound/ContextOverflow) into a one-line fixable next step. Wired into TUI error rows (`friendlyErrorMessage`) and `hawk exec` CLI errors |
 | Atomic install transactions | `internal/installtxn` | Cross-process staged install/remove with rollback. Wired into skill install (atomic `SKILL.md` publish) |
-| Stale-lock reclaim | `internal/lockutil` | Race-correct atomic reclaim of O_EXCL lock files with live-restore (ready for O_EXCL lock sites) |
 | Test command discovery | `internal/testrunner` | Auto-detect test/verify commands (Go/npm/bun/pnpm/yarn/pytest/cargo) and parse runner output into structured results. Wired into `hawk verify` |
 | Circuit breaker | `internal/circuitbreaker` | Closed/open/half-open retry-storm protection with cooldown. Wired into auto-compaction (cooldown + half-open auto-retry) |
 | Smart turn routing | `internal/smartrouting` | Deterministic simple/strong turn classifier with fail-toward-strong safety. Wired into per-turn model selection (`settings.smart_routing`) |

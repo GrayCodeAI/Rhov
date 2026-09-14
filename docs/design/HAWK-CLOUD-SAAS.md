@@ -315,7 +315,7 @@ This is the crux: **what is reusable today vs. net-new.**
 | Sandbox executor interface | `internal/sandbox/container.go:18-21` (`containerExecutor`: `Exec`, `Running`) | `CloudSandbox` implements the same interface → drop-in. Callers don't know if they're on local Docker or a cloud microVM. |
 | Sandbox lifecycle manager | `internal/sandbox/snapshot_sandbox.go:52-228` (`Create/Pause/Resume/Snapshot/Restore/List/Cleanup`) | Existing pause/resume/snapshot semantics map cleanly onto E2B/Daytona pause+snapshot APIs; the manager abstraction guides the `CloudSandbox` API shape. |
 | Messaging gateways | `internal/daemon/gateway.go`, `telegram.go`, `discord.go`, `slack.go` | Already forward to `/v1/chat` via `forwardToHawk` (`gateway.go:17`) with bearer auth. In cloud they forward to the tenant-scoped chat endpoint with the org's key — minimal change. |
-| Cron engine | `internal/system/cron/cron.go` | Foundation for cloud scheduled runs (Routines), per `TOP20_COMPARISON.md:48`. Out of scope here but shares the worker plane. |
+| Cron engine | (not yet implemented) | Cloud scheduled runs (Routines) are planned, per `TOP20_COMPARISON.md:48`. Out of scope here but shares the worker plane. |
 
 ### Net-new (must build)
 
@@ -387,7 +387,7 @@ credits hit zero.
 - **M2.3** JetBrains extension (ACP).
 - **M2.4** Org-scoped provider config (BYO keys / BYO model endpoints), aligning with eyrie multi-tenant proxy (`TOP20_COMPARISON.md:96`).
 - **M2.5** Audit logging, IT-managed policy tiers, self-hosted/on-prem distribution.
-- **M2.6** Cloud Routines (scheduled/triggered runs) on the worker plane via `internal/system/cron/cron.go` (`TOP20_COMPARISON.md:48`).
+- **M2.6** Cloud Routines (scheduled/triggered runs) on the worker plane (`TOP20_COMPARISON.md:48`).
 
 ---
 
