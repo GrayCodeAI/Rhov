@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/status"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/plugin"
+	"github.com/GrayCodeAI/rho/internal/status"
 	"github.com/spf13/cobra"
 )
 
@@ -34,11 +34,11 @@ var statusCmd = &cobra.Command{
 
 func buildStatusSnapshot() status.Snapshot {
 	snapshot := status.New()
-	snapshot.HawkVersion = version
+	snapshot.RhoVersion = version
 	snapshot.Workspace = status.Workspace()
 	snapshot.GitBranch = engine.InspectGitBranch("").Branch
-	settings := hawkconfig.LoadGlobalSettings()
-	selection := hawkconfig.EffectiveSelection(context.Background(), hawkconfig.SelectionOptions{})
+	settings := rhoconfig.LoadGlobalSettings()
+	selection := rhoconfig.EffectiveSelection(context.Background(), rhoconfig.SelectionOptions{})
 	snapshot.Model = strings.TrimSpace(selection.Model)
 	snapshot.Provider = strings.TrimSpace(selection.Provider)
 	if snapshot.Model == "" {
@@ -77,7 +77,7 @@ func formatStatusSnapshot(s status.Snapshot) string {
 		return fmt.Sprintf("%s: %s\n", auditTint(label, textMuted), auditTint(val, textPrimary))
 	}
 	var b strings.Builder
-	b.WriteString(auditTint("Hawk status", hawkColor) + "\n")
+	b.WriteString(auditTint("Rho status", rhoColor) + "\n")
 	b.WriteString(line("Schema", s.SchemaVersion))
 	b.WriteString(line("Workspace", s.Workspace))
 	b.WriteString(line("Git branch", s.GitBranch))

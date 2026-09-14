@@ -12,10 +12,10 @@ func TestThemeRegistryNotEmpty(t *testing.T) {
 	}
 }
 
-// TestThemeRegistryCount ensures we have 18 themes (17 palettes + minimal).
+// TestThemeRegistryCount ensures the registry matches the expected theme set.
 func TestThemeRegistryCount(t *testing.T) {
-	if len(themeRegistry) != 18 {
-		t.Errorf("themeRegistry has %d themes, want 18", len(themeRegistry))
+	if len(themeRegistry) != 19 {
+		t.Errorf("themeRegistry has %d themes, want 19", len(themeRegistry))
 	}
 }
 
@@ -86,8 +86,8 @@ func TestLookupThemeNotFound(t *testing.T) {
 // TestThemeNames ensures ThemeNames returns all theme names.
 func TestThemeNames(t *testing.T) {
 	names := ThemeNames()
-	if len(names) != 18 {
-		t.Errorf("ThemeNames returned %d names, want 18", len(names))
+	if len(names) != 19 {
+		t.Errorf("ThemeNames returned %d names, want 19", len(names))
 	}
 	// Check all expected themes are present
 	seen := make(map[string]bool)

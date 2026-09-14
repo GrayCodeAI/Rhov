@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	hawktoken "github.com/GrayCodeAI/hawk/internal/token"
+	rhotoken "github.com/GrayCodeAI/rho/internal/token"
 )
 
 var sensitiveKeySubstrings = []string{
@@ -38,7 +38,7 @@ func IsSensitiveEnvEntry(key, val string) bool {
 		return true
 	}
 	if len(val) > 0 {
-		matches := hawktoken.DefaultSecretDetector().DetectSecrets(val)
+		matches := rhotoken.DefaultSecretDetector().DetectSecrets(val)
 		if len(matches) > 0 {
 			return true
 		}

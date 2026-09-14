@@ -10,22 +10,22 @@ import (
 	"sync"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
-	"github.com/GrayCodeAI/hawk/internal/conversationarc"
-	"github.com/GrayCodeAI/hawk/internal/engine/planning"
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
-	"github.com/GrayCodeAI/hawk/internal/observability/logger"
-	"github.com/GrayCodeAI/hawk/internal/observability/metrics"
-	"github.com/GrayCodeAI/hawk/internal/observability/oteltrace"
-	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/prompts"
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
-	"github.com/GrayCodeAI/hawk/internal/resilience/ratelimit"
-	"github.com/GrayCodeAI/hawk/internal/schedule"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/snapshot"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
+	"github.com/GrayCodeAI/rho/internal/conversationarc"
+	"github.com/GrayCodeAI/rho/internal/engine/planning"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/observability/logger"
+	"github.com/GrayCodeAI/rho/internal/observability/metrics"
+	"github.com/GrayCodeAI/rho/internal/observability/oteltrace"
+	"github.com/GrayCodeAI/rho/internal/plugin"
+	"github.com/GrayCodeAI/rho/internal/prompts"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/resilience/ratelimit"
+	"github.com/GrayCodeAI/rho/internal/schedule"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/snapshot"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // MemoryRecaller abstracts memory recall/remember so engine avoids importing memory directly.
@@ -85,7 +85,7 @@ type Session struct {
 	// milestones/phase) loaded per session. See conversationarc package.
 	arc *conversationarc.Arc
 	// incremental is the opt-in incremental system-context reconciler for
-	// dynamic sections (e.g. memories). Nil unless HAWK_INCREMENTAL_CONTEXT=1.
+	// dynamic sections (e.g. memories). Nil unless RHO_INCREMENTAL_CONTEXT=1.
 	// See incremental.go.
 	incremental *memoryIncremental
 	// learnFn persists structured lessons produced by failure reflection to a
@@ -159,7 +159,7 @@ type Session struct {
 
 // NewSession creates a conversation session through Eyrie's engine facade.
 func NewSession(provider, model, systemPrompt string, registry *tool.Registry) *Session {
-	return NewHawkSession(context.Background(), gateway.Selection{
+	return NewRhoSession(context.Background(), gateway.Selection{
 		Provider: provider,
 		Model:    model,
 	}, provider, model, systemPrompt, registry)
@@ -858,7 +858,7 @@ func (s *Session) EscalatePermission(requestID string) bool {
 	return s.perms.EscalatePermission(requestID)
 }
 
-// SetConversationGraph attaches Hawk's product-owned conversation graph and
+// SetConversationGraph attaches Rho's product-owned conversation graph and
 // seeds it from an already-resumed linear transcript when the graph is new.
 func (s *Session) SetConversationGraph(graph *session.ConversationGraph) {
 	if s.persist != nil {

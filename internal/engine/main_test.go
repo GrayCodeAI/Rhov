@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/catalogtest"
-	"github.com/GrayCodeAI/hawk/internal/testutil"
+	"github.com/GrayCodeAI/rho/internal/catalogtest"
+	"github.com/GrayCodeAI/rho/internal/testutil"
 )
 
 func TestMain(m *testing.M) {

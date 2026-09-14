@@ -7,8 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 // configModelOption is one row in the /config model picker (display from eyrie, id for settings).
@@ -42,7 +42,7 @@ func InvalidateModelCache() {
 	modelSyncAttempted = make(map[string]bool)
 	modelSyncMu.Unlock()
 	invalidatePlatformContextCache()
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 }
 
 // InvalidateModelCacheProvider drops one gateway's cached picker rows.
@@ -54,7 +54,7 @@ func InvalidateModelCacheProvider(provider string) {
 	modelSyncMu.Lock()
 	delete(modelSyncAttempted, provider)
 	modelSyncMu.Unlock()
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 }
 
 func fetchModelsAsync(provider string) tea.Cmd {
@@ -62,13 +62,13 @@ func fetchModelsAsync(provider string) tea.Cmd {
 		ctx := context.Background()
 		provider = strings.TrimSpace(provider)
 		if provider == "" {
-			provider = hawkconfig.DefaultModelProviderFilter(ctx)
+			provider = rhoconfig.DefaultModelProviderFilter(ctx)
 		}
-		entries, err := hawkconfig.ListEngineModels(ctx, provider, false)
+		entries, err := rhoconfig.ListEngineModels(ctx, provider, false)
 		if err != nil {
-			if _, derr := hawkconfig.ListEngineModels(ctx, provider, true); derr == nil {
+			if _, derr := rhoconfig.ListEngineModels(ctx, provider, true); derr == nil {
 				InvalidateModelCacheProvider(provider)
-				entries, err = hawkconfig.ListEngineModels(ctx, provider, false)
+				entries, err = rhoconfig.ListEngineModels(ctx, provider, false)
 			}
 		}
 		if err != nil {
@@ -84,7 +84,7 @@ func fetchModelsAsync(provider string) tea.Cmd {
 	}
 }
 
-func configModelOptionsFromEyrie(entries []hawkconfig.EngineModel) []configModelOption {
+func configModelOptionsFromEyrie(entries []rhoconfig.EngineModel) []configModelOption {
 	opts := make([]configModelOption, len(entries))
 	for i, e := range entries {
 		opts[i] = configModelOption{
@@ -168,10 +168,10 @@ func ensureModelCacheLoaded(provider string) {
 	modelSyncMu.Unlock()
 
 	ctx := context.Background()
-	entries, err := hawkconfig.ListEngineModels(ctx, provider, false)
+	entries, err := rhoconfig.ListEngineModels(ctx, provider, false)
 	if err != nil {
-		if _, derr := hawkconfig.ListEngineModels(ctx, provider, true); derr == nil {
-			entries, err = hawkconfig.ListEngineModels(ctx, provider, false)
+		if _, derr := rhoconfig.ListEngineModels(ctx, provider, true); derr == nil {
+			entries, err = rhoconfig.ListEngineModels(ctx, provider, false)
 		}
 	}
 	if err != nil || len(entries) == 0 {
@@ -250,7 +250,7 @@ func loadConfigModelOptions(provider string) []configModelOption {
 		return cached
 	}
 	modelCacheMu.RUnlock()
-	entries, err := hawkconfig.ListEngineModels(context.Background(), provider, false)
+	entries, err := rhoconfig.ListEngineModels(context.Background(), provider, false)
 	if err == nil && len(entries) > 0 {
 		opts := configModelOptionsFromEyrie(entries)
 		modelCacheMu.Lock()

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	contracts "github.com/GrayCodeAI/hawk/internal/contracts/policy"
+	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
 )
 
 // ErrCircuitBreakerOpen is returned when the guardian has denied too many

@@ -3,7 +3,7 @@ package routing
 import (
 	"context"
 
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 type CostTier int

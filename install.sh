@@ -2,16 +2,16 @@
 set -e
 
 # Versioned install target.
-# By default the binary is installed under $HAWK_HOME/bin (default ~/.hawk/bin).
-# Override with HAWK_HOME env var, or pass --prefix <dir> as the first flag.
-HAWK_HOME="${HAWK_HOME:-$HOME/.hawk}"
+# By default the binary is installed under $RHO_HOME/bin (default ~/.rho/bin).
+# Override with RHO_HOME env var, or pass --prefix <dir> as the first flag.
+RHO_HOME="${RHO_HOME:-$HOME/.rho}"
 if [ "$1" = "--prefix" ]; then
-  HAWK_HOME="$2"
+  RHO_HOME="$2"
   shift 2
 fi
 
-REPO="GrayCodeAI/hawk"
-BINARY="hawk"
+REPO="GrayCodeAI/rho"
+BINARY="rho"
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
@@ -39,7 +39,7 @@ fi
 
 ARCHIVE_NAME="${BINARY}_${LATEST}_${OS}_${ARCH}.${ARCHIVE_EXT}"
 URL="https://github.com/$REPO/releases/download/v${LATEST}/${ARCHIVE_NAME}"
-echo "Downloading hawk v${LATEST} for ${OS}/${ARCH}..."
+echo "Downloading rho v${LATEST} for ${OS}/${ARCH}..."
 
 TMP=$(mktemp -d)
 ARCHIVE="$TMP/${ARCHIVE_NAME}"
@@ -146,25 +146,25 @@ VERSION=$(printf '%s' "$LATEST" | sed 's/^v//')
 # falling back to checksum-only verification otherwise. Versioned install is a
 # prerequisite for safe in-place self-update tooling: once installs land at a
 # stable versioned path + symlink, a future updater can swap the link without
-# ever replacing a binary a running hawk has mmap'd (same SIGKILL rationale).
+# ever replacing a binary a running rho has mmap'd (same SIGKILL rationale).
 #
 # Windows lacks reliable non-admin symlinks, so the launcher is a plain copy.
 
-BINDIR="$HAWK_HOME/bin"
+BINDIR="$RHO_HOME/bin"
 mkdir -p "$BINDIR"
 
 if [ "$OS" = "windows" ]; then
-  mv -f "$TMP/$BIN_NAME" "$BINDIR/hawk-$VERSION.exe"
-  cp -f "$BINDIR/hawk-$VERSION.exe" "$BINDIR/hawk.exe"
+  mv -f "$TMP/$BIN_NAME" "$BINDIR/rho-$VERSION.exe"
+  cp -f "$BINDIR/rho-$VERSION.exe" "$BINDIR/rho.exe"
   echo ""
-  echo "Installed hawk v$VERSION to $BINDIR/hawk-$VERSION.exe"
-  echo "Linked launcher: $BINDIR/hawk.exe"
+  echo "Installed rho v$VERSION to $BINDIR/rho-$VERSION.exe"
+  echo "Linked launcher: $BINDIR/rho.exe"
 else
-  mv -f "$TMP/$BIN_NAME" "$BINDIR/hawk-$VERSION"
-  ln -sf "hawk-$VERSION" "$BINDIR/hawk.tmp" \
-    && mv -f "$BINDIR/hawk.tmp" "$BINDIR/hawk"
+  mv -f "$TMP/$BIN_NAME" "$BINDIR/rho-$VERSION"
+  ln -sf "rho-$VERSION" "$BINDIR/rho.tmp" \
+    && mv -f "$BINDIR/rho.tmp" "$BINDIR/rho"
   echo ""
-  echo "Installed hawk v$VERSION to $BINDIR/hawk-$VERSION (linked: $BINDIR/hawk)"
+  echo "Installed rho v$VERSION to $BINDIR/rho-$VERSION (linked: $BINDIR/rho)"
 fi
 
 rm -rf "$TMP"
@@ -172,5 +172,5 @@ echo ""
 echo "Add $BINDIR to your PATH if it is not already, e.g."
 echo "  export PATH=\"\$PATH:$BINDIR\""
 echo ""
-echo "Restart any running hawk sessions to pick up the new binary — the old"
+echo "Restart any running rho sessions to pick up the new binary — the old"
 echo "process keeps running the previous version until it is restarted."

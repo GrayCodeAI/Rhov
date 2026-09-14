@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/flags"
-	"github.com/GrayCodeAI/hawk/internal/testutil"
+	"github.com/GrayCodeAI/rho/internal/flags"
+	"github.com/GrayCodeAI/rho/internal/testutil"
 )
 
 func TestMarketplaceFind(t *testing.T) {

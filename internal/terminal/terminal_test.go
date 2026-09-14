@@ -14,7 +14,7 @@ func TestTerminal_LifecycleAndRead(t *testing.T) {
 	defer cancel()
 
 	// Spawn echo / interactive shell
-	term, err := store.Create(ctx, "session-1", "", "echo hello_hawk", 24, 80)
+	term, err := store.Create(ctx, "session-1", "", "echo hello_rho", 24, 80)
 	if err != nil {
 		t.Fatalf("Create terminal failed: %v", err)
 	}
@@ -33,12 +33,12 @@ func TestTerminal_LifecycleAndRead(t *testing.T) {
 			t.Fatalf("Read failed: %v", rErr)
 		}
 		out += chunk
-		if strings.Contains(out, "hello_hawk") {
+		if strings.Contains(out, "hello_rho") {
 			break
 		}
 	}
-	if !strings.Contains(out, "hello_hawk") {
-		t.Errorf("expected output to contain hello_hawk, got %q", out)
+	if !strings.Contains(out, "hello_rho") {
+		t.Errorf("expected output to contain hello_rho, got %q", out)
 	}
 }
 

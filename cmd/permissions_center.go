@@ -7,8 +7,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func normalizePermissionTier(raw string) (engine.AutonomyLevel, string, bool) {
@@ -264,7 +264,7 @@ func permissionRulesSummary(m *chatModel) string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-func effectiveAllowRules(settings hawkconfig.Settings) []string {
+func effectiveAllowRules(settings rhoconfig.Settings) []string {
 	var rules []string
 	rules = append(rules, settings.AutoAllow...)
 	rules = append(rules, settings.AllowedTools...)
@@ -272,7 +272,7 @@ func effectiveAllowRules(settings hawkconfig.Settings) []string {
 	return dedupeStrings(rules)
 }
 
-func effectiveDenyRules(settings hawkconfig.Settings) []string {
+func effectiveDenyRules(settings rhoconfig.Settings) []string {
 	rules := append([]string{}, settings.DisallowedTools...)
 	rules = append(rules, parseToolListFromCLI(disallowedToolsFlag)...)
 	return dedupeStrings(rules)
@@ -292,7 +292,7 @@ func dedupeStrings(values []string) []string {
 	return out
 }
 
-func rebuildSessionPermissionRules(sess *engine.Session, settings hawkconfig.Settings) {
+func rebuildSessionPermissionRules(sess *engine.Session, settings rhoconfig.Settings) {
 	if sess == nil {
 		return
 	}
@@ -323,7 +323,7 @@ func rebuildSessionPermissionRules(sess *engine.Session, settings hawkconfig.Set
 	}
 }
 
-func savePermissionSettings(scope string, settings hawkconfig.Settings, level engine.AutonomyLevel) (string, error) {
+func savePermissionSettings(scope string, settings rhoconfig.Settings, level engine.AutonomyLevel) (string, error) {
 	scope = strings.ToLower(strings.TrimSpace(scope))
 	if scope == "" {
 		scope = "global"
@@ -337,13 +337,13 @@ func savePermissionSettings(scope string, settings hawkconfig.Settings, level en
 	case "project":
 		return "", fmt.Errorf("project-local settings writes are disabled; use scope \"global\" or an explicit --settings file")
 	case "global":
-		target := hawkconfig.LoadGlobalSettings()
+		target := rhoconfig.LoadGlobalSettings()
 		target.AutoAllow = append([]string{}, settings.AutoAllow...)
 		target.AllowedTools = append([]string{}, settings.AllowedTools...)
 		target.DisallowedTools = append([]string{}, settings.DisallowedTools...)
 		target.Autonomy = settings.Autonomy
 		target.AutonomyExplicit = true
-		if err := hawkconfig.SaveGlobal(target); err != nil {
+		if err := rhoconfig.SaveGlobal(target); err != nil {
 			return "", err
 		}
 		return "user settings", nil

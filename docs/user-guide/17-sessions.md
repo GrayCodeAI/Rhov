@@ -1,6 +1,6 @@
 # Sessions
 
-Hawk saves every conversation to disk automatically. Whether you work in the TUI, in headless mode, or over ACP, Hawk records the exchange as a session.
+Rho saves every conversation to disk automatically. Whether you work in the TUI, in headless mode, or over ACP, Rho records the exchange as a session.
 
 ---
 
@@ -14,7 +14,7 @@ A session is a persistent conversation with full history:
 - Token usage and turn counts
 - Subagent sessions
 
-Sessions are identified by a unique session ID and stored under `~/.hawk/sessions/`.
+Sessions are identified by a unique session ID and stored under `~/.rho/sessions/`.
 
 ---
 
@@ -36,7 +36,7 @@ This clears the current context and starts fresh.
 
 Alias: `/exit`
 
-To leave the session but stay in Hawk:
+To leave the session but stay in Rho:
 
 ```
 /home
@@ -58,13 +58,13 @@ Opens a session picker. Select a session to resume.
 
 ```bash
 # Resume specific session
-hawk --resume <session-id>
+rho --resume <session-id>
 
 # Continue most recent
-hawk --continue
+rho --continue
 
 # New session with specific ID
-hawk --session-id <uuid> -p "prompt"
+rho --session-id <uuid> -p "prompt"
 ```
 
 ---
@@ -122,10 +122,10 @@ Maintain context across headless calls:
 
 ```bash
 # Start and capture ID
-ID=$(hawk -p "First" --output-format json | jq -r '.sessionId')
+ID=$(rho -p "First" --output-format json | jq -r '.sessionId')
 
 # Continue
-hawk -p "Second" --resume "$ID"
+rho -p "Second" --resume "$ID"
 ```
 
 ---

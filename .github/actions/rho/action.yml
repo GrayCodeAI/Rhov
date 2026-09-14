@@ -1,0 +1,302 @@
+name: Rho
+
+description: >-
+  Run the Rho coding agent headlessly in a GitHub workflow. Rho is
+  model- and provider-agnostic: you supply the provider and API key as inputs.
+
+author: GrayCodeAI
+
+branding:
+  icon: terminal
+  color: blue
+
+inputs:
+  prompt:
+    description: The instruction for Rho to execute. Mutually exclusive with prompt-file.
+    required: false
+    default: ""
+  prompt-file:
+    description: Path (relative to working-directory) to a file whose contents are the prompt.
+    required: false
+    default: ""
+  provider:
+    description: >-
+      Provider id to activate (for example openai, anthropic, gemini, ollama, or
+      any configured OpenAI-/Anthropic-compatible endpoint). Optional when the
+      repository already carries a .zero/config.json with an active provider.
+    required: false
+    default: ""
+  api-key:
+    description: >-
+      The provider API key. Pass it from a repository or organization secret;
+      it is exported only for the Rho step and never written to the log.
+    required: false
+    default: ""
+  api-key-env:
+    description: >-
+      Name of the environment variable the chosen provider reads its key from
+      (for example OPENAI_API_KEY or ANTHROPIC_API_KEY). When set together with
+      api-key, that variable is exported only for the Rho step. Leave the action
+      provider-agnostic by passing the env name your provider expects rather than
+      hardcoding one here.
+    required: false
+    default: ""
+  model:
+    description: Model id to use for the run. Passed to `rho exec --model`.
+    required: false
+    default: ""
+  auto:
+    description: >-
+      Autonomy ceiling: supervised, basic, semi, full, or yolo.
+      Defaults to `supervised` so an unattended CI run does not take
+      high-impact actions implicitly.
+    required: false
+    default: supervised
+  agent:
+    description: >-
+      Agent persona to use (from Rho user state). Maps to `rho exec --agent`.
+    required: false
+    default: ""
+  cwd:
+    description: >-
+      Working directory override. Maps to `rho exec --cwd`.
+      Defaults to the action's working-directory input.
+    required: false
+    default: ""
+  ephemeral:
+    description: >-
+      When true, skip session persistence. Ideal for CI runs.
+      Maps to `rho exec --ephemeral`.
+    required: false
+    default: "false"
+  worktree:
+    description: When true, run inside an isolated git worktree.
+    required: false
+    default: "false"
+  output-format:
+    description: >-
+      Output format: text or json. Defaults to text.
+    required: false
+    default: text
+  post-to:
+    description: >-
+      Optional destination for a run summary after Rho finishes: `pr-comment`
+      posts to the triggering pull request, `slack` posts to slack-webhook-url,
+      or `none` (default) posts nowhere.
+    required: false
+    default: none
+  slack-webhook-url:
+    description: >-
+      Slack incoming-webhook URL used when post-to is slack.
+      Pass it from a secret; it is never written to the log.
+    required: false
+    default: ""
+  github-token:
+    description: >-
+      Token used to post a PR comment when post-to is pr-comment.
+      Defaults to ${{ github.token }}.
+    required: false
+    default: ${{ github.token }}
+  working-directory:
+    description: Directory to run Rho in. Defaults to ${{ github.workspace }}.
+    required: false
+    default: ${{ github.workspace }}
+  rho-version:
+    description: >-
+      Rho release version/tag to install (e.g. v1.2.3 or latest).
+      Defaults to the ref this action was resolved at.
+    required: false
+    default: ""
+  rho-repo:
+    description: Repository to install Rho from (owner/repo).
+    required: false
+    default: GrayCodeAI/rho
+
+outputs:
+  exit-code:
+    description: The exit code Rho returned (0 success, 2 usage, 3 provider, non-zero otherwise).
+    value: ${{ steps.run.outputs.exit-code }}
+  output-file:
+    description: Path to the captured Rho stdout (the raw output-format stream).
+    value: ${{ steps.run.outputs.output-file }}
+  summary:
+    description: A short human-readable summary line parsed from the run, when available.
+    value: ${{ steps.run.outputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rho
+      id: install
+      shell: bash
+      env:
+        RHO_REPO: ${{ inputs.rho-repo }}
+        RHO_VERSION_INPUT: ${{ inputs.rho-version }}
+        ACTION_REF: ${{ github.action_ref }}
+        ACTION_PATH: ${{ github.action_path }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: |
+        set -euo pipefail
+        if [ "${RUNNER_OS}" = "Windows" ]; then
+          echo "::error::The Rho action currently supports Linux and macOS runners only." >&2
+          exit 1
+        fi
+        # Resolve the version to install: explicit input wins; otherwise the ref
+        # this action was checked out at (a tag); otherwise the latest release.
+        version="${RHO_VERSION_INPUT}"
+        if [ -z "${version}" ]; then
+          version="${ACTION_REF}"
+        fi
+        # A commit-SHA pin (github.action_ref is the 40-hex SHA) is not a release
+        # tag, so fall back to latest rather than fetching releases/download/v<sha>.
+        case "${version}" in
+          ""|refs/*|*/*) version="latest" ;;
+        esac
+        if printf '%s' "${version}" | grep -qiE '^[0-9a-f]{40}$'; then
+          version="latest"
+        fi
+        install_dir="${RUNNER_TEMP}/rho-bin"
+        src_dir="${RUNNER_TEMP}/rho-src"
+        mkdir -p "${install_dir}" "${src_dir}"
+        # Download the Rho source archive and extract it
+        if [ "${version}" = "latest" ]; then
+          tarball_url=$(curl -sL "https://api.github.com/repos/${RHO_REPO}/releases/latest" \
+            | grep '"tarball_url":' | sed 's/.*"\([^"]*\)".*/\1/')
+        else
+          tarball_url="https://github.com/${RHO_REPO}/archive/refs/tags/v${version}.tar.gz"
+        fi
+        curl -sL "${tarball_url}" | tar -xz -C "${src_dir}" --strip-components=1
+        # Build the Rho binary from source (Go must be available on the runner)
+        if ! command -v go &>/dev/null; then
+          echo "::error::Go is required but not found on the runner PATH. Add actions/setup-go before this action, or install Go manually." >&2
+          exit 1
+        fi
+        go build -o "${install_dir}/rho" "${src_dir}/cmd/rho"
+        chmod +x "${install_dir}/rho"
+        echo "${install_dir}" >> "${GITHUB_PATH}"
+        echo "Installed Rho from ${RHO_REPO}@${version}"
+
+    - name: Run Rho
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        # Secrets are passed via the environment and never echoed. `set +x` and
+        # the absence of any `echo` of these values keep them out of the log.
+        RHO_INPUT_API_KEY: ${{ inputs.api-key }}
+        RHO_INPUT_API_KEY_ENV: ${{ inputs.api-key-env }}
+        RHO_INPUT_PROVIDER: ${{ inputs.provider }}
+        RHO_INPUT_PROMPT: ${{ inputs.prompt }}
+        RHO_INPUT_PROMPT_FILE: ${{ inputs.prompt-file }}
+        RHO_INPUT_MODEL: ${{ inputs.model }}
+        RHO_INPUT_AUTO: ${{ inputs.auto }}
+        RHO_INPUT_AGENT: ${{ inputs.agent }}
+        RHO_INPUT_CWD: ${{ inputs.cwd }}
+        RHO_INPUT_EPHEMERAL: ${{ inputs.ephemeral }}
+        RHO_INPUT_WORKTREE: ${{ inputs.worktree }}
+        RHO_INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
+        ACTION_PATH: ${{ github.action_path }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: |
+        set -euo pipefail
+
+        # Export the provider key under the env name the provider expects. This
+        # keeps the action provider-agnostic: no provider->env mapping is baked
+        # in. The value is never printed.
+        if [ -n "${RHO_INPUT_API_KEY}" ] && [ -n "${RHO_INPUT_API_KEY_ENV}" ]; then
+          if ! printf '%s' "${RHO_INPUT_API_KEY_ENV}" | grep -qE '^[A-Za-z_][A-Za-z0-9_]*$'; then
+            echo "::error::api-key-env must be a valid environment variable name." >&2
+            exit 2
+          fi
+          export "${RHO_INPUT_API_KEY_ENV}=${RHO_INPUT_API_KEY}"
+        fi
+        if [ -n "${RHO_INPUT_PROVIDER}" ]; then
+          export RHO_PROVIDER="${RHO_INPUT_PROVIDER}"
+        fi
+
+        args=(exec)
+
+        if [ -n "${RHO_INPUT_PROMPT_FILE}" ] && [ -n "${RHO_INPUT_PROMPT}" ]; then
+          echo "::error::The 'prompt' and 'prompt-file' inputs are mutually exclusive." >&2
+          exit 2
+        fi
+        if [ -n "${RHO_INPUT_PROMPT_FILE}" ]; then
+          args+=(--file "${RHO_INPUT_PROMPT_FILE}")
+        elif [ -n "${RHO_INPUT_PROMPT}" ]; then
+          args+=("${RHO_INPUT_PROMPT}")
+        else
+          echo "::error::Provide either the 'prompt' or 'prompt-file' input." >&2
+          exit 2
+        fi
+
+        [ -n "${RHO_INPUT_MODEL}" ] && args+=(--model "${RHO_INPUT_MODEL}")
+        [ -n "${RHO_INPUT_AUTO}" ] && args+=(--auto "${RHO_INPUT_AUTO}")
+        [ -n "${RHO_INPUT_AGENT}" ] && args+=(--agent "${RHO_INPUT_AGENT}")
+        [ -n "${RHO_INPUT_CWD}" ] && args+=(--cwd "${RHO_INPUT_CWD}")
+        if [ "${RHO_INPUT_EPHEMERAL}" = "true" ]; then
+          args+=(--ephemeral)
+        fi
+        if [ "${RHO_INPUT_WORKTREE}" = "true" ]; then
+          args+=(--worktree)
+        fi
+        [ -n "${RHO_INPUT_OUTPUT_FORMAT}" ] && args+=(--output-format "${RHO_INPUT_OUTPUT_FORMAT}")
+
+        output_file="${RUNNER_TEMP}/rho-output.txt"
+
+        # Run Rho. Capture stdout to a file AND echo it to the log. Surface the
+        # real exit code as the step's status.
+        set +e
+        rho "${args[@]}" | tee "${output_file}"
+        code=${PIPESTATUS[0]}
+        set -e
+
+        echo "exit-code=${code}" >> "${GITHUB_OUTPUT}"
+        echo "output-file=${output_file}" >> "${GITHUB_OUTPUT}"
+
+        # Best-effort one-line summary
+        if [ "${code}" = "0" ]; then
+          summary="Rho run succeeded"
+        else
+          summary="Rho run failed (exit ${code})"
+        fi
+        {
+          echo "summary<<RHO_EOF"
+          printf '%s\n' "${summary}"
+          echo "RHO_EOF"
+        } >> "${GITHUB_OUTPUT}"
+
+        exit "${code}"
+
+    - name: Post run summary to pull request
+      if: ${{ always() && inputs.post-to == 'pr-comment' && github.event.pull_request.number != '' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        RHO_EXIT: ${{ steps.run.outputs.exit-code }}
+        RHO_SUMMARY: ${{ steps.run.outputs.summary }}
+      run: |
+        set -euo pipefail
+        status="succeeded"
+        [ "${RHO_EXIT}" != "0" ] && status="failed (exit ${RHO_EXIT})"
+        body="$(printf 'Rho run %s.\n\n%s' "${status}" "${RHO_SUMMARY}")"
+        gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+          -f body="${body}" >/dev/null
+
+    - name: Post run summary to Slack
+      if: ${{ always() && inputs.post-to == 'slack' && inputs.slack-webhook-url != '' }}
+      shell: bash
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook-url }}
+        RHO_EXIT: ${{ steps.run.outputs.exit-code }}
+        RHO_SUMMARY: ${{ steps.run.outputs.summary }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        status="succeeded"
+        [ "${RHO_EXIT}" != "0" ] && status="failed (exit ${RHO_EXIT})"
+        text="Rho run ${status} for ${GITHUB_REPOSITORY}@${GITHUB_REF_NAME}. ${RHO_SUMMARY} ${RUN_URL}"
+        payload="$(jq -n --arg text "${text}" '{text: $text}')"
+        curl --fail --silent --show-error -X POST -H 'Content-Type: application/json' \
+          -d "${payload}" "${SLACK_WEBHOOK_URL}" >/dev/null || \
+          echo "::warning::Slack webhook delivery failed (run not affected)."

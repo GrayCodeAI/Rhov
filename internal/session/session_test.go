@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 func TestLoadLatestForCWD(t *testing.T) {
@@ -127,7 +127,7 @@ func TestSaveLoadRoundTripsEvents(t *testing.T) {
 // session load — it is skipped+logged, and subsequent valid messages are
 // still read.
 func TestLoadJSONLSkipsOversizeLine(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	dir := sessionsDir()
 	_ = os.MkdirAll(dir, 0o750)
 

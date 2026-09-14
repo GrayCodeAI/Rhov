@@ -9,20 +9,46 @@ import (
 )
 
 const (
-	appName           = "hawk"
-	envConfigDir      = "HAWK_CONFIG_DIR"
+	appName           = "rho"
+	legacyAppName     = "hawk"
+	envConfigDir      = "RHO_CONFIG_DIR"
 	envEyrieConfigDir = "EYRIE_CONFIG_DIR"
-	envStateDir       = "HAWK_STATE_DIR"
-	envCacheDir       = "HAWK_CACHE_DIR"
+	envStateDir       = "RHO_STATE_DIR"
+	envCacheDir       = "RHO_CACHE_DIR"
 	projectIDHashLen  = 12
 )
 
-// ConfigDir returns the per-user configuration directory for Hawk.
+// legacyEnvDir reads a legacy HAWK_* override (e.g. HAWK_STATE_DIR) so an
+// existing Hawk install keeps resolving to the same location after the rename.
+func legacyEnvDir(legacyKey string) string {
+	return strings.TrimSpace(os.Getenv(legacyKey))
+}
+
+// resolveAppDir returns the app directory under root, preferring the current
+// name but falling back to the legacy ".hawk" directory when it already exists
+// and the new one does not. This keeps an existing install's settings,
+// sessions, and caches in place across the rename.
+func resolveAppDir(root string) string {
+	current := filepath.Join(root, appName)
+	if _, err := os.Stat(current); err == nil {
+		return current
+	}
+	legacy := filepath.Join(root, legacyAppName)
+	if _, err := os.Stat(legacy); err == nil {
+		return legacy
+	}
+	return current
+}
+
+// ConfigDir returns the per-user configuration directory for Rho.
 func ConfigDir() string {
 	if dir := cleanEnvDir(envConfigDir); dir != "" {
 		return dir
 	}
-	return filepath.Join(mustUserConfigDir(), appName)
+	if dir := legacyEnvDir("HAWK_CONFIG_DIR"); dir != "" {
+		return dir
+	}
+	return resolveAppDir(mustUserConfigDir())
 }
 
 // StateDir returns the per-user state directory for durable runtime data.
@@ -30,10 +56,15 @@ func StateDir() string {
 	if dir := cleanEnvDir(envStateDir); dir != "" {
 		return dir
 	}
+	if dir := legacyEnvDir("HAWK_STATE_DIR"); dir != "" {
+		return dir
+	}
 	if dir := cleanEnvDir("XDG_STATE_HOME"); dir != "" {
 		return filepath.Join(dir, appName)
 	}
-	return filepath.Join(mustUserConfigDir(), appName, "state")
+	// State lives under the config root in both the current and legacy layout,
+	// so resolve the app dir once and append "state".
+	return filepath.Join(resolveAppDir(mustUserConfigDir()), "state")
 }
 
 // CacheDir returns the per-user cache directory for disposable data.
@@ -41,7 +72,10 @@ func CacheDir() string {
 	if dir := cleanEnvDir(envCacheDir); dir != "" {
 		return dir
 	}
-	return filepath.Join(mustUserCacheDir(), appName)
+	if dir := legacyEnvDir("HAWK_CACHE_DIR"); dir != "" {
+		return dir
+	}
+	return resolveAppDir(mustUserCacheDir())
 }
 
 func SettingsPath() string {
@@ -123,8 +157,8 @@ func mustUserConfigDir() string {
 		// (e.g. unset HOME in a cron/daemon context). Fall back to a
 		// stable, writable location under the OS temp dir so the process
 		// still functions; the effective paths are also overridable via
-		// HAWK_CONFIG_DIR / HAWK_STATE_DIR / HAWK_CACHE_DIR.
-		return filepath.Join(os.TempDir(), "hawk-config")
+		// RHO_CONFIG_DIR / RHO_STATE_DIR / RHO_CACHE_DIR.
+		return filepath.Join(os.TempDir(), "rho-config")
 	}
 	return dir
 }
@@ -132,7 +166,7 @@ func mustUserConfigDir() string {
 func mustUserCacheDir() string {
 	dir, err := os.UserCacheDir()
 	if err != nil || dir == "" {
-		return filepath.Join(os.TempDir(), "hawk-cache")
+		return filepath.Join(os.TempDir(), "rho-cache")
 	}
 	return dir
 }

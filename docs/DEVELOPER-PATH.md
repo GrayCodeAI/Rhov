@@ -1,13 +1,13 @@
-# Hawk Developer Path
+# Rho Developer Path
 
-This guide explains what `hawk path` checks and how to get a fresh developer machine ready to use Hawk safely.
+This guide explains what `rho path` checks and how to get a fresh developer machine ready to use Rho safely.
 
 ## What "developer path" means
 
-For Hawk, the developer path is the minimum local setup required to chat, edit code, and keep credentials off disk:
+For Rho, the developer path is the minimum local setup required to chat, edit code, and keep credentials off disk:
 
 - A provider credential stored in the OS secret store
-- A model selected in Hawk settings
+- A model selected in Rho settings
 - A local model catalog available through eyrie
 - No plaintext API keys left in Eyrie's configured `provider.json` or legacy env files
 - Safe defaults for Bash execution and filesystem access
@@ -16,85 +16,85 @@ For Hawk, the developer path is the minimum local setup required to chat, edit c
 Run the report at any time:
 
 ```bash
-hawk path
-hawk path --strict
-hawk doctor
-hawk preflight
+rho path
+rho path --strict
+rho doctor
+rho preflight
 ```
 
 ## Setup checklist
 
 ### 1. Build and workspace setup
 
-If you are contributing from source, clone Hawk as the main CLI. The support
+If you are contributing from source, clone Rho as the main CLI. The support
 repositories are independent sibling checkouts when you need the full local
-workspace; they are not nested under Hawk:
+workspace; they are not nested under Rho:
 
 ```bash
 mkdir graycode-eco && cd graycode-eco
-git clone https://github.com/GrayCodeAI/hawk
+git clone https://github.com/GrayCodeAI/rho
 git clone https://github.com/GrayCodeAI/eyrie
-cd hawk
+cd rho
 make setup
-go build -o hawk ./cmd/hawk
+go build -o rho ./cmd/rho
 ```
 
 `make setup` validates the canonical repository manifest and regenerates the
 parent `../go.work` from the local Go repositories marked `workspace: true`.
-Hawk can also be built as a standalone checkout with `GOWORK=off go build ./cmd/hawk`;
+Rho can also be built as a standalone checkout with `GOWORK=off go build ./cmd/rho`;
 the sibling workspace is only required for cross-repository development and
 boundary checks.
 
 ### 2. Configure credentials
 
-Start Hawk and use `/config` to paste an API key or configure a local provider like Ollama.
+Start Rho and use `/config` to paste an API key or configure a local provider like Ollama.
 
-Hawk stores credentials in the macOS Keychain or Linux secret store. It should not rely on shell env vars, `.env`, or plaintext config files for provider secrets.
+Rho stores credentials in the macOS Keychain or Linux secret store. It should not rely on shell env vars, `.env`, or plaintext config files for provider secrets.
 
 Useful checks:
 
 ```bash
-hawk credentials status
-hawk preflight
+rho credentials status
+rho preflight
 ```
 
-`hawk preflight` is a local-ready check; it does not contact a provider. To
+`rho preflight` is a local-ready check; it does not contact a provider. To
 live-verify the selected provider credential and connectivity, use `/config`
-validation or `hawk models list <provider> --live`.
+validation or `rho models list <provider> --live`.
 
 ### 3. Select a model
 
-Pick a model in `/config`. Hawk stores the selected model in settings and uses eyrie for provider routing and catalog resolution.
+Pick a model in `/config`. Rho stores the selected model in settings and uses eyrie for provider routing and catalog resolution.
 
 If the catalog is missing or empty:
 
 ```bash
-hawk models refresh
+rho models refresh
 ```
 
 ## Security checks
 
-`hawk path` treats these as important security conditions:
+`rho path` treats these as important security conditions:
 
 - Eyrie's resolved `provider.json` must not contain secret fields
 - sensitive files like provider config and SSH paths should be blocked from agent reads
 
 Eyrie resolves provider state from `EYRIE_CONFIG_DIR` first, then the
 platform user-config directory.
-Hawk protects that resolved path even when it is customized or symlinked.
+Rho protects that resolved path even when it is customized or symlinked.
 
-If Hawk detects secret fields in `provider.json`, back up the file, remove those fields manually, and save your keys again through `/config`.
+If Rho detects secret fields in `provider.json`, back up the file, remove those fields manually, and save your keys again through `/config`.
 
 Read the full credential and isolation model in [SECURITY-DEVELOPER.md](./SECURITY-DEVELOPER.md).
 
 ## Execution model
 
-Hawk executes agent commands directly on the host. No Docker daemon or
+Rho executes agent commands directly on the host. No Docker daemon or
 container runtime is required, and there is no container fallback to configure.
 
 ## Ecosystem checks
 
-`hawk path` also verifies the provider layer behind Hawk:
+`rho path` also verifies the provider layer behind Rho:
 
 - `eyrie` for provider routing and local preflight readiness
 - the embedded token pipeline for estimation and compression
@@ -102,19 +102,19 @@ container runtime is required, and there is no container fallback to configure.
 If you want the broader status summary:
 
 ```bash
-hawk ecosystem
-hawk doctor
+rho ecosystem
+rho doctor
 ```
 
 ## Typical recovery path
 
-If `hawk path` says you are not ready, this is the intended order:
+If `rho path` says you are not ready, this is the intended order:
 
-1. Run `hawk`
+1. Run `rho`
 2. Open `/config`
 3. Paste an API key or configure Ollama
 4. Pick a model
-5. Re-run `hawk preflight`
-6. Re-run `hawk path`
+5. Re-run `rho preflight`
+6. Re-run `rho path`
 
 If security items still fail, fix those before treating the machine as ready.

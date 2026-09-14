@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 func TestNewAgentsAccumulator(t *testing.T) {

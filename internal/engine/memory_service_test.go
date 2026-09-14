@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
+	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
 )
 
 func TestMemoryServiceRecallContextFallsBackToRecaller(t *testing.T) {
@@ -29,7 +29,7 @@ func TestMemoryServiceRecallContextIsEmptyWithoutBackends(t *testing.T) {
 // is recalled back through MemoryService.
 func TestMemoryServiceRoundTripThroughLocalManager(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 
 	mgr := memory.NewEnhancedMemoryManager(t.TempDir())
 	service := NewMemoryService(nil).WithMemory(mgr).WithEnhanced(mgr)

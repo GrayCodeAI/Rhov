@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // synthesisTailMessages is how many recent messages feed the exhaustion prompt.

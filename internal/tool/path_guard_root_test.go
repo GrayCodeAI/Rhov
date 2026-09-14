@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +34,7 @@ func TestGuardedRootPathAllowsRegularFile(t *testing.T) {
 	if err := writeGuardedFile(ctx, path, []byte("after"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	data, err := readGuardedFile(context.Background(), path)
+	data, err := readPinnedFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}

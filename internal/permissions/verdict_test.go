@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/permissions"
+	"github.com/GrayCodeAI/rho/internal/permissions"
 )
 
 func TestRiskString(t *testing.T) {

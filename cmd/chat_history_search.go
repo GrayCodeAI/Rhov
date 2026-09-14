@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/hawk/internal/textutil"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/textutil"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 	"github.com/mattn/go-runewidth"
 )
 

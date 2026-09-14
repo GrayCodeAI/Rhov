@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/env"
 )
 
 var (
@@ -223,6 +225,10 @@ func (s *Store) Create(ctx context.Context, sessionID, cwd, command string, rows
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", command) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
 	}
 	cmd.Dir = cwd
+	// Never hand provider API keys to a terminal child process. The agent can
+	// drive this shell, so it must not be able to read ANTHROPIC_API_KEY etc.
+	// from the inherited environment.
+	cmd.Env = env.SubprocessEnv()
 
 	device, err := startPTY(cmd, rows, cols)
 	if err != nil {

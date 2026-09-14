@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/terminal"
+	"github.com/GrayCodeAI/rho/internal/terminal"
 )
 
 func resolveStore(custom *terminal.Store) *terminal.Store {
@@ -67,6 +67,15 @@ func (t TerminalCreateTool) Execute(ctx context.Context, input json.RawMessage) 
 	if len(input) > 0 {
 		if err := json.Unmarshal(input, &p); err != nil {
 			return "", fmt.Errorf("invalid parameters: %w", err)
+		}
+	}
+
+	// A non-empty command is handed to a shell, so it must pass the same
+	// static safety stack as BashTool. An empty command just spawns the
+	// user's default shell and needs no command validation.
+	if p.Command != "" {
+		if err := validateShellCommand(ctx, p.Command); err != nil {
+			return "", err
 		}
 	}
 
@@ -146,6 +155,12 @@ func (t TerminalSendTool) Execute(_ context.Context, input json.RawMessage) (str
 
 	if p.TerminalID == "" {
 		return "", fmt.Errorf("terminal_id is required")
+	}
+
+	// Input is written to a live shell, so block destructive commands and
+	// nested AST dangers before it reaches stdin.
+	if err := validateTerminalInput(p.Input); err != nil {
+		return "", err
 	}
 
 	sessionID := strings.TrimSpace(p.SessionID)

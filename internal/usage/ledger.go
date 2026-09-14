@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 // SchemaVersion is the on-disk ledger format version.

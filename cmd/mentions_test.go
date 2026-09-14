@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestHandleMentions_BlocksSensitivePaths(t *testing.T) {

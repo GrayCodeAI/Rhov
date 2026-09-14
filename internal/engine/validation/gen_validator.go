@@ -13,7 +13,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // GenValidator checks generated code for correctness before writing to disk.

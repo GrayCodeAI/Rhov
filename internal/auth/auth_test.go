@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 func TestTokenStore(t *testing.T) {
@@ -119,12 +119,12 @@ func TestGenerateNonce(t *testing.T) {
 func TestSecureStorage(t *testing.T) {
 	t.Run("new secure storage", func(t *testing.T) {
 		t.Parallel()
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		if ss == nil {
 			t.Fatal("NewSecureStorage returned nil")
 		}
-		if ss.service != "hawk-test" {
-			t.Errorf("service = %q, want %q", ss.service, "hawk-test")
+		if ss.service != "rho-test" {
+			t.Errorf("service = %q, want %q", ss.service, "rho-test")
 		}
 	})
 
@@ -132,7 +132,7 @@ func TestSecureStorage(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("HOME", dir)
 
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		_, err := ss.getFile("nonexistent")
 		if err == nil {
 			t.Error("getFile() should return error for missing file")
@@ -143,7 +143,7 @@ func TestSecureStorage(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("HOME", dir)
 
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		if err := ss.setFile("anthropic", "sk-test-token"); err != nil {
 			t.Fatalf("setFile() error = %v", err)
 		}
@@ -161,7 +161,7 @@ func TestSecureStorage(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("HOME", dir)
 
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		if err := ss.setFile("provider", "old-token"); err != nil {
 			t.Fatal(err)
 		}
@@ -182,7 +182,7 @@ func TestSecureStorage(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("HOME", dir)
 
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		if err := ss.setFile("test", "secret"); err != nil {
 			t.Fatal(err)
 		}
@@ -202,7 +202,7 @@ func TestSecureStorage(t *testing.T) {
 		dir := t.TempDir()
 		t.Setenv("HOME", dir)
 
-		ss := NewSecureStorage("hawk-test")
+		ss := NewSecureStorage("rho-test")
 		if err := ss.setFile("provider1", "token1"); err != nil {
 			t.Fatal(err)
 		}

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/env"
+	"github.com/GrayCodeAI/rho/internal/env"
 )
 
 // PluginBridge wraps a shell-based bridge plugin, executing an external CLI

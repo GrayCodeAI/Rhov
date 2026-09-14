@@ -66,6 +66,8 @@ var toolPolicies = map[string]ToolPolicy{
 	"Screenshot":            {Name: "Screenshot", Capabilities: []Capability{CapabilityNetworkAccess, CapabilityFilesystemWrite}, DefaultRisk: RiskHigh},
 	"Download":              {Name: "Download", Capabilities: []Capability{CapabilityNetworkAccess, CapabilityFilesystemWrite}, DefaultRisk: RiskMedium},
 	"Bash":                  {Name: "Bash", Capabilities: []Capability{CapabilityProcessExecute}, DefaultRisk: RiskHigh},
+	"TerminalCreate":        {Name: "TerminalCreate", Capabilities: []Capability{CapabilityProcessExecute, CapabilityDestructive}, DefaultRisk: RiskHigh},
+	"TerminalSend":          {Name: "TerminalSend", Capabilities: []Capability{CapabilityProcessExecute, CapabilityDestructive}, DefaultRisk: RiskHigh},
 	"Write":                 {Name: "Write", Capabilities: []Capability{CapabilityFilesystemWrite}, DefaultRisk: RiskMedium},
 	"Edit":                  {Name: "Edit", Capabilities: []Capability{CapabilityFilesystemWrite}, DefaultRisk: RiskMedium},
 	"Delete":                {Name: "Delete", Capabilities: []Capability{CapabilityFilesystemDelete, CapabilityDestructive}, DefaultRisk: RiskHigh},

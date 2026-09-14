@@ -3,12 +3,12 @@ package cmd
 import (
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func TestDefaultRegistryWiresLanguageServerManager(t *testing.T) {
-	registry, err := defaultRegistry(hawkconfig.Settings{})
+	registry, err := defaultRegistry(rhoconfig.Settings{})
 	if err != nil {
 		t.Fatal(err)
 	}

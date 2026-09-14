@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 func TestSession_PersistenceLazyInitIsSynchronized(t *testing.T) {

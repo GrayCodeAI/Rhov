@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/GrayCodeAI/hawk/internal/permissions/stableid"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/permissions/stableid"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 // StableRuleStore persists exact, stable-id permission rules (ports fx's

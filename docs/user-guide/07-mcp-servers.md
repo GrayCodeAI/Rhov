@@ -1,12 +1,12 @@
 # MCP Servers
 
-MCP (Model Context Protocol) servers extend Hawk with external tool integrations. They let Hawk interact with any service that implements the MCP standard.
+MCP (Model Context Protocol) servers extend Rho with external tool integrations. They let Rho interact with any service that implements the MCP standard.
 
 ---
 
 ## What Are MCP Servers?
 
-An MCP server is a process that exposes tools to Hawk over a standardized protocol. When you configure an MCP server, its tools become available to the model alongside Hawk's built-in tools. The model can discover and call these tools during a session.
+An MCP server is a process that exposes tools to Rho over a standardized protocol. When you configure an MCP server, its tools become available to the model alongside Rho's built-in tools. The model can discover and call these tools during a session.
 
 For example, a GitHub MCP server might expose tools like `create_issue`, `list_pull_requests`, and `search_code`. A database server might expose `query`, `list_tables`, and `describe_schema`.
 
@@ -16,11 +16,11 @@ See the [MCP specification](https://modelcontextprotocol.io) for protocol detail
 
 ## Configuration
 
-MCP servers are configured in `.hawk/settings.json` under the `mcp_servers` key.
+MCP servers are configured in `.rho/settings.json` under the `mcp_servers` key.
 
 ### stdio Transport (Local Process)
 
-Hawk spawns a local process and communicates over stdin/stdout:
+Rho spawns a local process and communicates over stdin/stdout:
 
 ```json
 {
@@ -64,40 +64,40 @@ Manage MCP servers from the command line:
 
 ```bash
 # List configured MCP servers
-hawk mcp list
+rho mcp list
 
 # Add a stdio server
-hawk mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
+rho mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
 
 # Add a remote HTTP server
-hawk mcp add linear --transport http https://mcp.linear.app/mcp
+rho mcp add linear --transport http https://mcp.linear.app/mcp
 
 # Remove a server
-hawk mcp remove github
+rho mcp remove github
 
 # Diagnose server configuration
-hawk mcp doctor
-hawk mcp doctor <server-name>
+rho mcp doctor
+rho mcp doctor <server-name>
 ```
 
-Use `--scope project` to write to `.hawk/settings.json` in the current directory instead of the user config.
+Use `--scope project` to write to `.rho/settings.json` in the current directory instead of the user config.
 
 ---
 
 ## Project-Scoped MCP Servers
 
-MCP servers can be configured per-project in `.hawk/settings.json`:
+MCP servers can be configured per-project in `.rho/settings.json`:
 
 ```
 my-project/
-  .hawk/
+  .rho/
     settings.json
   src/
   ...
 ```
 
 ```json
-// .hawk/settings.json
+// .rho/settings.json
 {
   "mcp_servers": {
     "linear": {
@@ -125,7 +125,7 @@ MCP tools are namespaced with the server name to avoid collisions:
 
 ## Discovering and Using Tools
 
-Hawk provides built-in tools to work with MCP servers:
+Rho provides built-in tools to work with MCP servers:
 
 - **`search_tool`** — Discover available integration tools across all enabled MCP servers
 - **`use_tool`** — Call an integration tool discovered via `search_tool`

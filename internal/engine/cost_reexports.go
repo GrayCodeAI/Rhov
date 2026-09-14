@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/GrayCodeAI/hawk/internal/engine/cost"
-	analytics "github.com/GrayCodeAI/hawk/internal/observability"
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+	analytics "github.com/GrayCodeAI/rho/internal/observability"
 )
 
 type (

@@ -1,10 +1,10 @@
 # MCP Server Configuration
 
-hawk supports connecting to external MCP (Model Context Protocol) servers to extend its capabilities with additional tools, resources, and prompts.
+rho supports connecting to external MCP (Model Context Protocol) servers to extend its capabilities with additional tools, resources, and prompts.
 
 ## Configuration
 
-MCP servers are configured in `settings.json` (global: `~/.hawk/settings.json`, project: `.hawk/settings.json`).
+MCP servers are configured in `settings.json` (global: `~/.rho/settings.json`, project: `.rho/settings.json`).
 
 ```json
 {
@@ -42,7 +42,7 @@ My-Jogyo provides 12 MCP tools for scientific research workflows, including Pyth
 # Install My-Jogyo
 npm install -g my-jogyo
 
-# Add to hawk settings
+# Add to rho settings
 ```
 
 **settings.json:**
@@ -78,16 +78,16 @@ npm install -g my-jogyo
 
 ```bash
 # Add an MCP server
-hawk mcp add <name> <command> [args...]
+rho mcp add <name> <command> [args...]
 
 # List configured servers
-hawk mcp list
+rho mcp list
 
 # Remove a server
-hawk mcp remove <name>
+rho mcp remove <name>
 
 # Test a server connection
-hawk mcp test <name>
+rho mcp test <name>
 ```
 
 ## Troubleshooting
@@ -98,8 +98,8 @@ hawk mcp test <name>
 - Run the command manually to check for errors
 
 **Tools not appearing:**
-- Restart hawk after adding a new server
-- Check `hawk mcp test <name>` for connection errors
+- Restart rho after adding a new server
+- Check `rho mcp test <name>` for connection errors
 - Verify the server's tools/list response is valid JSON-RPC
 
 **Timeout errors:**

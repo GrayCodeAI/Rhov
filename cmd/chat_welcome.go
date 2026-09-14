@@ -9,23 +9,23 @@ import (
 
 	"github.com/mattn/go-runewidth"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 type welcomeStatusSnapshot struct {
-	setup    hawkconfig.SetupState
+	setup    rhoconfig.SetupState
 	agentsOK bool
 }
 
 func loadWelcomeStatusSnapshot() welcomeStatusSnapshot {
 	ctx := context.Background()
 	return welcomeStatusSnapshot{
-		setup:    hawkconfig.EvaluateSetupCached(ctx),
-		agentsOK: hawkconfig.LoadAgentsMD() != "",
+		setup:    rhoconfig.EvaluateSetupCached(ctx),
+		agentsOK: rhoconfig.LoadAgentsMD() != "",
 	}
 }
 
@@ -71,8 +71,8 @@ func (m *chatModel) rebuildWelcomeCache(opts ...any) {
 	m.welcomeCache = buildWelcomeMessageWithSnapshot(m.session, m.sessionID, m.registry, nil, m.settings, skillsCount, connectedMCPCount(m.registry), frame, width, height, m.welcomeStatusSnapshot(), m.lastCommand)
 }
 
-// buildWelcomeMessage renders the branded inline HAWK welcome block.
-func buildWelcomeMessage(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount int, blinkClosed bool, width, height int) string {
+// buildWelcomeMessage renders the branded inline RHO welcome block.
+func buildWelcomeMessage(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings rhoconfig.Settings, skillsCount int, blinkClosed bool, width, height int) string {
 	frame := 0
 	if blinkClosed {
 		frame = 2
@@ -80,8 +80,8 @@ func buildWelcomeMessage(sess *engine.Session, sessionID string, registry *tool.
 	return buildWelcomeMessageWithSnapshot(sess, sessionID, registry, saved, settings, skillsCount, connectedMCPCount(registry), frame, width, height, loadWelcomeStatusSnapshot(), "")
 }
 
-func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount, mcpCount int, eyeFrame int, width, height int, snapshot welcomeStatusSnapshot, lastCommand string) string {
-	// Talon Gold is used for the HAWK wordmark. All escapes come from the
+func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings rhoconfig.Settings, skillsCount, mcpCount int, eyeFrame int, width, height int, snapshot welcomeStatusSnapshot, lastCommand string) string {
+	// Talon Gold is used for the RHO wordmark. All escapes come from the
 	// theme palette (theme.go) so a rebrand stays a one-file change.
 	logoC := ansiOrange
 	dimC := ansiDim
@@ -119,7 +119,7 @@ func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, reg
 		return strings.Repeat(" ", pad) + styled
 	}
 
-	art := hawkLogoArtLines
+	art := rhoLogoArtLines
 	var eyeGlyph string
 	switch eyeFrame {
 	case 1, 3:
@@ -128,13 +128,13 @@ func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, reg
 		eyeGlyph = "|-\\/-|"
 	}
 	if eyeGlyph != "" {
-		art = append([]string(nil), hawkLogoArtLines...)
+		art = append([]string(nil), rhoLogoArtLines...)
 		for i, line := range art {
 			art[i] = strings.Replace(line, "|0\\/0|", eyeGlyph, 1)
 		}
 	}
 
-	// Inject the version into the hawk's body — centered in the lower gap.
+	// Inject the version into the rho's body — centered in the lower gap.
 	verStr := DisplayVersion()
 	if verStr != "" && !strings.HasPrefix(verStr, "v") && !strings.HasPrefix(verStr, "V") {
 		verStr = "v" + verStr
@@ -157,13 +157,13 @@ func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, reg
 
 	if tight {
 		// Compact single-line wordmark for small terminals — version sits
-		// inline so it's always visible even when the full hawk is hidden.
+		// inline so it's always visible even when the full rho is hidden.
 		verDisplay := DisplayVersion()
 		if verDisplay != "" && !strings.HasPrefix(verDisplay, "v") && !strings.HasPrefix(verDisplay, "V") {
 			verDisplay = "v" + verDisplay
 		}
-		compactArt := logoC + "HAWK" + rst + "  " + verDisplay
-		b.WriteString(center(runewidth.StringWidth("HAWK   "+verDisplay), compactArt) + "\n")
+		compactArt := logoC + "RHO" + rst + "  " + verDisplay
+		b.WriteString(center(runewidth.StringWidth("RHO   "+verDisplay), compactArt) + "\n")
 	} else {
 		artW := blockLinesWidth(art)
 		for _, line := range art {
@@ -346,7 +346,7 @@ func envSummary(provider, model string) string {
 
 func envSummaryWithSelection(provider, model string, includeSelection bool) string {
 	var providers []string
-	for _, gateway := range hawkconfig.GatewayStatuses(context.Background(), provider, model) {
+	for _, gateway := range rhoconfig.GatewayStatuses(context.Background(), provider, model) {
 		providers = append(providers, gateway.ID)
 	}
 	sort.Strings(providers)
@@ -354,17 +354,17 @@ func envSummaryWithSelection(provider, model string, includeSelection bool) stri
 	if includeSelection {
 		b.WriteString(fmt.Sprintf("Provider: %s\nModel: %s\n\n", provider, model))
 	}
-	b.WriteString(fmt.Sprintf("Credentials (%s):\n", hawkconfig.CredentialStoreName()))
+	b.WriteString(fmt.Sprintf("Credentials (%s):\n", rhoconfig.CredentialStoreName()))
 	for _, providerID := range providers {
-		b.WriteString(fmt.Sprintf("  %s: %s\n", providerID, hawkconfig.EnvKeyStatus(providerID)))
+		b.WriteString(fmt.Sprintf("  %s: %s\n", providerID, rhoconfig.EnvKeyStatus(providerID)))
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
 
-func configCommandSummary(settings hawkconfig.Settings) string {
+func configCommandSummary(settings rhoconfig.Settings) string {
 	_ = settings
-	providerName := displayConfigValue(hawkconfig.ActiveProvider(context.Background()))
-	modelName := displayConfigValue(hawkconfig.ActiveModel(context.Background()))
+	providerName := displayConfigValue(rhoconfig.ActiveProvider(context.Background()))
+	modelName := displayConfigValue(rhoconfig.ActiveModel(context.Background()))
 	keys := configuredKeyList()
 	keysColor := infoSky
 	if keys == "(none)" {
@@ -374,14 +374,14 @@ func configCommandSummary(settings hawkconfig.Settings) string {
 
   /config  → paste API key (OS keychain) + pick model
   /path    → verify readiness in TUI
-  hawk path (CLI)
+  rho path (CLI)
 
 %s:
   %s %s
   %s %s
   %s %s
 
-Model catalog and routing live in eyrie — hawk is the UI only.`,
+Model catalog and routing live in eyrie — rho is the UI only.`,
 		auditTint("Setup (eyrie)", textPrimary),
 		auditTint("Current", textPrimary),
 		auditTint("provider:", textMuted), auditTint(providerName, infoSky),
@@ -390,7 +390,7 @@ Model catalog and routing live in eyrie — hawk is the UI only.`,
 }
 
 func apiKeyConfigSummary() string {
-	return auditTint("API keys ("+hawkconfig.CredentialStoreName()+")", textPrimary) + "\n" + indentedAPIKeyLines()
+	return auditTint("API keys ("+rhoconfig.CredentialStoreName()+")", textPrimary) + "\n" + indentedAPIKeyLines()
 }
 
 func configuredKeyList() string {
@@ -436,11 +436,11 @@ func apiKeyStatusColor(status string) color.Color {
 }
 
 func apiKeyStatusLines() []string {
-	providers := hawkconfig.AllSetupGateways()
+	providers := rhoconfig.AllSetupGateways()
 	sort.Strings(providers)
 	var lines []string
 	for _, provider := range providers {
-		lines = append(lines, fmt.Sprintf("%s: %s", provider, hawkconfig.EnvKeyStatus(provider)))
+		lines = append(lines, fmt.Sprintf("%s: %s", provider, rhoconfig.EnvKeyStatus(provider)))
 	}
 	return lines
 }

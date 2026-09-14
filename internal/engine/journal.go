@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // SetJournal attaches the append-only session event spine to persistence. New

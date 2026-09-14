@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/governance"
+	"github.com/GrayCodeAI/rho/internal/governance"
 )
 
 // govPolicy builds a policy layer with the given capabilities.

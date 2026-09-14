@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/catalogtest"
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	"github.com/GrayCodeAI/rho/internal/catalogtest"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 )
 
 func TestPrepareCatalogForSession_StaleCacheRefreshFailureContinues(t *testing.T) {
 	catalogtest.Install(t)
 	// Force stale so refresh is attempted; remote may fail offline — should not block if cache has models.
-	h := hawkconfig.CatalogHealthReport(context.Background())
+	h := rhoconfig.CatalogHealthReport(context.Background())
 	var buf bytes.Buffer
-	err := hawkconfig.PrepareCatalogForSession(context.Background(), &buf, hawkconfig.CatalogStartupOptions{
+	err := rhoconfig.PrepareCatalogForSession(context.Background(), &buf, rhoconfig.CatalogStartupOptions{
 		ForceRefresh: true,
 	})
 	// With ForceRefresh, remote may fail; if we had models before, we tolerate failure.
@@ -28,7 +28,7 @@ func TestPrepareCatalogForSession_StaleCacheRefreshFailureContinues(t *testing.T
 func TestCatalogCachePathForDisplay_RespectsEnv(t *testing.T) {
 	custom := filepath.Join(t.TempDir(), "custom.json")
 	t.Setenv("EYRIE_MODEL_CATALOG_PATH", custom)
-	if got := hawkconfig.CatalogCachePathForDisplay(); got != custom {
+	if got := rhoconfig.CatalogCachePathForDisplay(); got != custom {
 		t.Fatalf("path = %q want %q", got, custom)
 	}
 }

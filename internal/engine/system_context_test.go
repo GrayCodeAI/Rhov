@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // deadlockTimeout bounds the regression tests below. Both Append and Replace

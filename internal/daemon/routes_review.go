@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var validSHA = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
@@ -19,12 +20,16 @@ const reviewArgMaxLen = 4096
 
 var reviewArgCharset = regexp.MustCompile(`^[^\x00-\x1f\x7f]*$`)
 
-// reviewSem bounds the number of concurrent `hawk review run` subprocesses
+// reviewSem bounds the number of concurrent `rho review run` subprocesses
 // spawned by POST /v1/review so an authenticated caller cannot exhaust CPU
 // or memory by firing unbounded review jobs.
 var reviewSem = make(chan struct{}, maxConcurrentReviews)
 
 const maxConcurrentReviews = 4
+
+// reviewTimeout bounds a spawned `rho review run` subprocess so a hung review
+// cannot run forever and cannot block daemon shutdown.
+const reviewTimeout = 30 * time.Minute
 
 // ReviewRequest is the JSON body for POST /v1/review.
 type ReviewRequest struct {
@@ -82,17 +87,22 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Bound concurrent review spawns: refuse (503) rather than queue when the
-	// limit is reached so a burst cannot pile up unbounded subprocesses.
+	// limit is reached so a burst cannot pile up unbounded subprocesses. The
+	// slot is released when the review subprocess finishes (in the goroutine
+	// below), not when this handler returns, so it bounds running reviews.
 	select {
 	case reviewSem <- struct{}{}:
-		defer func() { <-reviewSem }()
 	default:
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "server busy: too many reviews in flight"})
 		return
 	}
 
-	// Trigger review asynchronously via hawk review run.
+	// Trigger review asynchronously via rho review run. Track it in the
+	// server lifecycle so Stop can wait for in-flight reviews.
+	s.reviewWG.Add(1)
 	go func() {
+		defer s.reviewWG.Done()
+		defer func() { <-reviewSem }()
 		args := []string{"review", "run", req.SHA, "--background"}
 		if req.Model != "" {
 			args = append(args, "--model", req.Model)
@@ -100,7 +110,9 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 		if req.Concerns != "" {
 			args = append(args, "--concerns", req.Concerns)
 		}
-		_ = exec.CommandContext(context.Background(), "hawk", args...).Run() // #nosec G204 -- binary is fixed "hawk"; args are validated (SHA regex, no "--" prefix, printable charset)
+		ctx, cancel := context.WithTimeout(context.Background(), reviewTimeout)
+		defer cancel()
+		_ = exec.CommandContext(ctx, "rho", args...).Run() // #nosec G204 -- binary is fixed "rho"; args are validated (SHA regex, no "--" prefix, printable charset)
 	}()
 
 	resp := ReviewResponse{
@@ -112,8 +124,8 @@ func (s *Server) handleReview(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleReviewStatus(w http.ResponseWriter, _ *http.Request) {
-	// Run hawk review status and return output.
-	out, err := exec.CommandContext(context.Background(), "hawk", "review", "status").Output()
+	// Run rho review status and return output.
+	out, err := exec.CommandContext(context.Background(), "rho", "review", "status").Output()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

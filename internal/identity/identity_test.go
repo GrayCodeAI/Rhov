@@ -142,32 +142,32 @@ func TestFileFormat(t *testing.T) {
 
 func TestHomeDirEnvOverride(t *testing.T) {
 	freshHome(t)
-	t.Setenv("HAWK_HOME", "")
+	t.Setenv("RHO_HOME", "")
 	home, err := HomeDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Without HAWK_HOME the resolved home ends in /.hawk.
-	if !strings.HasSuffix(home, ".hawk") {
-		t.Fatalf("HomeDir() = %q, want ~/.hawk default", home)
+	// Without RHO_HOME the resolved home ends in /.rho.
+	if !strings.HasSuffix(home, ".rho") {
+		t.Fatalf("HomeDir() = %q, want ~/.rho default", home)
 	}
 }
 
-func TestHomeDirUsesHAWKHomeEnv(t *testing.T) {
+func TestHomeDirUsesRHOHomeEnv(t *testing.T) {
 	freshHome(t)
-	t.Setenv("HAWK_HOME", "/tmp/hawk-home-test")
+	t.Setenv("RHO_HOME", "/tmp/rho-home-test")
 	home, err := HomeDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if home != "/tmp/hawk-home-test" {
-		t.Fatalf("HomeDir() = %q, want HAWK_HOME value", home)
+	if home != "/tmp/rho-home-test" {
+		t.Fatalf("HomeDir() = %q, want RHO_HOME value", home)
 	}
 }
 
 func TestSetHomeDirOverrideWins(t *testing.T) {
 	home := freshHome(t)
-	t.Setenv("HAWK_HOME", "/tmp/ignored-home")
+	t.Setenv("RHO_HOME", "/tmp/ignored-home")
 	SetHomeDir(home)
 	got, err := HomeDir()
 	if err != nil {

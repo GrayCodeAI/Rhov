@@ -5,7 +5,7 @@
 
 package theme
 
-// darkPalette is the default dark theme with Hawk's Talon Gold accent.
+// darkPalette is the default dark theme with Rho's Talon Gold accent.
 var darkPalette = Palette{
 	Panel:     "#1b1e26",
 	PromptBg:  "#262626",
@@ -565,6 +565,38 @@ var minimalPalette = Palette{
 	CardPerm:  "#3a3a2a",
 }
 
+// tauPalette — the restrained, low-chrome look of Tau: near-black surface,
+// a single muted blue accent, generous dim text, and hairline separators.
+var tauPalette = Palette{
+	Panel:     "#0d1117",
+	PromptBg:  "#161b22",
+	Line:      "#21262d",
+	Line2:     "#30363d",
+	Ink:       "#e6edf3",
+	Muted:     "#8b949e",
+	Faint:     "#6e7681",
+	Faintest:  "#484f58",
+	Accent:    "#7aa2f7",
+	Green:     "#3fb950",
+	Red:       "#f85149",
+	Amber:     "#d29922",
+	Blue:      "#58a6ff",
+	GitAdd:    "#3fb950",
+	GitDel:    "#f85149",
+	AddBg:     "#12261e",
+	DelBg:     "#2d1418",
+	AddBgWord: "#1f4d33",
+	DelBgWord: "#5c2226",
+	PermBg:    "#2b2412",
+	SelBg:     "#1f2d4d",
+	AddInk:    "#7ee2a8",
+	DelInk:    "#ffa198",
+	OnAccent:  "#0d1117",
+	CardRun:   "#1f3a5f",
+	CardErr:   "#5c2226",
+	CardPerm:  "#4d3f1f",
+}
+
 // themeEntry is one registered theme for the theme picker.
 type themeEntry struct {
 	Name    string
@@ -594,6 +626,7 @@ var themeRegistry = []themeEntry{
 	{Name: "light", Label: "Light", Palette: lightPalette, IsDark: false},
 	{Name: "solarized-light", Label: "Solarized Light", Palette: solarizedLightPalette, IsDark: false},
 	{Name: "minimal", Label: "Minimal", Palette: minimalPalette, IsDark: true},
+	{Name: "tau", Label: "Tau", Palette: tauPalette, IsDark: true},
 }
 
 // themeByName indexes the registry by registered name for O(1) lookup.

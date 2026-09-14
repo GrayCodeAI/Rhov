@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 )
 
 var (
@@ -13,15 +13,15 @@ var (
 )
 
 func ensureCatalogBeforeAgent(ctx context.Context, strict bool) error {
-	opts := hawkconfig.CatalogStartupOptions{
+	opts := rhoconfig.CatalogStartupOptions{
 		ForceRefresh:    refreshCatalogFlag,
 		SkipAutoRefresh: skipCatalogRefreshFlag,
 		VerboseOutput:   refreshCatalogFlag,
 	}
 	if strict {
-		return hawkconfig.PrepareCatalogForSession(ctx, os.Stderr, opts)
+		return rhoconfig.PrepareCatalogForSession(ctx, os.Stderr, opts)
 	}
-	hawkconfig.StartupCatalogPrefetch(ctx)
+	rhoconfig.StartupCatalogPrefetch(ctx)
 	return nil
 }
 
@@ -29,5 +29,5 @@ func startBackgroundCatalogRefresh(ctx context.Context) {
 	if skipCatalogRefreshFlag {
 		return
 	}
-	hawkconfig.ScheduleBackgroundCatalogRefresh(ctx)
+	rhoconfig.ScheduleBackgroundCatalogRefresh(ctx)
 }

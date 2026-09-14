@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/hawk/internal/contracts/graph"
+	graphcontracts "github.com/GrayCodeAI/rho/internal/contracts/graph"
 )
 
 // RuntimeGraphSchemaVersion identifies the runtime-graph projection schema.

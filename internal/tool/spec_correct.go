@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type SpecCorrectTool struct{}
@@ -36,7 +37,11 @@ func (SpecCorrectTool) Execute(ctx context.Context, input json.RawMessage) (stri
 }
 
 func runCorrectCmd(dir, name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	// Bound `go test ./...` so a hung test/build cannot block the tool (and
+	// the agent turn) indefinitely.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...) // #nosec G204 -- executable and args are fixed by the caller
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	return string(output), err

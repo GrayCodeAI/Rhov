@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ var credentialsStatusCmd = &cobra.Command{
 	Short: "Show where API keys are stored",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		cmd.Println(hawkconfig.FormatCredentialCLIStatus(ctx))
+		cmd.Println(rhoconfig.FormatCredentialCLIStatus(ctx))
 		return nil
 	},
 }
@@ -30,7 +30,7 @@ var credentialsRemoveCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		ok, err := confirmDestructive(fmt.Sprintf("Remove stored API key(s) for %q from %s?", args[0], hawkconfig.CredentialStoreName()))
+		ok, err := confirmDestructive(fmt.Sprintf("Remove stored API key(s) for %q from %s?", args[0], rhoconfig.CredentialStoreName()))
 		if err != nil {
 			return err
 		}
@@ -38,11 +38,11 @@ var credentialsRemoveCmd = &cobra.Command{
 			cmd.Printf("%s\n", auditTint("Cancelled.", textMuted))
 			return nil
 		}
-		removed, err := hawkconfig.RemoveStoredCredential(ctx, args[0])
+		removed, err := rhoconfig.RemoveStoredCredential(ctx, args[0])
 		if err != nil {
 			return err
 		}
-		cmd.Printf("%s\n", auditTint(fmt.Sprintf("Removed %d key(s) from %s: %s", len(removed), hawkconfig.CredentialStoreName(), strings.Join(removed, ", ")), doneGreen))
+		cmd.Printf("%s\n", auditTint(fmt.Sprintf("Removed %d key(s) from %s: %s", len(removed), rhoconfig.CredentialStoreName(), strings.Join(removed, ", ")), doneGreen))
 		return nil
 	},
 }

@@ -1,9 +1,9 @@
 package compact
 
 import (
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 
-	"github.com/GrayCodeAI/hawk/internal/engine/token"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
 )
 
 type APICompactConfig struct {

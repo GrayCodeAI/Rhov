@@ -11,11 +11,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/feature/shellmode"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/feature/shellmode"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // submitUserMessage handles Enter on a non-empty prompt (slash commands, shell, or agent turn).
@@ -77,7 +77,7 @@ func (m chatModel) submitUserMessage() (chatModel, tea.Cmd) {
 		}
 		return m, cmd
 	}
-	if setup := hawkconfig.EvaluateSetupCached(context.Background()); setup.NeedsSetup {
+	if setup := rhoconfig.EvaluateSetupCached(context.Background()); setup.NeedsSetup {
 		hint := setup.Hint
 		if hint == "" {
 			hint = "Complete setup in /config (keychain + model)."

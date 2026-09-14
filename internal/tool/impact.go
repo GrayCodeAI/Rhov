@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/GrayCodeAI/rho/internal/gitcmd"
 )
 
 // ImpactTool provides cross-file impact analysis for changed files.
@@ -389,12 +390,12 @@ func formatImpactReport(analysis *ImpactAnalysis) string {
 
 func gitDiffFiles(ctx context.Context, root string) ([]string, error) {
 	// Try staged + unstaged
-	cmd := exec.CommandContext(ctx, "git", "diff", "--name-only", "HEAD")
+	cmd := gitcmd.Command(ctx, "diff", "--name-only", "HEAD")
 	cmd.Dir = root
 	out, err := cmd.Output()
 	if err != nil {
 		// Try initial commit
-		cmd = exec.CommandContext(ctx, "git", "diff", "--name-only", "--cached")
+		cmd = gitcmd.Command(ctx, "diff", "--name-only", "--cached")
 		cmd.Dir = root
 		out, err = cmd.Output()
 		if err != nil {
@@ -587,7 +588,7 @@ func resolveImport(imp, ext, dir, root string) string {
 }
 
 func buildCoChangeAnalysis(ctx context.Context, root string, commitLimit int) (*simpleCoChange, error) {
-	cmd := exec.CommandContext(ctx, "git", "log", "--name-only", "--pretty=format:", fmt.Sprintf("-%d", commitLimit)) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
+	cmd := gitcmd.Command(ctx, "log", "--name-only", "--pretty=format:", fmt.Sprintf("-%d", commitLimit)) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
 	cmd.Dir = root
 	out, err := cmd.Output()
 	if err != nil {

@@ -3,7 +3,7 @@ package engine
 import (
 	"fmt"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // TeachConfig controls explanation depth.

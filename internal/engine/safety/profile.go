@@ -128,7 +128,7 @@ func (p *AutonomyProfile) NeedsPermission(toolName string, isSafe bool) bool {
 		return false
 	case AutonomyFull:
 		// Bash: auto-allow safe commands unless the user overrode bash off.
-		if canonicalToolName(toolName) == "Bash" {
+		if isShellExecutionTool(toolName) {
 			if !autoBash {
 				return true // override: always ask for bash
 			}
@@ -151,7 +151,7 @@ func (p *AutonomyProfile) NeedsPermission(toolName string, isSafe bool) bool {
 			return !autoNetwork
 		}
 		// Bash asks unless explicitly overridden on.
-		if canonicalToolName(toolName) == "Bash" {
+		if isShellExecutionTool(toolName) {
 			return !autoBash
 		}
 		return true
@@ -163,6 +163,17 @@ func (p *AutonomyProfile) NeedsPermission(toolName string, isSafe bool) bool {
 	default: // Supervised
 		return true
 	}
+}
+
+// isShellExecutionTool reports whether a tool executes a model-supplied
+// string in a shell (Bash or the persistent-terminal tools). These share the
+// same autoBash override and safe-command gating.
+func isShellExecutionTool(toolName string) bool {
+	switch canonicalToolName(toolName) {
+	case "Bash", "TerminalCreate", "TerminalSend":
+		return true
+	}
+	return false
 }
 
 // isNetworkTool reports whether a tool performs outbound network access.

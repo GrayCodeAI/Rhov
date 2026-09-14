@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // gitRollbackTimeout bounds rollback git operations in the experiment loop.

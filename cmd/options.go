@@ -9,19 +9,19 @@ import (
 	"os"
 	"strings"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	ctxrepomap "github.com/GrayCodeAI/hawk/internal/context/repomap"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/engine/branching"
-	"github.com/GrayCodeAI/hawk/internal/engine/lifecycle"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/repomap"
-	"github.com/GrayCodeAI/hawk/internal/observability/logger"
-	"github.com/GrayCodeAI/hawk/internal/prompt"
-	"github.com/GrayCodeAI/hawk/internal/prompts"
-	hawkmodel "github.com/GrayCodeAI/hawk/internal/provider/routing"
-	"github.com/GrayCodeAI/hawk/internal/snapshot"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	ctxrepomap "github.com/GrayCodeAI/rho/internal/context/repomap"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine/branching"
+	"github.com/GrayCodeAI/rho/internal/engine/lifecycle"
+	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
+	"github.com/GrayCodeAI/rho/internal/intelligence/repomap"
+	"github.com/GrayCodeAI/rho/internal/observability/logger"
+	"github.com/GrayCodeAI/rho/internal/prompt"
+	"github.com/GrayCodeAI/rho/internal/prompts"
+	rhomodel "github.com/GrayCodeAI/rho/internal/provider/routing"
+	"github.com/GrayCodeAI/rho/internal/snapshot"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func buildSystemPrompt() (string, error) {
@@ -69,7 +69,7 @@ func buildSystemPromptWithOptions(includeWorkspaceContext, includeRepoMap bool) 
 		modularPrompt = ""
 	}
 
-	base := prompt.System() + "\n\n" + hawkconfig.BuildStartupContextWithDirs(addDirs)
+	base := prompt.System() + "\n\n" + rhoconfig.BuildStartupContextWithDirs(addDirs)
 	if modularPrompt != "" {
 		base += "\n\n" + modularPrompt
 	}
@@ -119,7 +119,7 @@ func buildDeferredWorkspacePromptContext() string {
 		return ""
 	}
 	var sections []string
-	if deferred := strings.TrimSpace(hawkconfig.BuildDeferredContextWithDirs(addDirs)); deferred != "" {
+	if deferred := strings.TrimSpace(rhoconfig.BuildDeferredContextWithDirs(addDirs)); deferred != "" {
 		sections = append(sections, deferred)
 	}
 	if ws := prompts.GatherWorkspaceContext(cwd); ws != nil {
@@ -156,7 +156,7 @@ func injectRepoMap(base string) string {
 		return base
 	}
 
-	settings := hawkconfig.LoadSettings()
+	settings := rhoconfig.LoadSettings()
 	if settings.RepoMap == nil || !*settings.RepoMap {
 		return base
 	}
@@ -182,43 +182,43 @@ func injectRepoMap(base string) string {
 	return base + "\n\n# Repository Map\n" + formatted
 }
 
-func loadEffectiveSettings() (hawkconfig.Settings, error) {
-	return hawkconfig.LoadSettingsWithOverride(settingsFlag)
+func loadEffectiveSettings() (rhoconfig.Settings, error) {
+	return rhoconfig.LoadSettingsWithOverride(settingsFlag)
 }
 
-func resolveSelection(settings hawkconfig.Settings) hawkconfig.Selection {
-	return hawkconfig.EffectiveSelectionWithSettings(context.Background(), settings, hawkconfig.SelectionOptions{
+func resolveSelection(settings rhoconfig.Settings) rhoconfig.Selection {
+	return rhoconfig.EffectiveSelectionWithSettings(context.Background(), settings, rhoconfig.SelectionOptions{
 		ProviderOverride: firstNonEmptyTrimmed(provider, settings.Provider),
 		ModelOverride:    firstNonEmptyTrimmed(model, settings.Model),
 	})
 }
 
-func startupSelection(settings hawkconfig.Settings) hawkconfig.Selection {
+func startupSelection(settings rhoconfig.Settings) rhoconfig.Selection {
 	providerOverride := firstNonEmptyTrimmed(provider, settings.Provider)
 	modelOverride := firstNonEmptyTrimmed(model, settings.Model)
 
 	explicitProvider, explicitModel := explicitSelection(context.Background())
 
-	providerID := hawkconfig.ActiveProviderID(firstNonEmptyTrimmed(providerOverride, explicitProvider))
+	providerID := rhoconfig.ActiveProviderID(firstNonEmptyTrimmed(providerOverride, explicitProvider))
 	modelID := strings.TrimSpace(firstNonEmptyTrimmed(modelOverride, explicitModel))
 
 	if providerID == "" && modelID != "" {
-		providerID = hawkconfig.ActiveProviderID(hawkconfig.ProviderOfModelWithSettings(settings, modelID))
+		providerID = rhoconfig.ActiveProviderID(rhoconfig.ProviderOfModelWithSettings(settings, modelID))
 	}
 	if modelID == "" && providerID != "" {
-		modelID = strings.TrimSpace(hawkconfig.DefaultModelForProviderWithSettings(settings, providerID))
+		modelID = strings.TrimSpace(rhoconfig.DefaultModelForProviderWithSettings(settings, providerID))
 	}
 	if providerID == "" {
 		providerID = startupPlaceholderProvider
 	}
 
-	return hawkconfig.Selection{
+	return rhoconfig.Selection{
 		Provider: providerID,
 		Model:    modelID,
 	}
 }
 
-func effectiveModelAndProvider(settings hawkconfig.Settings) (string, string) {
+func effectiveModelAndProvider(settings rhoconfig.Settings) (string, string) {
 	selection := resolveSelection(settings)
 	if !selection.HasConfiguredDeployment {
 		return "", ""
@@ -226,7 +226,7 @@ func effectiveModelAndProvider(settings hawkconfig.Settings) (string, string) {
 	return selection.Model, selection.Provider
 }
 
-func newStartupHawkSession(selection hawkconfig.Selection, systemPrompt string, registry *tool.Registry) *engine.Session {
+func newStartupRhoSession(selection rhoconfig.Selection, systemPrompt string, registry *tool.Registry) *engine.Session {
 	providerID := strings.TrimSpace(selection.Provider)
 	if providerID == "" {
 		providerID = startupPlaceholderProvider
@@ -234,7 +234,7 @@ func newStartupHawkSession(selection hawkconfig.Selection, systemPrompt string, 
 	return engine.NewSession(providerID, strings.TrimSpace(selection.Model), systemPrompt, registry)
 }
 
-func newHawkSession(settings hawkconfig.Settings, effectiveProvider, effectiveModel, systemPrompt string, registry *tool.Registry) *engine.Session {
+func newRhoSession(settings rhoconfig.Settings, effectiveProvider, effectiveModel, systemPrompt string, registry *tool.Registry) *engine.Session {
 	selection := resolveSelection(settings)
 	if strings.TrimSpace(selection.Provider) == "" {
 		selection.Provider = effectiveProvider
@@ -242,15 +242,15 @@ func newHawkSession(settings hawkconfig.Settings, effectiveProvider, effectiveMo
 	if strings.TrimSpace(selection.Model) == "" {
 		selection.Model = effectiveModel
 	}
-	sess := engine.NewHawkSessionForSettings(context.Background(), settings, selection, selection.Provider, selection.Model, systemPrompt, registry)
+	sess := engine.NewRhoSessionForSettings(context.Background(), settings, selection, selection.Provider, selection.Model, systemPrompt, registry)
 	return sess
 }
 
-// newConfiguredHawkSession is the non-interactive command composition root.
+// newConfiguredRhoSession is the non-interactive command composition root.
 // Interactive chat intentionally keeps its lightweight startup and deferred
 // heavy configuration split; batch/daemon/ACP callers use this atomic path.
-func newConfiguredHawkSession(settings hawkconfig.Settings, effectiveProvider, effectiveModel, systemPrompt string, registry *tool.Registry, sessionLogger *logger.Logger, maxTurnsOverride ...int) (*engine.Session, error) {
-	sess := newHawkSession(settings, effectiveProvider, effectiveModel, systemPrompt, registry)
+func newConfiguredRhoSession(settings rhoconfig.Settings, effectiveProvider, effectiveModel, systemPrompt string, registry *tool.Registry, sessionLogger *logger.Logger, maxTurnsOverride ...int) (*engine.Session, error) {
+	sess := newRhoSession(settings, effectiveProvider, effectiveModel, systemPrompt, registry)
 	if sessionLogger != nil {
 		sess.SetLogger(sessionLogger)
 	}
@@ -260,11 +260,11 @@ func newConfiguredHawkSession(settings hawkconfig.Settings, effectiveProvider, e
 	return sess, nil
 }
 
-// newConfiguredHawkSessionFactory is the shared composition seam for
+// newConfiguredRhoSessionFactory is the shared composition seam for
 // non-interactive protocol/server entry points. It owns registry creation and
 // settings-based model selection while allowing each protocol to provide its
 // own prompt and optional model override.
-func newConfiguredHawkSessionFactory(settings hawkconfig.Settings, sessionLogger *logger.Logger) func(string, string, ...int) (*engine.Session, error) {
+func newConfiguredRhoSessionFactory(settings rhoconfig.Settings, sessionLogger *logger.Logger) func(string, string, ...int) (*engine.Session, error) {
 	return func(systemPrompt, modelOverride string, maxTurnsOverride ...int) (*engine.Session, error) {
 		registry, err := defaultRegistry(settings)
 		if err != nil {
@@ -274,14 +274,14 @@ func newConfiguredHawkSessionFactory(settings hawkconfig.Settings, sessionLogger
 		if strings.TrimSpace(modelOverride) != "" {
 			effectiveModel = modelOverride
 		}
-		return newConfiguredHawkSession(settings, effectiveProvider, effectiveModel, systemPrompt, registry, sessionLogger, maxTurnsOverride...)
+		return newConfiguredRhoSession(settings, effectiveProvider, effectiveModel, systemPrompt, registry, sessionLogger, maxTurnsOverride...)
 	}
 }
 
 // prepareInteractiveSessionStartup applies only the cheap TUI startup slice.
 // Transport rebuild and heavy memory setup remain deferred until the first
 // real chat request in bootstrapSessionForChat.
-func prepareInteractiveSessionStartup(sess *engine.Session, settings hawkconfig.Settings) error {
+func prepareInteractiveSessionStartup(sess *engine.Session, settings rhoconfig.Settings) error {
 	syncSessionFromPersistedSelection(sess)
 	sess.SetLogger(logger.New(io.Discard, logger.Error))
 	return configureSessionStartup(sess, settings)
@@ -296,7 +296,7 @@ func firstNonEmptyTrimmed(values ...string) string {
 	return ""
 }
 
-func configureSession(sess *engine.Session, settings hawkconfig.Settings, maxTurnsOverride ...int) error {
+func configureSession(sess *engine.Session, settings rhoconfig.Settings, maxTurnsOverride ...int) error {
 	if err := configureSessionStartup(sess, settings, maxTurnsOverride...); err != nil {
 		return err
 	}
@@ -304,7 +304,7 @@ func configureSession(sess *engine.Session, settings hawkconfig.Settings, maxTur
 	return nil
 }
 
-func configureSessionStartup(sess *engine.Session, settings hawkconfig.Settings, maxTurnsOverride ...int) error {
+func configureSessionStartup(sess *engine.Session, settings rhoconfig.Settings, maxTurnsOverride ...int) error {
 	sess.WireAgentTool()
 	sess.SetAllowedDirs(addDirs)
 	_ = sess.SetWorkMode(engine.WorkModeAct)
@@ -357,7 +357,7 @@ func configureSessionStartup(sess *engine.Session, settings hawkconfig.Settings,
 	}
 
 	// Model cascade router: automatically routes tasks to optimal model tier
-	roles := hawkmodel.DefaultRoles(sess.Model())
+	roles := rhomodel.DefaultRoles(sess.Model())
 	if settings.ModelRoles != nil {
 		roles = *settings.ModelRoles
 	}
@@ -405,7 +405,7 @@ func configureSessionStartup(sess *engine.Session, settings hawkconfig.Settings,
 	// provider-specific defaults (e.g. LongCat off).
 	modelID := strings.TrimSpace(sess.Model())
 	providerID := strings.TrimSpace(sess.Provider())
-	sess.SetThinkingEnabled(hawkconfig.ResolveThinkingForModel(settings, modelID, providerID))
+	sess.SetThinkingEnabled(rhoconfig.ResolveThinkingForModel(settings, modelID, providerID))
 
 	return nil
 }
@@ -441,8 +441,8 @@ func bindChatSession(sess *engine.Session, sessionID string) {
 }
 
 func validateRootFlags() error {
-	if outputFormat != "text" && outputFormat != "json" && outputFormat != "stream-json" {
-		return fmt.Errorf("--output-format must be one of: text, json, stream-json")
+	if outputFormat != "text" && outputFormat != "json" && outputFormat != "stream-json" && outputFormat != "transcript" {
+		return fmt.Errorf("--output-format must be one of: text, json, stream-json, transcript")
 	}
 	if inputFormat != "text" && inputFormat != "stream-json" {
 		return fmt.Errorf("--input-format must be one of: text, stream-json")

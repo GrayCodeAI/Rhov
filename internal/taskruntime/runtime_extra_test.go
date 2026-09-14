@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 )
 
 // --- SpawnAgent tests ---

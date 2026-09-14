@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	llm "github.com/GrayCodeAI/eyrie/llm"
-	gw "github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	gw "github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 type GatewayStatus struct {

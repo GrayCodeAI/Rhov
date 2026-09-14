@@ -13,21 +13,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
-	"github.com/GrayCodeAI/hawk/internal/provider/routing"
-	"github.com/GrayCodeAI/hawk/internal/safewrite"
-	"github.com/GrayCodeAI/hawk/internal/smartrouting"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/provider/routing"
+	"github.com/GrayCodeAI/rho/internal/safewrite"
+	"github.com/GrayCodeAI/rho/internal/smartrouting"
+	"github.com/GrayCodeAI/rho/internal/storage"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 func fetchModelsViaRuntime(ctx context.Context, provider string) ([]EngineModel, error) {
 	return ListEngineModels(ctx, provider, false)
 }
 
-// Settings holds hawk configuration.
-// Hawk: no API keys stored here. Secrets come from the OS secret store via eyrie.
+// Settings holds rho configuration.
+// Rho: no API keys stored here. Secrets come from the OS secret store via eyrie.
 type Settings struct {
 	// PolicySchemaVersion versions permission/autonomy/sandbox fields. Zero is
 	// the legacy format and is migrated to CurrentPolicySchemaVersion on load.
@@ -105,7 +105,7 @@ func ToolPresetByName(name string) (ToolPreset, bool) {
 	return p, ok
 }
 
-// Attribution controls how hawk identifies itself in git commits.
+// Attribution controls how rho identifies itself in git commits.
 type Attribution = types.Attribution
 
 // CustomProviderConfig defines a user-specified OpenAI-compatible provider.
@@ -190,7 +190,7 @@ func readSettingsFileCached(path string) ([]byte, error) {
 		settingsCache.modTime.Equal(fi.ModTime()) && settingsCache.size == fi.Size() {
 		return settingsCache.data, nil
 	}
-	data, err := os.ReadFile(path) // #nosec G304 -- path is the hawk global settings path from internal storage config, not external input
+	data, err := os.ReadFile(path) // #nosec G304 -- path is the rho global settings path from internal storage config, not external input
 	if err == nil && statErr == nil {
 		settingsCache.valid = true
 		settingsCache.path = path
@@ -212,7 +212,7 @@ func invalidateSettingsCache() {
 	settingsCache.Unlock()
 }
 
-// LoadGlobalSettings loads only Hawk's user config settings.json.
+// LoadGlobalSettings loads only Rho's user config settings.json.
 func LoadGlobalSettings() Settings {
 	var s Settings
 	path := globalSettingsPath()
@@ -232,7 +232,7 @@ func LoadGlobalSettings() Settings {
 
 // LoadSettings loads settings from user config, overlaid with any
 // project-scoped settings discovered by walking up from the current working
-// directory looking for .hawk/settings.json.
+// directory looking for .rho/settings.json.
 func LoadSettings() Settings {
 	s := LoadGlobalSettings()
 	if project := findProjectSettings(); project != nil {
@@ -266,7 +266,7 @@ func projectSafeSettings(project Settings) Settings {
 }
 
 // findProjectSettings walks up from the current working directory looking for
-// a .hawk/settings.json file. Returns nil if none is found. The nearest
+// a .rho/settings.json file. Returns nil if none is found. The nearest
 // ancestor wins (no recursive merge — a project settings file fully shadows
 // global settings for its fields).
 func findProjectSettings() *Settings {
@@ -276,7 +276,7 @@ func findProjectSettings() *Settings {
 	}
 	dir := cwd
 	for {
-		candidate := filepath.Join(dir, ".hawk", "settings.json")
+		candidate := filepath.Join(dir, ".rho", "settings.json")
 		if data, err := os.ReadFile(candidate); err == nil { // #nosec G304 -- path derived from cwd walk-up
 			var s Settings
 			if err := json.Unmarshal(data, &s); err == nil {
@@ -441,7 +441,7 @@ func SaveGlobal(s Settings) error {
 // SettingValue returns a display-safe value for a supported setting key.
 func SettingValue(s Settings, key string) (string, bool) {
 	normalized := normalizeSettingKey(key)
-	// Hawk: API key status comes from OS secret store, not settings file
+	// Rho: API key status comes from OS secret store, not settings file
 	if provider, ok := apiKeyProviderFromSettingKey(normalized); ok {
 		return EnvKeyStatus(provider), true
 	}
@@ -508,12 +508,12 @@ func SettingValue(s Settings, key string) (string, bool) {
 	}
 }
 
-// SetGlobalSetting updates a supported scalar/list setting in Hawk user config.
-// Hawk: API keys are NOT stored in settings.json. Use /config and the OS secret store.
+// SetGlobalSetting updates a supported scalar/list setting in Rho user config.
+// Rho: API keys are NOT stored in settings.json. Use /config and the OS secret store.
 func SetGlobalSetting(key, value string) error {
 	s := LoadGlobalSettings()
 	normalized := normalizeSettingKey(key)
-	// Hawk: reject API key persistence to disk
+	// Rho: reject API key persistence to disk
 	if _, ok := apiKeyProviderFromSettingKey(normalized); ok {
 		return fmt.Errorf("API keys are not stored in settings.json. Save via /config (%s)", CredentialStoreName())
 	}
@@ -687,7 +687,7 @@ func splitSettingList(value string) []string {
 func BoolPtr(b bool) *bool { return &b }
 
 // ─────────────────────────────────────────────────────────────
-// Hawk: API keys from OS secret store only (no .env)
+// Rho: API keys from OS secret store only (no .env)
 // ─────────────────────────────────────────────────────────────
 
 // ProviderAPIKeyEnv returns the API key env var for a provider (registry first for setup gateways).
@@ -756,7 +756,7 @@ func providerCredentialEnvAliases(provider string) []string {
 // Live model catalog fetch from eyrie
 // ─────────────────────────────────────────────────────────────
 
-// FetchModelsForProvider returns models from the eyrie catalog (dynamic; no hawk hardcoded lists).
+// FetchModelsForProvider returns models from the eyrie catalog (dynamic; no rho hardcoded lists).
 // RefreshModelCatalogV1 is the explicit network refresh boundary.
 func FetchModelsForProvider(provider string) ([]EngineModel, error) {
 	provider = gateway.NormalizeProviderID(provider)
@@ -774,7 +774,7 @@ func FetchModelsForProvider(provider string) ([]EngineModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Custom OpenAI-compatible providers: single model from settings, not hawk catalog data.
+	// Custom OpenAI-compatible providers: single model from settings, not rho catalog data.
 	for _, cp := range LoadSettings().CustomProviders {
 		if gateway.NormalizeProviderID(cp.Name) != provider {
 			continue
@@ -786,7 +786,7 @@ func FetchModelsForProvider(provider string) ([]EngineModel, error) {
 			}}, nil
 		}
 	}
-	return nil, fmt.Errorf("no models found for provider %s in eyrie catalog (check API keys; hawk will refresh automatically on next start)", provider)
+	return nil, fmt.Errorf("no models found for provider %s in eyrie catalog (check API keys; rho will refresh automatically on next start)", provider)
 }
 
 // FetchModelsForProviderWithSettings resolves cached models using one

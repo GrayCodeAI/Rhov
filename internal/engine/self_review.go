@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // SelfReview implements "rubber duck debugging" -- asking the model to explain

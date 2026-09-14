@@ -3,7 +3,7 @@ package token
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // DynamicMaxTokens calculates the optimal max_tokens for a request based on:

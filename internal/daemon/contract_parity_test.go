@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/hawk/internal/contracts/graph"
-	"github.com/GrayCodeAI/hawk/internal/testutil"
+	graphcontracts "github.com/GrayCodeAI/rho/internal/contracts/graph"
+	"github.com/GrayCodeAI/rho/internal/testutil"
 )
 
 // TestDaemon_GraphSync_ContractMatrix locks the /v1/graph/sync parity contract

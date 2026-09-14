@@ -7,13 +7,13 @@ import (
 )
 
 // versionLine is the single user-facing version format shared by
-// `hawk --version` and `hawk version`.
+// `rho --version` and `rho version`.
 func versionLine() string {
 	ver := DisplayVersion()
 	if ver != "" && !strings.HasPrefix(ver, "v") && !strings.HasPrefix(ver, "V") {
 		ver = "v" + ver
 	}
-	line := auditTint("hawk", textPrimary) + " " + auditTint(ver, hawkColor)
+	line := auditTint("rho", textPrimary) + " " + auditTint(ver, rhoColor)
 	if d := strings.TrimSpace(buildDate); d != "" && d != "unknown" {
 		line += auditTint(" (built "+d+")", textMuted)
 	}

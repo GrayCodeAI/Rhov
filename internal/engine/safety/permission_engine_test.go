@@ -41,7 +41,7 @@ func TestCheckTool_SpecStageAllowsWorkflowAndReadTools(t *testing.T) {
 	os.Chdir(tmpDir)
 	t.Cleanup(func() { os.Chdir(origDir) })
 
-	constitutionDir := filepath.Join(tmpDir, ".hawk", "specs", "test-spec")
+	constitutionDir := filepath.Join(tmpDir, ".rho", "specs", "test-spec")
 	os.MkdirAll(constitutionDir, 0o700)
 	os.WriteFile(filepath.Join(constitutionDir, "constitution.md"), []byte("## Constitution\n"), 0o600)
 

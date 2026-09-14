@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GrayCodeAI/hawk/internal/lint"
+	"github.com/GrayCodeAI/rho/internal/lint"
 )
 
 // lintConfig returns the lint configuration carried on the ToolContext, or a

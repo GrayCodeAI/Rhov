@@ -1,7 +1,7 @@
 # GrayCode Ecosystem Roadmap (2026)
 
 **Status:** Active · **Last updated:** 2026-09-09
-**Scope:** the 4 in-workspace repos — `hawk`, `eyrie`,
+**Scope:** the 4 in-workspace repos — `rho`, `eyrie`,
 `graycode-skills`, `graycode-platform` — plus the 5 external engine repos they
 depend on.
 **Evidence base:** `docs/RESEARCH.md`, `docs/COMPETITIVE.md`, `docs/plans/competitive-gap-*.md`
@@ -37,7 +37,7 @@ Claude Code) has proven demand.
 
 ### The single most important fact (historical)
 
-`hawk` imports **5 engine modules** — `harrier` (memory graph),
+`rho` imports **5 engine modules** — `harrier` (memory graph),
 `shrike` (token/compress), `kestrel` (code review), `merlin` (site audit),
 `swift` (session correlation) — that were **absent from this workspace and 404
 on GitHub**. They were replaced in `go.mod` by no-op stubs, so the CLI compiled
@@ -55,12 +55,12 @@ dropped.
 
 | Repo | Role | Build | Tests | Health |
 |---|---|---|---|---|
-| `hawk` | Product face (Go, Bubble Tea v2) | ✅ `go build ./...` | ✅ 179 pkgs green | Engines restored; memory/token/review/audit/correlation live |
+| `rho` | Product face (Go, Bubble Tea v2) | ✅ `go build ./...` | ✅ 179 pkgs green | Engines restored; memory/token/review/audit/correlation live |
 | `eyrie` | Provider runtime (Go) | ✅ | ✅ 37 pkgs green | Healthy; 28 providers; gRPC ChatService wired |
 | `graycode-skills` | Skill marketplace (Python) | ✅ | ✅ 382/382 | Healthy; single parsed schema |
 | `graycode-platform` | Web + Cloud control plane (TS) | ✅ | ✅ 320 worker / 33 web | Healthy; worker+bff routes added; migration deduped |
 
-### 2.1 hawk
+### 2.1 rho
 
 - Builds and vets clean **only because** the 5 engines are stubbed.
 - **5 failing tests:** `internal/token/shrike_test.go` asserts real token counts
@@ -69,10 +69,10 @@ dropped.
   - `internal/token/shrike.go` — token counting/compression → 0 / identity.
   - `internal/intelligence/memory/harrier_bridge.go` — `Ready()` is true but
     nothing persists (stub store returns nil DB).
-  - `internal/bridge/kestrel/bridge.go` — `hawk review run|analyze` always
+  - `internal/bridge/kestrel/bridge.go` — `rho review run|analyze` always
     report "no issues found" / status `Passed`.
   - `internal/bridge/merlin/bridge.go` — site audits return 0 pages/findings.
-  - `cmd/swift.go` / `cmd/swift_correlation.go` — `hawk swift` has no
+  - `cmd/swift.go` / `cmd/swift_correlation.go` — `rho swift` has no
     working subcommands; correlation silently errors.
   - `internal/engine/compact.go` etc. — context compaction depends on shrike.
 - **Orphaned code:** `cmd/merlin_pipeline.go` defines + unit-tests
@@ -187,7 +187,7 @@ Make the current state truthful and green. **No new user-facing features.**
 | # | Repo | Task | Acceptance | Effort |
 |---|---|---|---|---|
 | 0.1 | cli | Add `token.ShrikeAvailable()` functional probe; guard the 5 shrike boundary tests to skip when the engine is the stub | `go test ./internal/token/...` green; stub detected as unavailable | 0.5d ✅ |
-| 0.2 | cli | Report shrike honestly in `ecosystem` / `doctor` (unavailable when stub, not "pipeline OK (sample=0)") | `hawk ecosystem` flags stub; JSON `shrike.embedded=false` | 0.5d ✅ |
+| 0.2 | cli | Report shrike honestly in `ecosystem` / `doctor` (unavailable when stub, not "pipeline OK (sample=0)") | `rho ecosystem` flags stub; JSON `shrike.embedded=false` | 0.5d ✅ |
 | 0.3 | skills | Make `manifest-schema.toml` the single source of truth; wire a validator into CI that enforces the *enforced* schema (not the aspirational one) | schema parsed by tooling; CI gate matches reality; corpus still 0-warning | 1-2d ✅ |
 | 0.4 | skills | Add a declared dev/test dependency group so `pytest`/`ruff`/`pytest-cov` install reproducibly | `pip install -e '.[dev]'` then `pytest` green | 0.5d ✅ |
 | 0.5 | platform | Renumber duplicate migration `0022_identity_ui.sql` → `0023`; dedupe identity schema note | migrations apply in deterministic order; tests green | 0.5d ✅ |
@@ -209,14 +209,14 @@ memory, token, review, audit, and correlation features are dead.
 | 1.5 | `swift` | session correlation / checkpoint linking | `graph correlation` subcommand the CLI shells into |
 
 **Acceptance:** `go.mod` `replace` directives removed; `make check-replace`
-passes; `hawk path` shows all engines genuinely ready; `go test ./...`
+passes; `rho path` shows all engines genuinely ready; `go test ./...`
 green with real engines. **Effort:** 4-8 weeks total across the 5 repos.
 
 ### Phase 2 — Product honesty + verification surface (P1)
 
 | # | Repo | Task | Acceptance |
 |---|---|---|---|
-| 2.1 | cli | Wire `RunMerlinPipeline` into a `hawk audit`/`merlin` command (orphaned code) | command runs the pipeline end-to-end with a real merlin |
+| 2.1 | cli | Wire `RunMerlinPipeline` into a `rho audit`/`merlin` command (orphaned code) | command runs the pipeline end-to-end with a real merlin |
 | 2.2 | cli | Wire `BeamSearch` into the live agent loop as scorer/expander | tree-search used for planning with real model outputs |
 | 2.3 | cli | Publish benchmark numbers in README (Gap-04 follow-through) | `make bench` numbers in README, cited |
 | 2.4 | router | Wire the gRPC `ChatService` behind the `grpc` build tag | `grpc`-tagged build serves Chat; unit-tested |
@@ -270,7 +270,7 @@ green with real engines. **Effort:** 4-8 weeks total across the 5 repos.
 ## 7. Metrics
 
 - `go test ./...` green in all Go repos; `make ci` green.
-- `hawk path` / `hawk ecosystem` report engine availability honestly.
+- `rho path` / `rho ecosystem` report engine availability honestly.
 - Skills: 0-warning corpus maintained; single parsed schema.
 - Platform: worker reachable at a stable domain; migrations deterministic.
 - Benchmarks published (per Gap-04).

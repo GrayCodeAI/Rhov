@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/governance"
-	"github.com/GrayCodeAI/hawk/internal/securitylog"
-	"github.com/GrayCodeAI/hawk/internal/testrunner"
+	"github.com/GrayCodeAI/rho/internal/governance"
+	"github.com/GrayCodeAI/rho/internal/securitylog"
+	"github.com/GrayCodeAI/rho/internal/testrunner"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ import (
 var verifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Run local self-verification (security log, governance policy)",
-	Long: `Run hawk's self-verification checks without a model:
+	Long: `Run rho's self-verification checks without a model:
   1. The tamper-evident security event log hash chain is intact.
   2. The managed governance policy (if installed) parses and validates.
 

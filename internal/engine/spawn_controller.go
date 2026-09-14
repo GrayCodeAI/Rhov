@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 
-	"github.com/GrayCodeAI/hawk/internal/taskruntime"
+	"github.com/GrayCodeAI/rho/internal/taskruntime"
 )
 
 // SpawnController is the single entrypoint for subagent spawn, background

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/graphjournal"
-	"github.com/GrayCodeAI/hawk/internal/token"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/graphjournal"
+	"github.com/GrayCodeAI/rho/internal/token"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 type graphVerifyTool struct{}
@@ -25,7 +25,7 @@ func (graphVerifyTool) Execute(context.Context, json.RawMessage) (string, error)
 }
 
 func TestToolExecutionAutomaticallyRecordsPolicyAndVerification(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 
 	sess := NewSession("test", "test", "system", tool.NewRegistry(graphVerifyTool{}))
 	sess.SetPersistID("graph-runtime-session")
@@ -62,7 +62,7 @@ func TestToolExecutionAutomaticallyRecordsPolicyAndVerification(t *testing.T) {
 }
 
 func TestShrikeCompressionObservationIsPrivacySafe(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	sess.SetPersistID("token-runtime-session")
 	sess.recordCompressionObservation(
@@ -89,7 +89,7 @@ func TestShrikeCompressionObservationIsPrivacySafe(t *testing.T) {
 }
 
 func TestShrikeRedactionObservationIsPrivacySafe(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	sess.SetPersistID("token-redaction-session")
 	sess.recordRedactionObservation(
@@ -116,7 +116,7 @@ func TestShrikeRedactionObservationIsPrivacySafe(t *testing.T) {
 }
 
 func TestShrikeUsageBudgetObservationTracksAndProjectsAuthoritativeUsage(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	sess.SetPersistID("shrike-usage-session")
 	if err := sess.SetMaxBudgetUSD(1); err != nil {
@@ -216,7 +216,7 @@ func TestDrainAlertsSurfacesHourlyWarning(t *testing.T) {
 }
 
 func TestEyrieOperationObservationIsPrivacySafe(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	sess.SetPersistID("eyrie-runtime-session")
 	sess.recordEyrieOperationObservation(

@@ -12,8 +12,8 @@ type SpinnerStyle string
 const (
 	SpinnerBraille     SpinnerStyle = "braille"
 	SpinnerBrailleWave SpinnerStyle = "braillewave"
-	SpinnerHawk        SpinnerStyle = "hawk"
-	SpinnerHawkQuad    SpinnerStyle = "hawkquad"
+	SpinnerRho         SpinnerStyle = "rho"
+	SpinnerRhoQuad     SpinnerStyle = "rhoquad"
 	SpinnerDNA         SpinnerStyle = "dna"
 	SpinnerScan        SpinnerStyle = "scan"
 	SpinnerPulse       SpinnerStyle = "pulse"
@@ -24,18 +24,18 @@ const (
 	SpinnerRandom      SpinnerStyle = "random"
 )
 
-// hawkSpinnerGlyphs is the default TUI spinner — partial-circle compass (smooth, readable).
-var hawkSpinnerGlyphs = []string{"◐", "◓", "◑", "◒"}
+// rhoSpinnerGlyphs is the default TUI spinner — partial-circle compass (smooth, readable).
+var rhoSpinnerGlyphs = []string{"◐", "◓", "◑", "◒"}
 
-// hawkQuadBlockGlyphs is the legacy QUADBLOCK animation (kept for tests / bubbles compat).
-var hawkQuadBlockGlyphs = []string{"▛", "▜", "▟", "▙"}
+// rhoQuadBlockGlyphs is the legacy QUADBLOCK animation (kept for tests / bubbles compat).
+var rhoQuadBlockGlyphs = []string{"▛", "▜", "▟", "▙"}
 
 // spinnerFrames maps style names to their animation frames.
 var spinnerFrames = map[SpinnerStyle][]string{
 	SpinnerBraille:     {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
 	SpinnerBrailleWave: {"⠁⠂⠄⡀", "⠂⠄⡀⢀", "⠄⡀⢀⠠", "⡀⢀⠠⠐", "⢀⠠⠐⠈", "⠠⠐⠈⠁", "⠐⠈⠁⠂", "⠈⠁⠂⠄"},
-	SpinnerHawk:        hawkSpinnerGlyphs,
-	SpinnerHawkQuad:    hawkQuadBlockGlyphs,
+	SpinnerRho:         rhoSpinnerGlyphs,
+	SpinnerRhoQuad:     rhoQuadBlockGlyphs,
 	SpinnerDNA:         {"⠋⠉⠙⠚", "⠉⠙⠚⠒", "⠙⠚⠒⠂", "⠚⠒⠂⠂", "⠒⠂⠂⠒", "⠂⠂⠒⠲", "⠂⠒⠲⠴", "⠒⠲⠴⠤", "⠲⠴⠤⠄", "⠴⠤⠄⠋", "⠤⠄⠋⠉", "⠄⠋⠉⠙"},
 	SpinnerScan:        {"⡇⠀⠀⠀", "⣿⠀⠀⠀", "⢸⡇⠀⠀", "⠀⣿⠀⠀", "⠀⢸⡇⠀", "⠀⠀⣿⠀", "⠀⠀⢸⡇", "⠀⠀⠀⣿", "⠀⠀⠀⢸", "⠀⠀⠀⠀"},
 	SpinnerPulse:       {"⠀", "⠄", "⠆", "⠇", "⡇", "⣇", "⣧", "⣷", "⣿", "⣷", "⣧", "⣇", "⡇", "⠇", "⠆", "⠄"},
@@ -45,8 +45,8 @@ var spinnerFrames = map[SpinnerStyle][]string{
 	SpinnerTalons:      {"⩤", "⩥", "⩦", "⩧"},
 }
 
-// hawkTypingDots is the number of trailing typing-indicator dots.
-const hawkTypingDots = 3
+// rhoTypingDots is the number of trailing typing-indicator dots.
+const rhoTypingDots = 3
 
 // BrailleSpinner renders the glyph frame (◐◓◑◒) and a 20-color wave on the
 // whole status strip: glyph → verb → ▪▫▫.
@@ -57,7 +57,7 @@ type BrailleSpinner struct {
 	frame     int // glyph animation frame (mod len(frames))
 	wavePhase int // 0..19 flowing color wave (glyph + verb + dots)
 	text      string
-	dots      int // 0..hawkTypingDots-1 — position of the highlighted dot
+	dots      int // 0..rhoTypingDots-1 — position of the highlighted dot
 	running   bool
 	stopCh    chan struct{}
 }
@@ -65,7 +65,7 @@ type BrailleSpinner struct {
 // NewBrailleSpinner creates a spinner with the given style and label text.
 func NewBrailleSpinner(style SpinnerStyle, text string) *BrailleSpinner {
 	if style == SpinnerRandom {
-		styles := []SpinnerStyle{SpinnerHawk, SpinnerBraille, SpinnerBrailleWave, SpinnerDNA, SpinnerScan, SpinnerPulse, SpinnerSnake, SpinnerOrbit}
+		styles := []SpinnerStyle{SpinnerRho, SpinnerBraille, SpinnerBrailleWave, SpinnerDNA, SpinnerScan, SpinnerPulse, SpinnerSnake, SpinnerOrbit}
 		style = styles[rand.Intn(len(styles))] // #nosec G404 -- non-cryptographic use (random spinner style selection)
 	}
 	frames := spinnerFrames[style]
@@ -110,7 +110,7 @@ func (s *BrailleSpinner) Tick() string {
 	s.mu.Lock()
 	s.frame++
 	s.wavePhase = (s.wavePhase + 1) % spinnerWaveLen
-	s.dots = (s.dots + 1) % hawkTypingDots
+	s.dots = (s.dots + 1) % rhoTypingDots
 	s.mu.Unlock()
 	return s.Frame()
 }

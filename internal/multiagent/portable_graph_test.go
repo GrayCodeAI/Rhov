@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/executiongraph"
+	"github.com/GrayCodeAI/rho/internal/executiongraph"
 )
 
 func TestBuildPortableGraphIncludesWaveJoinOperations(t *testing.T) {

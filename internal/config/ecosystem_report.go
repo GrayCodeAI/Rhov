@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/theme"
-	"github.com/GrayCodeAI/hawk/internal/token"
+	"github.com/GrayCodeAI/rho/internal/theme"
+	"github.com/GrayCodeAI/rho/internal/token"
 )
 
 // EcosystemReport is the structured view of the ecosystem panel.
@@ -49,7 +49,7 @@ func BuildEcosystemReport(ctx context.Context, provider, model string) Ecosystem
 
 	// embedded token engine
 	r.Token.Embedded = token.ShrikeAvailable()
-	r.Token.SampleTokens = token.CountTokensFast("hawk context compression pipeline")
+	r.Token.SampleTokens = token.CountTokensFast("rho context compression pipeline")
 
 	return r
 }
@@ -65,7 +65,7 @@ func FormatEcosystemPanel(ctx context.Context, provider, model string) string {
 	if cat.Exists {
 		eyrieLine += theme.Tint(fmt.Sprintf("catalog %d models", cat.Models), theme.ReportInfo)
 	} else {
-		eyrieLine += theme.Tint("catalog missing (run hawk models refresh)", theme.ReportWarn)
+		eyrieLine += theme.Tint("catalog missing (run rho models refresh)", theme.ReportWarn)
 	}
 	pre := EnginePreflightReport(ctx)
 	if pre.Ready {
@@ -86,7 +86,7 @@ func FormatEcosystemPanel(ctx context.Context, provider, model string) string {
 	b.WriteString(eyrieLine + "\n")
 
 	// Embedded token engine — token counting and context compression.
-	sample := token.CountTokensFast("hawk context compression pipeline")
+	sample := token.CountTokensFast("rho context compression pipeline")
 	if token.ShrikeAvailable() {
 		b.WriteString("  " + theme.Tint("token:", theme.ReportMuted) + " " + theme.Tint("embedded", theme.ReportInfo) + " · " + theme.Tint("token/compress pipeline OK", theme.ReportSuccess) + fmt.Sprintf(" (sample=%d tokens)", sample) + "\n")
 	} else {

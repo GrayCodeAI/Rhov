@@ -13,8 +13,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/safewrite"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/safewrite"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 // TokenStore manages authentication tokens.
@@ -217,6 +217,20 @@ func (s *SecureStorage) setWindows(account, token string) error {
 
 func (s *SecureStorage) getFile(account string) (string, error) {
 	path := filepath.Join(storage.ConfigDir(), ".tokens")
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	// Refuse to follow a symlink: the token store is a fixed, private file and
+	// a symlink here would let another process redirect reads/writes.
+	if info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("refusing to read token store: %s is a symlink", path)
+	}
+	// Tighten overly-permissive modes rather than failing, so existing installs
+	// are repaired instead of locked out.
+	if info.Mode().Perm()&0o077 != 0 {
+		_ = os.Chmod(path, 0o600)
+	}
 	data, err := os.ReadFile(path) // #nosec G304 -- path is the fixed internal token store location, not external input
 	if err != nil {
 		return "", err

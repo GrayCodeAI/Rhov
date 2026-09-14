@@ -61,11 +61,11 @@ func TestSpecLinksAddWritesTraceability(t *testing.T) {
 		t.Errorf("unexpected add result: %q", out)
 	}
 
-	entries, err := os.ReadDir(filepath.Join(dir, ".hawk", "specs"))
+	entries, err := os.ReadDir(filepath.Join(dir, ".rho", "specs"))
 	if err != nil || len(entries) != 1 {
 		t.Fatalf("expected one spec dir, got %v (%v)", entries, err)
 	}
-	tasks, err := os.ReadFile(filepath.Join(dir, ".hawk", "specs", entries[0].Name(), "tasks.md"))
+	tasks, err := os.ReadFile(filepath.Join(dir, ".rho", "specs", entries[0].Name(), "tasks.md"))
 	if err != nil {
 		t.Fatalf("read tasks.md: %v", err)
 	}

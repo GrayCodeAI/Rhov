@@ -79,7 +79,7 @@ jobs:
         run: bash ./scripts/check-eyrie-engine-boundary.sh
 
   # -------------------------------------------------------------------------
-  # 2. Module hygiene — tidy, verify Hawk plus the sibling Go modules via go.work.
+  # 2. Module hygiene — tidy, verify Rho plus the sibling Go modules via go.work.
   # -------------------------------------------------------------------------
   module:
     name: module hygiene
@@ -109,7 +109,7 @@ jobs:
           # go mod tidy can mis-resolve workspace modules here; go work sync is
           # the supported workspace hygiene step.
           go work sync
-          go build -mod=readonly -o /dev/null ./cmd/hawk
+          go build -mod=readonly -o /dev/null ./cmd/rho
           if ! git diff --quiet -- go.mod go.sum go.work go.work.sum; then
             echo "::error::go.mod / go.sum / go.work files out of date — run 'go work sync' locally and commit"
             git diff -- go.mod go.sum go.work go.work.sum
@@ -121,7 +121,7 @@ jobs:
         run: |
           workspace_file="${GITHUB_WORKSPACE}/../go.work"
           while IFS= read -r module; do
-            [ "$module" = hawk ] && continue
+            [ "$module" = rho ] && continue
             if ! grep -q "./${module}" "$workspace_file"; then
               echo "::error::go.work must include ./${module}."
               cat "$workspace_file"
@@ -158,7 +158,7 @@ jobs:
         run: |
           go mod download
           go mod verify
-          go build -mod=readonly ./cmd/hawk
+          go build -mod=readonly ./cmd/rho
           go test ./... -count=1 -timeout=300s -skip='TestDefaultSkillDirsCrossAgent|TestCopySelectionE2E'
 
   release-parity:
@@ -196,8 +196,8 @@ jobs:
           cache: true
       - name: go vet
         run: go vet ./...
-      - name: hawk harness evaluation audit
-        run: go run ./cmd/hawk harness --out-dir .hawk/harness
+      - name: rho harness evaluation audit
+        run: go run ./cmd/rho harness --out-dir .rho/harness
       - name: support repo coupling guard
         run: bash ./scripts/check-support-repo-coupling.sh
 
@@ -232,7 +232,7 @@ jobs:
     runs-on: ubuntu-latest
     # NOTE: depends only on `format`, deliberately NOT on `vet`.
     # A `vet` (or upstream) failure must never skip the test job — that
-    # historically masked real test regressions (see hawk PR #155, where
+    # historically masked real test regressions (see rho PR #155, where
     # DrainAlerts code shipped with failing tests because `test` was skipped
     # when `vet` failed on the trailer-strip force-push). Tests must always
     # run so regressions surface instead of being hidden.
@@ -296,7 +296,7 @@ jobs:
             echo ""
             echo "Policy: Every t.Skip() should have a comment linking to a GitHub issue."
             echo "Example:"
-            echo "  // TODO: https://github.com/GrayCodeAI/hawk/issues/123"
+            echo "  // TODO: https://github.com/GrayCodeAI/rho/issues/123"
             echo "  t.Skip(\"not yet implemented\")"
           fi
 
@@ -495,7 +495,7 @@ jobs:
         run: |
           # Use -ldflags="-s -w" to match release build size (Makefile LDFLAGS).
           # This catches binary bloat regressions against the actual shipped artifact size.
-          size=$(go build -trimpath -ldflags="-s -w" -o /tmp/hawk-bin ./cmd/hawk && wc -c < /tmp/hawk-bin)
+          size=$(go build -trimpath -ldflags="-s -w" -o /tmp/rho-bin ./cmd/rho && wc -c < /tmp/rho-bin)
           size_mb=$((size / 1024 / 1024))
           echo "Binary size: ${size_mb}MB"
           # Threshold history: 110MB → 80MB (binary was ~76MB) → 98MB.
@@ -509,7 +509,7 @@ jobs:
           if [ "$size_mb" -gt 98 ]; then
             echo "::warning::Binary size ${size_mb}MB exceeds 98MB threshold"
           fi
-          rm -f /tmp/hawk-bin
+          rm -f /tmp/rho-bin
 
   # -------------------------------------------------------------------------
   # Fuzz — short corpus runs to catch panics in fuzz targets.
@@ -531,15 +531,18 @@ jobs:
           cache: true
       - name: Run fuzz targets
         run: |
-          go test -fuzz=FuzzScanForAIComments   -fuzztime=60s ./cmd/... || true
-          go test -fuzz=FuzzValidateSettings     -fuzztime=60s ./internal/config/... || true
-          go test -fuzz=FuzzIsSuspicious         -fuzztime=60s ./internal/tool/... || true
-          go test -fuzz=FuzzIsSafeGitCommit      -fuzztime=60s ./internal/tool/... || true
-          go test -fuzz=FuzzParseMessage         -fuzztime=60s ./internal/session/... || true
-          go test -fuzz=FuzzParseSessionMeta     -fuzztime=60s ./internal/session/... || true
+          # Each target must name a single package: `-fuzz` rejects `./x/...`
+          # when it expands to more than one package, which previously made the
+          # cmd target fail setup silently under `|| true`.
+          go test -run='^$' -fuzz=FuzzScanForAIComments -fuzztime=60s ./cmd
+          go test -run='^$' -fuzz=FuzzValidateSettings   -fuzztime=60s ./internal/config
+          go test -run='^$' -fuzz=FuzzIsSuspicious       -fuzztime=60s ./internal/tool
+          go test -run='^$' -fuzz=FuzzIsSafeGitCommit    -fuzztime=60s ./internal/tool
+          go test -run='^$' -fuzz=FuzzParseMessage       -fuzztime=60s ./internal/session
+          go test -run='^$' -fuzz=FuzzParseSessionMeta   -fuzztime=60s ./internal/session
 
   # -------------------------------------------------------------------------
-  # 10. Smoke — build hawk and verify ecosystem CLI wiring.
+  # 10. Smoke — build rho and verify ecosystem CLI wiring.
   # -------------------------------------------------------------------------
   smoke:
     name: smoke
@@ -556,5 +559,5 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      - name: smoke-hawk.sh
-        run: ./scripts/smoke-hawk.sh
+      - name: smoke-rho.sh
+        run: ./scripts/smoke-rho.sh

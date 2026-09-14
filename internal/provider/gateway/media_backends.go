@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	eyrieengine "github.com/GrayCodeAI/eyrie/engine"
-	"github.com/GrayCodeAI/hawk/internal/stt"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/stt"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // Env gates for opt-in backend wiring (Gap-05). Off by default so the default
@@ -19,8 +19,8 @@ import (
 // facade. Credentials and endpoint come from the companion env vars; no new
 // secret store path is introduced.
 const (
-	envMediaGate = "HAWK_MEDIA"
-	envSTTGate   = "HAWK_STT"
+	envMediaGate = "RHO_MEDIA"
+	envSTTGate   = "RHO_STT"
 )
 
 // routerMediaEngine implements tool.MediaEngine against the router engine
@@ -97,17 +97,17 @@ func wireOptionalBackends(eng *eyrieengine.Engine) {
 	if os.Getenv(envMediaGate) == "1" {
 		tool.SetMediaEngine(&routerMediaEngine{
 			eng:     eng,
-			apiKey:  os.Getenv("HAWK_MEDIA_API_KEY"),
-			baseURL: os.Getenv("HAWK_MEDIA_BASE_URL"),
-			model:   os.Getenv("HAWK_MEDIA_MODEL"),
+			apiKey:  os.Getenv("RHO_MEDIA_API_KEY"),
+			baseURL: os.Getenv("RHO_MEDIA_BASE_URL"),
+			model:   os.Getenv("RHO_MEDIA_MODEL"),
 		})
 	}
 	if os.Getenv(envSTTGate) == "1" {
 		stt.SetTranscriber(&routerTranscriber{
 			eng:     eng,
-			apiKey:  os.Getenv("HAWK_STT_API_KEY"),
-			baseURL: os.Getenv("HAWK_STT_BASE_URL"),
-			model:   os.Getenv("HAWK_STT_MODEL"),
+			apiKey:  os.Getenv("RHO_STT_API_KEY"),
+			baseURL: os.Getenv("RHO_STT_BASE_URL"),
+			model:   os.Getenv("RHO_STT_MODEL"),
 		})
 	}
 }

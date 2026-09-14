@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 var (
@@ -69,7 +69,7 @@ func runReviewRefine(_ *cobra.Command, args []string) error {
 	fmt.Printf("%s\n\n", auditTint(fmt.Sprintf("Refining %d review(s), max %d iterations...", len(reviews), refineMaxIter), textPrimary))
 
 	for iter := 1; iter <= refineMaxIter; iter++ {
-		fmt.Printf("%s\n", auditTint(fmt.Sprintf("── Iteration %d/%d ──", iter, refineMaxIter), hawkColor))
+		fmt.Printf("%s\n", auditTint(fmt.Sprintf("── Iteration %d/%d ──", iter, refineMaxIter), rhoColor))
 
 		// Fix all open reviews.
 		for _, r := range reviews {
@@ -129,7 +129,7 @@ func runReviewRefine(_ *cobra.Command, args []string) error {
 	}
 	if len(remaining) > 0 {
 		fmt.Printf("\n%s %s\n", auditTint(icons.Alert(), warnAmber), auditTint(fmt.Sprintf("%d review(s) still open after %d iterations.", len(remaining), refineMaxIter), textPrimary))
-		fmt.Println(auditTint("  Run 'hawk review show' to inspect, or increase --max-iterations.", textMuted))
+		fmt.Println(auditTint("  Run 'rho review show' to inspect, or increase --max-iterations.", textMuted))
 	}
 	return nil
 }
@@ -137,9 +137,9 @@ func runReviewRefine(_ *cobra.Command, args []string) error {
 func fixReviewRefine(store *ReviewStore, r *ReviewRecord) error {
 	prompt := buildFixPrompt(r)
 
-	hawkBin, err := os.Executable()
+	rhoBin, err := os.Executable()
 	if err != nil {
-		hawkBin = "hawk"
+		rhoBin = "rho"
 	}
 
 	execArgs := []string{"exec", "--auto", "full"}
@@ -148,7 +148,7 @@ func fixReviewRefine(store *ReviewStore, r *ReviewRecord) error {
 	}
 	execArgs = append(execArgs, prompt)
 
-	cmd := exec.CommandContext(context.Background(), hawkBin, execArgs...) // #nosec G204 -- hawkBin resolved via os.Executable() or literal 'hawk'; args are internal flags
+	cmd := exec.CommandContext(context.Background(), rhoBin, execArgs...) // #nosec G204 -- rhoBin resolved via os.Executable() or literal 'rho'; args are internal flags
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -159,9 +159,9 @@ func fixReviewRefine(store *ReviewStore, r *ReviewRecord) error {
 }
 
 func runReviewOnSHA(store *ReviewStore, sha string) error {
-	hawkBin, err := os.Executable()
+	rhoBin, err := os.Executable()
 	if err != nil {
-		hawkBin = "hawk"
+		rhoBin = "rho"
 	}
 
 	args := []string{"review", "run", sha}
@@ -172,7 +172,7 @@ func runReviewOnSHA(store *ReviewStore, sha string) error {
 		args = append(args, "--model", refineModel)
 	}
 
-	cmd := exec.CommandContext(context.Background(), hawkBin, args...) // #nosec G204 -- hawkBin resolved via os.Executable() or literal 'hawk'; args are internal flags
+	cmd := exec.CommandContext(context.Background(), rhoBin, args...) // #nosec G204 -- rhoBin resolved via os.Executable() or literal 'rho'; args are internal flags
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

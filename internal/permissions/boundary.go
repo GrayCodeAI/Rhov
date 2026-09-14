@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GrayCodeAI/hawk/internal/home"
+	"github.com/GrayCodeAI/rho/internal/home"
 )
 
 // BoundaryChecker enforces safety boundaries that prevent the agent from

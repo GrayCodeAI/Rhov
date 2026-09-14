@@ -1,6 +1,6 @@
 # Intelligent CLI capabilities
 
-Hawk keeps the startup tool schema small while making the full capability
+Rho keeps the startup tool schema small while making the full capability
 surface discoverable on demand. The registry currently contains core tools,
 lazy tools, and MCP tools; intent routing promotes only the tools relevant to
 the current request.
@@ -37,8 +37,8 @@ Dependency and GitHub operations are network-gated and read-only by default.
 ## Inspecting the registry
 
 ```bash
-hawk tools
-hawk tools --json
+rho tools
+rho tools --json
 ```
 
 The JSON form includes risk level, read-only status, aliases, and intent

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/lsp"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/lsp"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // This file holds the tool-registry construction used by the chat TUI:
@@ -188,7 +188,7 @@ func optionalTools() []tool.Tool {
 	}
 }
 
-func configuredStartupMCPServers(settings hawkconfig.Settings) []startupMCPServerSpec {
+func configuredStartupMCPServers(settings rhoconfig.Settings) []startupMCPServerSpec {
 	servers := make([]startupMCPServerSpec, 0, len(settings.MCPServers)+len(mcpServers))
 	for _, cfg := range settings.MCPServers {
 		if cfg.Name == "" {
@@ -237,7 +237,7 @@ func configuredStartupMCPServers(settings hawkconfig.Settings) []startupMCPServe
 // non-expired OAuth token is stored for this server (see
 // internal/tool/mcp_auth.go). A configured static Authorization header, if
 // any, takes precedence over the auto-injected one.
-func mergedMCPHeaders(cfg hawkconfig.MCPServerConfig) map[string]string {
+func mergedMCPHeaders(cfg rhoconfig.MCPServerConfig) map[string]string {
 	headers := make(map[string]string, len(cfg.Headers)+1)
 	for k, v := range cfg.Headers {
 		headers[k] = v
@@ -286,7 +286,7 @@ func loadStartupMCPToolSetsWith(loadMCP func(context.Context, string, string, ..
 	return results
 }
 
-func defaultRegistry(settings hawkconfig.Settings) (*tool.Registry, error) {
+func defaultRegistry(settings rhoconfig.Settings) (*tool.Registry, error) {
 	// Load essential tools first for fast startup
 	tools := essentialTools()
 	if tool.IsPowerShellAvailable() {

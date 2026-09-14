@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 func TestEnvKeyStatusUsesEyrieCredentialStatus(t *testing.T) {

@@ -3,7 +3,7 @@ package compact
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 func TestDefaultConfig(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/hawk/internal/hooks/audit"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/hooks/audit"
+	"github.com/GrayCodeAI/rho/internal/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ var auditCmd = &cobra.Command{
 redundant cd commands, unnecessary cat/head usage, long sleep loops,
 and other patterns that waste tokens and wall-clock time.
 
-Reports what hawk would have caught with current policies enabled,
+Reports what rho would have caught with current policies enabled,
 plus audit-only detectors that identify optimization opportunities.`,
 	RunE: runAudit,
 }
@@ -213,9 +213,9 @@ func discoverSessions(days int, projectFilter string) ([]SessionInfo, error) {
 	cutoff := time.Now().AddDate(0, 0, -days)
 	var sessions []SessionInfo
 
-	// Scan hawk sessions directory
-	hawkDir := storage.SessionsDir()
-	entries, err := os.ReadDir(hawkDir)
+	// Scan rho sessions directory
+	rhoDir := storage.SessionsDir()
+	entries, err := os.ReadDir(rhoDir)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func discoverSessions(days int, projectFilter string) ([]SessionInfo, error) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".jsonl") {
 			continue
 		}
-		path := filepath.Join(hawkDir, e.Name())
+		path := filepath.Join(rhoDir, e.Name())
 		info, err := os.Stat(path)
 		if err != nil {
 			continue
@@ -311,7 +311,7 @@ func printAuditText(cmd *cobra.Command, result AuditResult) {
 
 	_, _ = fmt.Fprintf(w, "\n")
 	_, _ = fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════\n")
-	_, _ = fmt.Fprintf(w, "  %s\n", auditTint("Hawk Audit Report", hawkColor))
+	_, _ = fmt.Fprintf(w, "  %s\n", auditTint("Rho Audit Report", rhoColor))
 	_, _ = fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════\n")
 	_, _ = fmt.Fprintf(w, "\n")
 	_, _ = fmt.Fprintf(w, "  %s %d sessions (last %d days)\n",

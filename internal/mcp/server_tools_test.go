@@ -13,7 +13,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestRegisterDefaultTools_RegistersAllTools(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
 	// Send tools/list
@@ -27,11 +27,11 @@ func TestRegisterDefaultTools_RegistersAllTools(t *testing.T) {
 	tools := result["tools"].([]interface{})
 
 	expectedNames := map[string]bool{
-		"hawk_chat":          false,
-		"hawk_search":        false,
-		"hawk_memory_recall": false,
-		"hawk_memory_store":  false,
-		"hawk_compress":      false,
+		"rho_chat":          false,
+		"rho_search":        false,
+		"rho_memory_recall": false,
+		"rho_memory_store":  false,
+		"rho_compress":      false,
 	}
 
 	for _, raw := range tools {
@@ -53,11 +53,11 @@ func TestRegisterDefaultTools_RegistersAllTools(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// hawk_chat tool
+// rho_chat tool
 // ---------------------------------------------------------------------------
 
-func TestHawkChatTool_ValidPrompt(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoChatTool_ValidPrompt(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
 		if name != "agent" {
 			return "", fmt.Errorf("expected agent, got %s", name)
@@ -66,36 +66,36 @@ func TestHawkChatTool_ValidPrompt(t *testing.T) {
 	}
 	RegisterDefaultTools(server, executor)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_chat","arguments":{"prompt":"hello"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_chat","arguments":{"prompt":"hello"}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertNoError(t, resp)
 	assertResponseContains(t, resp, "chat response")
 }
 
-func TestHawkChatTool_EmptyPrompt(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoChatTool_EmptyPrompt(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_chat","arguments":{"prompt":""}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_chat","arguments":{"prompt":""}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
-func TestHawkChatTool_MissingPrompt(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoChatTool_MissingPrompt(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_chat","arguments":{}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_chat","arguments":{}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
 // ---------------------------------------------------------------------------
-// hawk_search tool
+// rho_search tool
 // ---------------------------------------------------------------------------
 
-func TestHawkSearchTool_ValidQuery(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoSearchTool_ValidQuery(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
 		if name != "code_search" {
 			return "", fmt.Errorf("expected code_search, got %s", name)
@@ -104,102 +104,102 @@ func TestHawkSearchTool_ValidQuery(t *testing.T) {
 	}
 	RegisterDefaultTools(server, executor)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_search","arguments":{"query":"auth middleware"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_search","arguments":{"query":"auth middleware"}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertNoError(t, resp)
 	assertResponseContains(t, resp, "search results")
 }
 
-func TestHawkSearchTool_EmptyQuery(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoSearchTool_EmptyQuery(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_search","arguments":{"query":""}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_search","arguments":{"query":""}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
 // ---------------------------------------------------------------------------
-// hawk_memory_recall tool
+// rho_memory_recall tool
 // ---------------------------------------------------------------------------
 
-func TestHawkMemoryRecallTool_EmptyQuery(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoMemoryRecallTool_EmptyQuery(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":""}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_memory_recall","arguments":{"query":""}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
-func TestHawkMemoryRecallTool_NoMatches(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoMemoryRecallTool_NoMatches(t *testing.T) {
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"definitely-not-stored"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_memory_recall","arguments":{"query":"definitely-not-stored"}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertNoError(t, resp)
 	assertResponseContains(t, resp, "No memories matched")
 }
 
 // ---------------------------------------------------------------------------
-// hawk_memory_store tool
+// rho_memory_store tool
 // ---------------------------------------------------------------------------
 
-func TestHawkMemoryStoreTool_RoundTrip(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoMemoryStoreTool_RoundTrip(t *testing.T) {
+	t.Setenv("RHO_STATE_DIR", t.TempDir())
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	storeReq := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_store","arguments":{"key":"decision","content":"use Go for the backend"}}}` + "\n"
+	storeReq := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_memory_store","arguments":{"key":"decision","content":"use Go for the backend"}}}` + "\n"
 	storeResp := sendRequest(t, server, storeReq)
 	assertNoError(t, storeResp)
 	assertResponseContains(t, storeResp, "Stored memory")
 
-	recallReq := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"backend"}}}` + "\n"
+	recallReq := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"rho_memory_recall","arguments":{"query":"backend"}}}` + "\n"
 	recallResp := sendRequest(t, server, recallReq)
 	assertNoError(t, recallResp)
 	assertResponseContains(t, recallResp, "use Go for the backend")
 }
 
-func TestHawkMemoryStoreTool_MissingKey(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoMemoryStoreTool_MissingKey(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_store","arguments":{"content":"some content"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_memory_store","arguments":{"content":"some content"}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
-func TestHawkMemoryStoreTool_MissingContent(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoMemoryStoreTool_MissingContent(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_store","arguments":{"key":"some-key"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_memory_store","arguments":{"key":"some-key"}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
 
 // ---------------------------------------------------------------------------
-// hawk_compress tool
+// rho_compress tool
 // ---------------------------------------------------------------------------
 
-func TestHawkCompressTool_ValidText(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoCompressTool_ValidText(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":"the quick brown fox jumps over the lazy dog. the quick brown fox jumps over the lazy dog."}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_compress","arguments":{"text":"the quick brown fox jumps over the lazy dog. the quick brown fox jumps over the lazy dog."}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertNoError(t, resp)
 	assertResponseContains(t, resp, "original_tokens")
 }
 
-func TestHawkCompressTool_EmptyText(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+func TestRhoCompressTool_EmptyText(t *testing.T) {
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":""}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rho_compress","arguments":{"text":""}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
 }
@@ -246,7 +246,7 @@ func TestDelegateToExecutor_ExecutorError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestToolSchemas_HaveRequiredFields(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+	server := NewMCPServer(ServerInfo{Name: "rho", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
 	req := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n"

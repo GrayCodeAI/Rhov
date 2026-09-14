@@ -1,26 +1,26 @@
-# Hawk Examples
+# Rho Examples
 
-Hawk is an AI coding agent that understands your codebase.
+Rho is an AI coding agent that understands your codebase.
 
 ## Basic Usage
 
 ### Start a chat session
 
 ```bash
-hawk chat
+rho chat
 > Explain how the authentication system works
 ```
 
 ### Generate code
 
 ```bash
-hawk "Add input validation to the user registration endpoint"
+rho "Add input validation to the user registration endpoint"
 ```
 
 ### Review changes
 
 ```bash
-hawk review
+rho review
 ```
 
 ## Advanced Examples
@@ -28,52 +28,52 @@ hawk review
 ### Use with skills
 
 ```bash
-hawk --skill code-review "Review my latest changes"
+rho --skill code-review "Review my latest changes"
 ```
 
 ### Analyze codebase
 
 ```bash
-hawk analyze --depth full
+rho analyze --depth full
 ```
 
 ### Fix issues
 
 ```bash
-hawk fix --auto
+rho fix --auto
 ```
 
 ### Headless agent in CI
 
-Copy [hawk-ci-exec.yml](github/hawk-ci-exec.yml) to run `hawk exec --ephemeral --json`
+Copy [rho-ci-exec.yml](github/rho-ci-exec.yml) to run `rho exec --ephemeral --json`
 on pull requests (summarize diff, risk list, or your own prompt). Pin your
-hawk install step and provider secrets before enabling the job.
+rho install step and provider secrets before enabling the job.
 
 ### Report CI delivery context
 
-Copy [hawk-delivery-context.yml](github/hawk-delivery-context.yml) to your
-repository to report GitHub Actions runs to Hawk Cloud. Create a dedicated,
+Copy [rho-delivery-context.yml](github/rho-delivery-context.yml) to your
+repository to report GitHub Actions runs to Rho Cloud. Create a dedicated,
 revocable device token for CI and keep its endpoint, device ID, project ID, and
 token in GitHub Actions secrets.
 
 ## MCP Integration
 
-Hawk can use MCP servers for extended capabilities:
+Rho can use MCP servers for extended capabilities:
 
 ```bash
 # With harrier for persistent memory
 harrier setup
-hawk chat
+rho chat
 
 # With swift for session capture
 swift start
-hawk "refactor the API layer"
+rho "refactor the API layer"
 swift stop
 ```
 
 ## Configuration
 
-Create `.hawk/config.json`:
+Create `.rho/config.json`:
 
 ```json
 {

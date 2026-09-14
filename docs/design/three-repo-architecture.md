@@ -8,7 +8,7 @@ proposal. See also `gateway-architecture.md` (human-readable version),
 
 ```mermaid
 flowchart LR
-    subgraph CLI["hawk"]
+    subgraph CLI["rho"]
         TUI["chat · exec · review\nagent loop · sessions"]
         ENG["eyrie engine\n(compiled in)"]
     end
@@ -34,14 +34,14 @@ Wires, with evidence:
 |---|---|---|
 | CLI → Router | Go module dep, in-process construction | `go.mod` requires `github.com/GrayCodeAI/eyrie`; `internal/provider/gateway/gateway.go` is the sole importer |
 | CLI → Platform | Opt-in HTTPS (login, usage, graph sync) | `internal/platform/cloud/client.go`; `Enabled()` requires endpoint + token; no default URL |
-| Router → CLI | none | router `go.mod`/`go.sum` contain zero hawk refs |
+| Router → CLI | none | router `go.mod`/`go.sum` contain zero rho refs |
 | Router ↔ Platform | none | no imports, package deps, or API calls either direction |
 
 ## Target state (proposal)
 
 ```mermaid
 flowchart LR
-    CLI2["hawk\n(default: in-process)"] -. "opt-in --model-gateway" .-> GW
+    CLI2["rho\n(default: in-process)"] -. "opt-in --model-gateway" .-> GW
     WEB2["platform web/BFF"] -->|per-user keys| GW
     subgraph GW["eyrie: common service"]
         API["OpenAI-compatible API\n/v1/chat/completions + SSE"]

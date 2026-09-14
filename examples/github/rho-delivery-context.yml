@@ -1,0 +1,47 @@
+# Rho Delivery Context
+#
+# Copy to .github/workflows/rho-delivery-context.yml. This workflow assumes
+# `rho` is available on PATH (install it using your team's normal release
+# mechanism before this reporting step).
+#
+# Create a dedicated, revocable Rho Cloud device token for CI. Do not reuse a
+# developer's local device token. Store all three values as repository secrets.
+name: Rho Delivery Context
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  report-delivery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Install Rho here using the release package your organization pins.
+      # The remaining steps are intentionally independent of the installer.
+      - name: Connect CI device to Rho Cloud
+        run: |
+          rho cloud connect \
+            --endpoint "$RHO_CLOUD_URL" \
+            --device-id "$RHO_CLOUD_DEVICE_ID" \
+            --project-id "$RHO_CLOUD_PROJECT_ID" \
+            --token "$RHO_CLOUD_DEVICE_TOKEN"
+        env:
+          RHO_CLOUD_URL: ${{ secrets.RHO_CLOUD_URL }}
+          RHO_CLOUD_DEVICE_ID: ${{ secrets.RHO_CLOUD_DEVICE_ID }}
+          RHO_CLOUD_PROJECT_ID: ${{ secrets.RHO_CLOUD_PROJECT_ID }}
+          RHO_CLOUD_DEVICE_TOKEN: ${{ secrets.RHO_CLOUD_DEVICE_TOKEN }}
+
+      - name: Report successful CI run
+        if: ${{ success() }}
+        run: rho cloud context --ci-status succeeded
+
+      - name: Report failed CI run
+        if: ${{ failure() }}
+        run: rho cloud context --ci-status failed

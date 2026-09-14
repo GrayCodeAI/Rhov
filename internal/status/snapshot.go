@@ -12,7 +12,7 @@ import (
 // must not start providers, MCP servers, or network operations.
 type Snapshot struct {
 	SchemaVersion string           `json:"schema_version"`
-	HawkVersion   string           `json:"hawk_version,omitempty"`
+	RhoVersion    string           `json:"rho_version,omitempty"`
 	SessionID     string           `json:"session_id,omitempty"`
 	Workspace     string           `json:"workspace,omitempty"`
 	GitBranch     string           `json:"git_branch,omitempty"`

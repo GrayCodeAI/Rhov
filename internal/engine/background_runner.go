@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 
-	"github.com/GrayCodeAI/hawk/internal/taskruntime"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/taskruntime"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // BackgroundTask represents an async subagent task running in the background.

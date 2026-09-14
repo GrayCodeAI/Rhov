@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 func TestGoalAddStartCompleteLifecycle(t *testing.T) {

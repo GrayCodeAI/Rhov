@@ -14,15 +14,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
 
-	"github.com/GrayCodeAI/hawk/internal/bridge/sessioncapture"
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/feature/shellmode"
-	"github.com/GrayCodeAI/hawk/internal/feature/taste"
-	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/system/staleness"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/bridge/sessioncapture"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/feature/shellmode"
+	"github.com/GrayCodeAI/rho/internal/feature/taste"
+	"github.com/GrayCodeAI/rho/internal/plugin"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/system/staleness"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // sessionWAL is the durability surface the chat model needs from its
@@ -54,10 +54,10 @@ func (m *chatModel) recordWALError(err error) {
 	if err == nil || m.durabilityWarning != "" {
 		return
 	}
-	m.durabilityWarning = "Warning: session persistence is failing — recent messages may be lost if hawk crashes. Check disk space and permissions."
+	m.durabilityWarning = "Warning: session persistence is failing — recent messages may be lost if rho crashes. Check disk space and permissions."
 }
 
-// All hawk color/icon/glyph constants live in theme.go. This file holds
+// All rho color/icon/glyph constants live in theme.go. This file holds
 // the pre-built lipgloss styles that combine a color with attributes
 // (bold, italic, border, etc.) for the most common patterns.
 
@@ -73,8 +73,8 @@ var (
 
 	slashCmdStyle     = lipgloss.NewStyle().Foreground(textDisabled)
 	slashDescStyle    = lipgloss.NewStyle().Foreground(textDisabled)
-	slashSelCmdStyle  = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
-	slashSelDescStyle = lipgloss.NewStyle().Foreground(hawkColor)
+	slashSelCmdStyle  = lipgloss.NewStyle().Foreground(rhoColor).Bold(true)
+	slashSelDescStyle = lipgloss.NewStyle().Foreground(rhoColor)
 	inputBorderStyle  = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
 	ghostHintStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Italic(true)
 
@@ -83,13 +83,13 @@ var (
 	dimColor = textDisabled
 )
 
-// hawkSpinnerFrames feeds the bubbles spinner (matches BrailleSpinner default).
-var hawkSpinnerFrames = hawkSpinnerGlyphs
+// rhoSpinnerFrames feeds the bubbles spinner (matches BrailleSpinner default).
+var rhoSpinnerFrames = rhoSpinnerGlyphs
 
-// hawkSpinnerFrameInterval — compass frame cadence.
-const hawkSpinnerFrameInterval = 80 * time.Millisecond
+// rhoSpinnerFrameInterval — compass frame cadence.
+const rhoSpinnerFrameInterval = 80 * time.Millisecond
 
-// Spinner verbs (from hawk-archive) — picked randomly per session
+// Spinner verbs (from rho-archive) — picked randomly per session
 var spinnerVerbs = []string{
 	"Abstracting", "Architecting", "Brewing", "Calculating", "Cogitating",
 	"Compiling", "Computing", "Conjuring", "Contemplating", "Cooking",
@@ -149,7 +149,7 @@ type (
 		statusLeftBranch string
 		connStatusVal    string
 		connStatusKey    string
-		welcomeSetup     hawkconfig.SetupState
+		welcomeSetup     rhoconfig.SetupState
 		welcomeAgentsOK  bool
 	}
 	processArrowTickMsg struct {
@@ -206,7 +206,7 @@ type chatModel struct {
 	viewport                   viewport.Model
 	session                    *engine.Session
 	registry                   *tool.Registry
-	settings                   hawkconfig.Settings
+	settings                   rhoconfig.Settings
 	ref                        *progRef
 	cancel                     context.CancelFunc // cancel current stream
 	sessionID                  string
@@ -304,7 +304,7 @@ type chatModel struct {
 	sessionBootstrapDone         bool
 	toolStartTime                time.Time
 	welcomeCache                 string
-	welcomeSetupState            hawkconfig.SetupState
+	welcomeSetupState            rhoconfig.SetupState
 	welcomeAgentsOK              bool
 	viewDirty                    bool
 	layoutKey                    int    // input lines + slash menu height fingerprint

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	lipgloss "charm.land/lipgloss/v2"
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -119,17 +119,17 @@ func modelTableRowFromOption(o configModelOption) modelTableRow {
 }
 
 func formatModelThinkingCell(o configModelOption) string {
-	supports := hawkconfig.ModelCapabilitySupportsThinking(o.Capabilities)
-	settings := hawkconfig.LoadSettings()
-	pref := hawkconfig.ThinkingPrefForModel(settings, o.ID)
+	supports := rhoconfig.ModelCapabilitySupportsThinking(o.Capabilities)
+	settings := rhoconfig.LoadSettings()
+	pref := rhoconfig.ThinkingPrefForModel(settings, o.ID)
 	if pref == nil && o.CanonicalID != "" && o.CanonicalID != o.ID {
-		pref = hawkconfig.ThinkingPrefForModel(settings, o.CanonicalID)
+		pref = rhoconfig.ThinkingPrefForModel(settings, o.CanonicalID)
 	}
 	provider := strings.TrimSpace(o.GatewayID)
 	if provider == "" {
 		provider = strings.TrimSpace(o.ProviderID)
 	}
-	return hawkconfig.FormatModelThinkingLabel(supports, pref, provider)
+	return rhoconfig.FormatModelThinkingLabel(supports, pref, provider)
 }
 
 func formatModelCapabilities(capabilities []string) string {
@@ -370,7 +370,7 @@ func modelTableFooter(total, scroll, end, allTotal int, muted lipgloss.Style) st
 	return muted.Render(fmt.Sprintf("%s%s · t toggle thinking · enter to select", prefix, label))
 }
 
-func modelTableRowFromCatalogEntry(m hawkconfig.EngineModel) modelTableRow {
+func modelTableRowFromCatalogEntry(m rhoconfig.EngineModel) modelTableRow {
 	name := strings.TrimSpace(m.DisplayName)
 	if name == "" {
 		name = m.ID
@@ -401,7 +401,7 @@ func modelTableRowFromCatalogEntry(m hawkconfig.EngineModel) modelTableRow {
 		Model:    name,
 		Provider: owner,
 		Caps:     formatModelCapabilities(m.Capabilities),
-		Think:    hawkconfig.FormatModelThinkingLabel(hawkconfig.ModelCapabilitySupportsThinking(m.Capabilities), hawkconfig.ThinkingPrefForModel(hawkconfig.LoadSettings(), m.ID), provider),
+		Think:    rhoconfig.FormatModelThinkingLabel(rhoconfig.ModelCapabilitySupportsThinking(m.Capabilities), rhoconfig.ThinkingPrefForModel(rhoconfig.LoadSettings(), m.ID), provider),
 		Price:    price,
 		Context:  formatModelTableContext(m.ContextWindow),
 		Free:     free,

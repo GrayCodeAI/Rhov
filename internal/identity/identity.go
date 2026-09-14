@@ -2,7 +2,7 @@
 // telemetry and feedback.
 //
 // The id is a random UUID persisted as a bare line in `.anonymous-user-id`
-// inside the harness home (`$HAWK_HOME` > `~/.hawk`), and never derived from
+// inside the harness home (`$RHO_HOME` > `~/.rho`), and never derived from
 // the hostname, network address, git remote, or any other identifying source.
 // It is scoped to the harness home, not the machine: every process sharing one
 // home reports the same id, and deleting the file mints a fresh identity on
@@ -34,15 +34,15 @@ var (
 )
 
 // SetHomeDir overrides the harness home used by Resolve. It exists so tests
-// never touch the real `~/.hawk`. Pass "" to clear the override.
+// never touch the real `~/.rho`. Pass "" to clear the override.
 func SetHomeDir(dir string) {
 	stateMu.Lock()
 	defer stateMu.Unlock()
 	overrideHome = dir
 }
 
-// HomeDir resolves the harness home: `$HAWK_HOME` when set, otherwise
-// `~/.hawk`. DSH uses `$DSH_HOME > ~/.dsh`; hawk mirrors that convention.
+// HomeDir resolves the harness home: `$RHO_HOME` when set, otherwise
+// `~/.rho`. DSH uses `$DSH_HOME > ~/.dsh`; rho mirrors that convention.
 func HomeDir() (string, error) {
 	stateMu.Lock()
 	over := overrideHome
@@ -50,14 +50,14 @@ func HomeDir() (string, error) {
 	if over != "" {
 		return over, nil
 	}
-	if env := strings.TrimSpace(os.Getenv("HAWK_HOME")); env != "" {
+	if env := strings.TrimSpace(os.Getenv("RHO_HOME")); env != "" {
 		return env, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("identity: cannot determine home directory: %w", err)
 	}
-	return filepath.Join(home, ".hawk"), nil
+	return filepath.Join(home, ".rho"), nil
 }
 
 // Identity is one resolved anonymous user id.

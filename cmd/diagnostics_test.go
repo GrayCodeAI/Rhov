@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
-	"github.com/GrayCodeAI/hawk/internal/resilience/health"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/resilience/health"
 )
 
 type diagnosticsContextKey struct{}
@@ -25,7 +25,7 @@ func (s *contextRecordingCredentialStore) Get(ctx context.Context, account strin
 
 func TestDoctorReport(t *testing.T) {
 	t.Parallel()
-	settings := hawkconfig.Settings{}
+	settings := rhoconfig.Settings{}
 	report := doctorReport(settings)
 	if report == "" {
 		t.Error("doctorReport should produce non-empty output")
@@ -40,7 +40,7 @@ func TestDoctorReport(t *testing.T) {
 
 func TestDoctorReportProviderModelOrder(t *testing.T) {
 	t.Parallel()
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Model:    "claude-sonnet-4-20250514",
 		Provider: "anthropic",
 	}
@@ -56,14 +56,14 @@ func TestDoctorReportProviderModelOrder(t *testing.T) {
 
 func TestDoctorReportUsesResolvedProviderForChecks(t *testing.T) {
 	isolateCredentialHome(t)
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	gateway.SetDefaultStore(&gateway.MapStore{})
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
-	report := doctorReport(hawkconfig.Settings{
+	report := doctorReport(rhoconfig.Settings{
 		Model:    "claude-sonnet-4-20250514",
 		Provider: "anthropic",
 	})
@@ -75,22 +75,22 @@ func TestDoctorReportUsesResolvedProviderForChecks(t *testing.T) {
 func TestProviderCredentialHealthCheckerResolvesAuto(t *testing.T) {
 	isolateCredentialHome(t)
 	t.Setenv("EYRIE_CONFIG_DIR", t.TempDir())
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	store := &contextRecordingCredentialStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	ctx := context.WithValue(context.Background(), diagnosticsContextKey{}, "checker-context")
 	if err := store.Set(ctx, gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatal(err)
 	}
-	if err := hawkconfig.SetActiveProvider(ctx, "openrouter"); err != nil {
+	if err := rhoconfig.SetActiveProvider(ctx, "openrouter"); err != nil {
 		t.Fatal(err)
 	}
-	if err := hawkconfig.SetActiveModel(ctx, "gpt-4o"); err != nil {
+	if err := rhoconfig.SetActiveModel(ctx, "gpt-4o"); err != nil {
 		t.Fatal(err)
 	}
 	store.contextValue = nil
@@ -118,11 +118,11 @@ func TestProviderCredentialHealthCheckerResolvesAuto(t *testing.T) {
 func TestProviderCredentialHealthCheckerMissingIsUnhealthy(t *testing.T) {
 	isolateCredentialHome(t)
 	t.Setenv("EYRIE_CONFIG_DIR", t.TempDir())
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	gateway.SetDefaultStore(&gateway.MapStore{})
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	result := providerCredentialHealthChecker("openai")(context.Background())
@@ -142,7 +142,7 @@ func TestProviderCredentialHealthCheckerMissingIsUnhealthy(t *testing.T) {
 
 func TestSettingsSummary(t *testing.T) {
 	t.Parallel()
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Model:    "claude-sonnet-4-20250514",
 		Provider: "anthropic",
 	}
@@ -154,7 +154,7 @@ func TestSettingsSummary(t *testing.T) {
 
 func TestMcpConfigSummary(t *testing.T) {
 	t.Parallel()
-	settings := hawkconfig.Settings{}
+	settings := rhoconfig.Settings{}
 	summary := mcpConfigSummary(settings)
 	if summary == "" {
 		t.Error("mcpConfigSummary should produce output")

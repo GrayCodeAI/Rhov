@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 )
 
 type configRemoveCredentialMsg struct {
@@ -17,7 +17,7 @@ type configRemoveCredentialMsg struct {
 
 func removeCredentialAsync(provider string) tea.Cmd {
 	return func() tea.Msg {
-		removed, err := hawkconfig.RemoveStoredCredential(context.Background(), provider)
+		removed, err := rhoconfig.RemoveStoredCredential(context.Background(), provider)
 		return configRemoveCredentialMsg{
 			provider: provider,
 			removed:  removed,
@@ -34,10 +34,10 @@ func (m chatModel) handleConfigRemoveCredentialMsg(msg configRemoveCredentialMsg
 	}
 	delete(modelCache, msg.provider)
 	ctx := context.Background()
-	hawkconfig.RefreshConfigCredSnapshot(ctx)
+	rhoconfig.RefreshConfigCredSnapshot(ctx)
 	m = m.refreshConfigGatewayRows()
-	if hawkconfig.ShouldClearSelectionAfterCredentialRemove(ctx, msg.provider) {
-		_ = hawkconfig.ClearActiveSelection(ctx)
+	if rhoconfig.ShouldClearSelectionAfterCredentialRemove(ctx, msg.provider) {
+		_ = rhoconfig.ClearActiveSelection(ctx)
 		m.configModelProvider = ""
 		m.configModelOptions = nil
 		m.session.SetProvider("")
@@ -46,8 +46,8 @@ func (m chatModel) handleConfigRemoveCredentialMsg(msg configRemoveCredentialMsg
 	m.configTab = configTabGateways
 	m.configSel = 0
 	m.configScroll = 0
-	m.configNotice = fmt.Sprintf("Removed API key for %s", hawkconfig.GatewayDisplayName(msg.provider))
-	if !hawkconfig.HasConfiguredDeploymentCached(ctx) {
+	m.configNotice = fmt.Sprintf("Removed API key for %s", rhoconfig.GatewayDisplayName(msg.provider))
+	if !rhoconfig.HasConfiguredDeploymentCached(ctx) {
 		m.configNotice += " — add an API key to continue"
 	}
 	next, cmd := m.rebuildSessionTransport()
@@ -59,7 +59,7 @@ func (m chatModel) handleConfigRemoveCredentialMsg(msg configRemoveCredentialMsg
 
 func (m chatModel) openConfigRemoveKeyPanel() (chatModel, tea.Cmd) {
 	next, cmd := m.openConfigAtTab(configTabGateways)
-	if len(hawkconfig.ConfiguredCredentialProviders()) == 0 {
+	if len(rhoconfig.ConfiguredCredentialProviders()) == 0 {
 		next.configNotice = "No stored API keys"
 	}
 	return next, cmd

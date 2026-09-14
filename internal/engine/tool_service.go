@@ -10,15 +10,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GrayCodeAI/hawk/internal/engine/diff"
-	"github.com/GrayCodeAI/hawk/internal/hooks"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/repomap"
-	"github.com/GrayCodeAI/hawk/internal/observability/metrics"
-	"github.com/GrayCodeAI/hawk/internal/observability/oteltrace"
-	"github.com/GrayCodeAI/hawk/internal/prompts"
-	"github.com/GrayCodeAI/hawk/internal/securitylog"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/engine/diff"
+	"github.com/GrayCodeAI/rho/internal/hooks"
+	"github.com/GrayCodeAI/rho/internal/intelligence/repomap"
+	"github.com/GrayCodeAI/rho/internal/observability/metrics"
+	"github.com/GrayCodeAI/rho/internal/observability/oteltrace"
+	"github.com/GrayCodeAI/rho/internal/prompts"
+	"github.com/GrayCodeAI/rho/internal/securitylog"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // ToolService is the Session's view of the tool execution surface:
@@ -289,6 +289,20 @@ func (s *ToolService) Classify(calls []types.ToolCall) (concurrent, sequential [
 	return
 }
 
+// emitEvent sends an event to the stream channel, abandoning the send if the
+// context is cancelled or the channel is nil. Without this, a consumer that
+// stops draining (TUI quit, daemon client disconnect) blocks tool goroutines
+// forever and ExecuteAll's wg.Wait() never returns.
+func emitEvent(ctx context.Context, ch chan<- StreamEvent, ev StreamEvent) {
+	if ch == nil {
+		return
+	}
+	select {
+	case ch <- ev:
+	case <-ctx.Done():
+	}
+}
+
 // ExecuteAll runs the complete tool batch pipeline. The service owns the
 // public operation and callers no longer need to reach into Session's
 // unexported execution method. An unconfigured service produces deterministic
@@ -299,9 +313,7 @@ func (s *ToolService) ExecuteAll(ctx context.Context, calls []types.ToolCall, ch
 		for i, call := range calls {
 			msg := "tool execution service is unavailable"
 			results[i] = toolExecResult{tc: call, output: msg, isErr: true}
-			if ch != nil {
-				ch <- StreamEvent{Type: "tool_result", ToolName: call.Name, Content: msg}
-			}
+			emitEvent(ctx, ch, StreamEvent{Type: "tool_result", ToolName: call.Name, Content: msg})
 		}
 		return results
 	}
@@ -319,7 +331,7 @@ func (s *ToolService) ExecuteAll(ctx context.Context, calls []types.ToolCall, ch
 		}
 	}
 	if report := EstimateBlastRadius(plannedCalls); report.Radius.NeedsConfirmation() && ch != nil {
-		ch <- StreamEvent{Type: "blast_radius", Content: report.Message}
+		emitEvent(ctx, ch, StreamEvent{Type: "blast_radius", Content: report.Message})
 	}
 
 	results := make([]toolExecResult, len(calls))
@@ -368,13 +380,13 @@ func bool2tag(isErr bool) string {
 // own the remaining result lifecycle.
 func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, override tool.Tool, ch chan<- StreamEvent, turn int, intent string) toolExecResult {
 	result := toolExecResult{tc: tc, state: ToolStateValidating}
-	ch <- StreamEvent{Type: "tool_use", ToolName: tc.Name, ToolID: tc.ID, ToolState: ToolStateValidating}
+	emitEvent(ctx, ch, StreamEvent{Type: "tool_use", ToolName: tc.Name, ToolID: tc.ID, ToolState: ToolStateValidating})
 	var span *oteltrace.Span
 	if s.tracer != nil {
 		_, span = oteltrace.StartToolSpan(ctx, s.tracer, tc.Name, tc.ID)
 	}
 	finishDenied := func(tag string, msg string) toolExecResult {
-		ch <- StreamEvent{Type: "tool_result", ToolName: tc.Name, Content: msg, ToolState: ToolStateFailed, ToolReason: result.reason}
+		emitEvent(ctx, ch, StreamEvent{Type: "tool_result", ToolName: tc.Name, Content: msg, ToolState: ToolStateFailed, ToolReason: result.reason})
 		if span != nil {
 			span.SetTag(tag, "true")
 			span.Finish()
@@ -837,13 +849,13 @@ func (s *ToolService) CompleteResult(ctx context.Context, result toolExecResult,
 	if s.deps.redactOutput != nil {
 		output = s.deps.redactOutput(output)
 	}
-	ch <- StreamEvent{
+	emitEvent(ctx, ch, StreamEvent{
 		Type:       "tool_result",
 		ToolName:   result.tc.Name,
 		Content:    output,
 		ToolState:  result.state,
 		ToolReason: result.reason,
-	}
+	})
 	if result.span != nil {
 		if isErr {
 			result.span.SetTag("error", "true")

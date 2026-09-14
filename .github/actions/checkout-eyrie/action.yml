@@ -1,5 +1,5 @@
 name: Checkout ecosystem
-description: Clone graycode-eco sibling repos into the workspace parent for hawk's go.work
+description: Clone graycode-eco sibling repos into the workspace parent for rho's go.work
 
 inputs:
   ref:
@@ -24,7 +24,7 @@ runs:
         # ecosystem migration; downstream guards skip absent checkouts too).
         ws_parent="$(cd "${GITHUB_WORKSPACE}/.." && pwd)"
         while IFS= read -r repo; do
-          [ "$repo" = hawk ] && continue
+          [ "$repo" = rho ] && continue
           dest="${ws_parent}/${repo}"
           if [ -d "$dest/.git" ]; then
             echo "$repo already present at $dest"

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/permissions"
-	"github.com/GrayCodeAI/hawk/internal/permissions/stableid"
+	"github.com/GrayCodeAI/rho/internal/permissions"
+	"github.com/GrayCodeAI/rho/internal/permissions/stableid"
 	"github.com/spf13/cobra"
 )
 

@@ -1,6 +1,6 @@
 # Dashboard and HUD
 
-The Hawk dashboard provides system status and monitoring information.
+The Rho dashboard provides system status and monitoring information.
 
 ---
 
@@ -18,7 +18,7 @@ In the TUI:
 
 ## Ecosystem Status
 
-Shows the status of all Hawk components:
+Shows the status of all Rho components:
 
 | Component | Status |
 |-----------|--------|
@@ -33,7 +33,7 @@ Shows the status of all Hawk components:
 Check readiness to chat:
 
 ```bash
-hawk path
+rho path
 ```
 
 This verifies:

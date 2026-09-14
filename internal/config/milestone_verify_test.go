@@ -13,18 +13,18 @@ import (
 	"github.com/GrayCodeAI/eyrie/credentials"
 )
 
-// isolateMilestoneTest uses a temp HOME and HAWK_CONFIG_DIR so verification does not touch the user machine.
+// isolateMilestoneTest uses a temp HOME and RHO_CONFIG_DIR so verification does not touch the user machine.
 func isolateMilestoneTest(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
-	hawkDir := filepath.Join(home, ".hawk")
-	if err := os.MkdirAll(hawkDir, 0o700); err != nil {
+	rhoDir := filepath.Join(home, ".rho")
+	if err := os.MkdirAll(rhoDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", home)
-	t.Setenv("HAWK_CONFIG_DIR", hawkDir)
-	t.Setenv("EYRIE_CONFIG_DIR", hawkDir)
-	return hawkDir
+	t.Setenv("RHO_CONFIG_DIR", rhoDir)
+	t.Setenv("EYRIE_CONFIG_DIR", rhoDir)
+	return rhoDir
 }
 
 func TestVerify_ProviderJSONOnDiskHasNoSecrets(t *testing.T) {
@@ -46,7 +46,7 @@ func TestVerify_ProviderJSONOnDiskHasNoSecrets(t *testing.T) {
 }
 
 func TestVerify_PersistAPIKeyDoesNotWriteProviderJSON(t *testing.T) {
-	hawkDir := isolateMilestoneTest(t)
+	rhoDir := isolateMilestoneTest(t)
 	credentials.SetDefaultStore(emptyCredentialStore{})
 	t.Cleanup(func() { credentials.SetDefaultStore(nil) })
 
@@ -54,7 +54,7 @@ func TestVerify_PersistAPIKeyDoesNotWriteProviderJSON(t *testing.T) {
 	if err := PersistAPIKey(context.Background(), "ANTHROPIC_API_KEY", secret); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(hawkDir, "provider.json")
+	path := filepath.Join(rhoDir, "provider.json")
 	if _, err := os.Stat(path); err == nil {
 		data, _ := os.ReadFile(path)
 		if strings.Contains(string(data), secret) {
@@ -99,7 +99,7 @@ func TestVerify_EvaluateSetupFlow(t *testing.T) {
 		t.Fatal("expected setup still needed until model selected")
 	}
 
-	providerPath := filepath.Join(os.Getenv("HOME"), ".hawk", "provider.json")
+	providerPath := filepath.Join(os.Getenv("HOME"), ".rho", "provider.json")
 	cfg := &eyriecfg.ProviderConfig{
 		ActiveProvider: "anthropic",
 		ActiveModel:    "claude-sonnet-4-20250514",

@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 
-	"github.com/GrayCodeAI/hawk/internal/engine/token"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 type SessionMemoryConfig struct {

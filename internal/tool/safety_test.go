@@ -234,9 +234,9 @@ func TestIsSensitivePath(t *testing.T) {
 		filepath.Join(home, ".ssh", "config"),
 		filepath.Join(home, ".ssh", "authorized_keys"),
 		filepath.Join(home, ".aws", "credentials"),
-		filepath.Join(home, ".hawk", "provider.json"),
-		filepath.Join(home, ".hawk", "env"),
-		filepath.Join(home, ".hawk", ".env"),
+		filepath.Join(home, ".rho", "provider.json"),
+		filepath.Join(home, ".rho", "env"),
+		filepath.Join(home, ".rho", ".env"),
 		filepath.Join(home, ".env"),
 		"/some/project/.env",
 		"/tmp/app/credentials.json",
@@ -260,25 +260,25 @@ func TestIsSensitivePath(t *testing.T) {
 	}
 }
 
-func TestIsSensitivePath_HawkConfigDir(t *testing.T) {
+func TestIsSensitivePath_RhoConfigDir(t *testing.T) {
 	cfgDir := t.TempDir()
-	t.Setenv("HAWK_CONFIG_DIR", cfgDir)
+	t.Setenv("RHO_CONFIG_DIR", cfgDir)
 	if reason := IsSensitivePath(filepath.Join(cfgDir, "env")); reason == "" {
-		t.Fatalf("expected custom HAWK_CONFIG_DIR env file blocked, got empty")
+		t.Fatalf("expected custom RHO_CONFIG_DIR env file blocked, got empty")
 	}
 }
 
 func TestIsSensitivePath_EyrieConfigDir(t *testing.T) {
-	hawkDir := filepath.Join(t.TempDir(), "hawk")
+	rhoDir := filepath.Join(t.TempDir(), "rho")
 	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
-	t.Setenv("HAWK_CONFIG_DIR", hawkDir)
+	t.Setenv("RHO_CONFIG_DIR", rhoDir)
 	t.Setenv("EYRIE_CONFIG_DIR", eyrieDir)
 
 	if reason := IsSensitivePath(filepath.Join(eyrieDir, "provider.json")); reason == "" {
 		t.Fatal("expected EYRIE_CONFIG_DIR/provider.json to be blocked")
 	}
-	if reason := IsSensitivePath(filepath.Join(hawkDir, "settings.json")); reason != "" {
-		t.Fatalf("expected Hawk settings path to remain allowed, got %q", reason)
+	if reason := IsSensitivePath(filepath.Join(rhoDir, "settings.json")); reason != "" {
+		t.Fatalf("expected Rho settings path to remain allowed, got %q", reason)
 	}
 }
 
@@ -322,18 +322,18 @@ func TestFileToolsBlockEyrieProviderConfig(t *testing.T) {
 	}
 }
 
-func TestIsSensitivePath_HawkConfigDirEnv(t *testing.T) {
+func TestIsSensitivePath_RhoConfigDirEnv(t *testing.T) {
 	cfgDir := t.TempDir()
-	t.Setenv("HAWK_CONFIG_DIR", cfgDir)
+	t.Setenv("RHO_CONFIG_DIR", cfgDir)
 
 	envPath := filepath.Join(cfgDir, "env")
 	if reason := IsSensitivePath(envPath); reason == "" {
-		t.Error("expected HAWK_CONFIG_DIR/env to be blocked")
+		t.Error("expected RHO_CONFIG_DIR/env to be blocked")
 	}
 
 	dotEnvPath := filepath.Join(cfgDir, ".env")
 	if reason := IsSensitivePath(dotEnvPath); reason == "" {
-		t.Error("expected HAWK_CONFIG_DIR/.env to be blocked")
+		t.Error("expected RHO_CONFIG_DIR/.env to be blocked")
 	}
 }
 
@@ -834,7 +834,7 @@ func TestCommandReferencesSensitivePath(t *testing.T) {
 		"cat .npmrc",
 		"less ~/.netrc",
 		"tar czf out.tgz ~/.ssh",
-		"cat ~/.hawk/provider.json",
+		"cat ~/.rho/provider.json",
 		"grep key credentials.json",
 	}
 	for _, cmd := range blocked {

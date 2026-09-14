@@ -1,4 +1,4 @@
-module github.com/GrayCodeAI/hawk
+module github.com/GrayCodeAI/rho
 
 go 1.26.6
 

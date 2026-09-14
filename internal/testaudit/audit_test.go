@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-// repoRoot returns the hawk repo root directory.
+// repoRoot returns the rho repo root directory.
 // It walks up from the test file's location to find go.mod.
 func repoRoot(t *testing.T) string {
 	t.Helper()
@@ -52,8 +52,8 @@ var getEnvExemptions = map[string]bool{
 	"terminal_context.go":        true, // TMUX, STY, TERM_PROGRAM for terminal detection
 	"sandbox/seatbelt.go":        true, // HOME, GOPATH for sandbox policy
 	"prompts/loader.go":          true, // SHELL for prompt context
-	"health/diagnostics.go":      true, // SHELL, HAWK_MODEL for health checks
-	"tool/safety.go":             true, // HAWK_CONFIG_DIR for security checks
+	"health/diagnostics.go":      true, // SHELL, RHO_MODEL for health checks
+	"tool/safety.go":             true, // RHO_CONFIG_DIR for security checks
 	"tool/treesitter.go":         true, // HOME for grammar dir (uses os.UserHomeDir)
 	"tool/web_search_brave.go":   true, // BRAVE_SEARCH_API_KEY
 	"tool/web_search_searxng.go": true, // SEARXNG_URL
@@ -184,7 +184,7 @@ func TestNoDirectOsGetenvInInternal(t *testing.T) {
 	t.Logf("Total os.Getenv violations in internal/: %d (logged as tech debt)", violationCount)
 }
 
-// TestNoDirectLowerEyrieImports verifies production Hawk code uses only
+// TestNoDirectLowerEyrieImports verifies production Rho code uses only
 // Eyrie's stable engine facade. Tests may import lower packages for fixtures.
 func TestNoDirectLowerEyrieImports(t *testing.T) {
 	root := repoRoot(t)
@@ -207,7 +207,7 @@ func TestNoDirectLowerEyrieImports(t *testing.T) {
 					strings.HasPrefix(path, "github.com/GrayCodeAI/eyrie/engine/") {
 					continue
 				}
-				// Hawk uses the full vendored Eyrie API surface for provider,
+				// Rho uses the full vendored Eyrie API surface for provider,
 				// graph, and tooling contracts that the engine facade does not
 				// re-export.
 				switch path {
@@ -223,9 +223,9 @@ func TestNoDirectLowerEyrieImports(t *testing.T) {
 	}
 }
 
-// TestNoLazyProviderConstructionInHawk verifies Hawk does not construct lazy
+// TestNoLazyProviderConstructionInRho verifies Rho does not construct lazy
 // provider transports directly. Provider/model transport resolution belongs in Eyrie.
-func TestNoLazyProviderConstructionInHawk(t *testing.T) {
+func TestNoLazyProviderConstructionInRho(t *testing.T) {
 	root := repoRoot(t)
 	paths := []string{
 		filepath.Join(root, "internal"),

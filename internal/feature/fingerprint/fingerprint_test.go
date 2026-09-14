@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// repoRoot returns the hawk repo root (great-grandparent of internal/feature/fingerprint).
+// repoRoot returns the rho repo root (great-grandparent of internal/feature/fingerprint).
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
@@ -17,7 +17,7 @@ func repoRoot(t *testing.T) string {
 	return filepath.Dir(filepath.Dir(filepath.Dir(wd)))
 }
 
-func TestGenerate_HawkRepo(t *testing.T) {
+func TestGenerate_RhoRepo(t *testing.T) {
 	root := repoRoot(t)
 	fp, err := Generate(root)
 	if err != nil {
@@ -56,9 +56,11 @@ func TestGenerate_HawkRepo(t *testing.T) {
 		t.Error("expected HasTests to be true")
 	}
 
-	// Name should be the directory name.
-	if fp.Name != "hawk" {
-		t.Errorf("expected Name='hawk', got %q", fp.Name)
+	// Name should be the directory name. The repo may be checked out under a
+	// pre-rename directory (e.g. `hawk`) during the Rho migration, so compare
+	// against the actual root basename instead of hardcoding the product name.
+	if want := filepath.Base(root); fp.Name != want {
+		t.Errorf("expected Name=%q, got %q", want, fp.Name)
 	}
 
 	t.Logf("Fingerprint: files=%d lines=%d langs=%d deps=%d pm=%s",

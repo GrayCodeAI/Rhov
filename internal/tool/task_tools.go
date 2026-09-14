@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/env"
-	"github.com/GrayCodeAI/hawk/internal/taskruntime"
+	"github.com/GrayCodeAI/rho/internal/env"
+	"github.com/GrayCodeAI/rho/internal/taskruntime"
 )
 
 const (
@@ -120,16 +120,20 @@ func startBackgroundBash(ctx context.Context, command string, execName string, e
 	// Single outer goroutine: flatten the nested-goroutine pattern. Honor
 	// registry kill via shellCancel → kill process group, then wait.
 	go func() {
-		// Watch shellCancel (registry kill) in parallel with cmd.Wait.
-		waitCh := make(chan struct{})
+		// Watch shellCancel (registry kill) in parallel with cmd.Wait. The Wait
+		// goroutine publishes its error on waitCh so the outer goroutine never
+		// reads cmd.ProcessState while Wait is still writing it (data race).
+		waitCh := make(chan error, 1)
 		go func() {
-			_ = cmd.Wait()
-			close(waitCh)
+			waitCh <- cmd.Wait()
 		}()
+		var waitErr error
 		select {
 		case <-shellCtx.Done():
 			_ = task.stop()
-		case <-waitCh:
+			// Join the Wait goroutine before inspecting the result.
+			waitErr = <-waitCh
+		case waitErr = <-waitCh:
 		}
 		captureWg.Wait()
 		task.mu.Lock()
@@ -138,9 +142,9 @@ func startBackgroundBash(ctx context.Context, command string, execName string, e
 		if task.stopped {
 			status = taskruntime.StatusKilled
 			errMsg = "killed"
-		} else if waitErr := cmd.ProcessState; waitErr != nil && !waitErr.Success() {
+		} else if waitErr != nil {
 			status = taskruntime.StatusFailed
-			errMsg = waitErr.String()
+			errMsg = waitErr.Error()
 		}
 		out := task.output.String()
 		task.mu.Unlock()

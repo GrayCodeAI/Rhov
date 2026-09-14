@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/spec"
+	"github.com/GrayCodeAI/rho/internal/spec"
 )
 
 type SpecGroundTool struct{}
@@ -58,7 +59,7 @@ func (SpecGroundTool) Execute(ctx context.Context, input json.RawMessage) (strin
 
 	dir, err := specDir(ctx)
 	if err != nil {
-		dir = filepath.Join(cwd, ".hawk", "specs")
+		dir = filepath.Join(cwd, ".rho", "specs")
 	}
 
 	var b strings.Builder
@@ -293,7 +294,10 @@ func groundForImplement(dir, cwd string, b *strings.Builder) {
 }
 
 func runCmd(dir string, name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	// Bound find/grep so a pathological tree cannot block the tool forever.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...) // #nosec G204 -- executable and args are fixed by the caller
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	return string(out), err

@@ -9,17 +9,17 @@ import (
 	"sync"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 
-	"github.com/GrayCodeAI/hawk/internal/lint"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/lint"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // AgentSpawnFn is the typed subagent entrypoint (Year 0 PACK-02).
 // Implementations must honor SpawnRequest fields after Normalize.
 type AgentSpawnFn func(ctx context.Context, req agentcontracts.SpawnRequest) (agentcontracts.SpawnResult, error)
 
-// Tool is the interface every hawk tool implements.
+// Tool is the interface every rho tool implements.
 type Tool interface {
 	Name() string
 	Description() string
@@ -344,7 +344,7 @@ func (r *Registry) Filter(allow []string) *Registry {
 	return NewRegistry(filtered...)
 }
 
-// EyrieTools converts model-visible tools to Hawk runtime tool definitions.
+// EyrieTools converts model-visible tools to Rho runtime tool definitions.
 // When lazy model surface is enabled, only promoted/essential tools are listed.
 func (r *Registry) EyrieTools() []types.EyrieTool {
 	r.mu.RLock()

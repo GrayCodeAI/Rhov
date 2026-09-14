@@ -24,7 +24,7 @@ if [[ -n "$violations" ]]; then
   echo "direct production imports below the eyrie/engine facade found:"
   echo "$violations"
   echo
-  echo "route every Hawk production integration through github.com/GrayCodeAI/eyrie/engine"
+  echo "route every Rho production integration through github.com/GrayCodeAI/eyrie/engine"
   exit 1
 fi
 
@@ -36,7 +36,7 @@ fi
 if [[ -n "$credential_symbols" ]]; then
 	printf '%s\n' "$credential_symbols"
   echo
-  echo "provider credentials must not enter Hawk's agent/session layer"
+  echo "provider credentials must not enter Rho's agent/session layer"
   exit 1
 fi
 

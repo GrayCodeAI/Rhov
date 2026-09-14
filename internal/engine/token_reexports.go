@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/GrayCodeAI/hawk/internal/engine/token"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 type (

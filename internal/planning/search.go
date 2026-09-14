@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // Expander generates the candidate next states reachable from a state. An

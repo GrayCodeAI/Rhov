@@ -20,12 +20,12 @@ For example, a `team-tools` plugin might include a deploy skill, a code-review a
 
 ## Plugin Locations
 
-Hawk discovers plugins from these locations, in priority order:
+Rho discovers plugins from these locations, in priority order:
 
 | Location | Scope | Trust Required |
 |----------|-------|----------------|
-| `.hawk/plugins/` | Project | Yes |
-| `~/.hawk/plugins/` | User | No |
+| `.rho/plugins/` | Project | Yes |
+| `~/.rho/plugins/` | User | No |
 | `--plugin-dir` | Process | No |
 
 When two plugins share a name, the higher-priority location wins.
@@ -38,21 +38,21 @@ Manage plugins from the command line:
 
 ```bash
 # List installed plugins
-hawk plugins list
+rho plugins list
 
 # Install a plugin
-hawk plugins install user/repo
-hawk plugins install user/repo@v1.0
-hawk plugins install /path/to/local/plugin
+rho plugins install user/repo
+rho plugins install user/repo@v1.0
+rho plugins install /path/to/local/plugin
 
 # Install with trust (required for project plugins)
-hawk plugins install user/repo --trust
+rho plugins install user/repo --trust
 
 # Uninstall a plugin
-hawk plugins uninstall my-plugin
+rho plugins uninstall my-plugin
 
 # Update plugins
-hawk plugins update
+rho plugins update
 ```
 
 ---
@@ -63,15 +63,15 @@ Browse and install plugins from the community marketplace:
 
 ```bash
 # Search marketplace
-hawk plugins search go
+rho plugins search go
 
 # Install from marketplace
-hawk plugins install go-review --trust
+rho plugins install go-review --trust
 ```
 
 ### Adding Marketplace Sources
 
-Configure additional marketplaces in `~/.hawk/settings.json`:
+Configure additional marketplaces in `~/.rho/settings.json`:
 
 ```json
 {
@@ -90,13 +90,13 @@ Configure additional marketplaces in `~/.hawk/settings.json`:
 
 ## Trust Model
 
-- **User plugins** (`~/.hawk/plugins/`) — Trusted automatically
-- **Project plugins** (`.hawk/plugins/`) — Require explicit trust before activation
+- **User plugins** (`~/.rho/plugins/`) — Trusted automatically
+- **Project plugins** (`.rho/plugins/`) — Require explicit trust before activation
 
 Trust is required because plugins can execute code via hooks and MCP servers. To trust a plugin:
 
 ```bash
-hawk plugins install <source> --trust
+rho plugins install <source> --trust
 ```
 
 ---

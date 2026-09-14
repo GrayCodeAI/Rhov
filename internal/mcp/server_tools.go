@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
-	"github.com/GrayCodeAI/hawk/internal/token"
+	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
+	"github.com/GrayCodeAI/rho/internal/token"
 )
 
 // ToolExecutor is a function that executes a named tool with JSON input.
@@ -23,25 +23,25 @@ func readOnlyAnnotations(title string) *ToolAnnotations {
 	return &ToolAnnotations{Title: title, ReadOnlyHint: boolPtr(true), DestructiveHint: boolPtr(false)}
 }
 
-// RegisterDefaultTools registers hawk's standard capabilities as MCP tools.
-// If executor is non-nil, tools that delegate to hawk's tool registry will
+// RegisterDefaultTools registers rho's standard capabilities as MCP tools.
+// If executor is non-nil, tools that delegate to rho's tool registry will
 // use it for execution; otherwise those tools return a not-configured error.
 func RegisterDefaultTools(server *MCPServer, executor ToolExecutor) {
-	server.RegisterTool(hawkChatTool(executor))
-	server.RegisterTool(hawkSearchTool(executor))
-	server.RegisterTool(hawkMemoryRecallTool(executor))
-	server.RegisterTool(hawkMemoryStoreTool(executor))
-	server.RegisterTool(hawkCompressTool(executor))
+	server.RegisterTool(rhoChatTool(executor))
+	server.RegisterTool(rhoSearchTool(executor))
+	server.RegisterTool(rhoMemoryRecallTool(executor))
+	server.RegisterTool(rhoMemoryStoreTool(executor))
+	server.RegisterTool(rhoCompressTool(executor))
 }
 
-// hawkChatTool sends a prompt to hawk and returns the response.
-func hawkChatTool(executor ToolExecutor) MCPToolHandler {
+// rhoChatTool sends a prompt to rho and returns the response.
+func rhoChatTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
-		Name: "hawk_chat",
-		Description: "Send a prompt to the hawk AI coding agent and receive a response. " +
+		Name: "rho_chat",
+		Description: "Send a prompt to the rho AI coding agent and receive a response. " +
 			"WARNING: this runs an autonomous agent that may execute shell commands and modify files.",
 		Annotations: &ToolAnnotations{
-			Title:           "Run hawk agent",
+			Title:           "Run rho agent",
 			ReadOnlyHint:    boolPtr(false),
 			DestructiveHint: boolPtr(true),
 			OpenWorldHint:   boolPtr(true),
@@ -51,7 +51,7 @@ func hawkChatTool(executor ToolExecutor) MCPToolHandler {
 			"properties": map[string]interface{}{
 				"prompt": map[string]interface{}{
 					"type":        "string",
-					"description": "The prompt or question to send to hawk.",
+					"description": "The prompt or question to send to rho.",
 				},
 			},
 			"required": []string{"prompt"},
@@ -71,12 +71,12 @@ func hawkChatTool(executor ToolExecutor) MCPToolHandler {
 	}
 }
 
-// hawkSearchTool searches across hawk sessions.
-func hawkSearchTool(executor ToolExecutor) MCPToolHandler {
+// rhoSearchTool searches across rho sessions.
+func rhoSearchTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
-		Name:        "hawk_search",
-		Description: "Search across hawk sessions and conversation history.",
-		Annotations: readOnlyAnnotations("Search hawk sessions"),
+		Name:        "rho_search",
+		Description: "Search across rho sessions and conversation history.",
+		Annotations: readOnlyAnnotations("Search rho sessions"),
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -107,12 +107,12 @@ func hawkSearchTool(executor ToolExecutor) MCPToolHandler {
 	}
 }
 
-// hawkMemoryRecallTool recalls information from hawk's local memory store.
-func hawkMemoryRecallTool(executor ToolExecutor) MCPToolHandler {
+// rhoMemoryRecallTool recalls information from rho's local memory store.
+func rhoMemoryRecallTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
-		Name:        "hawk_memory_recall",
-		Description: "Recall stored information from hawk's local persistent memory.",
-		Annotations: readOnlyAnnotations("Recall from hawk memory"),
+		Name:        "rho_memory_recall",
+		Description: "Recall stored information from rho's local persistent memory.",
+		Annotations: readOnlyAnnotations("Recall from rho memory"),
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -157,13 +157,13 @@ func hawkMemoryRecallTool(executor ToolExecutor) MCPToolHandler {
 	}
 }
 
-// hawkMemoryStoreTool stores information to hawk's local memory store.
-func hawkMemoryStoreTool(executor ToolExecutor) MCPToolHandler {
+// rhoMemoryStoreTool stores information to rho's local memory store.
+func rhoMemoryStoreTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
-		Name:        "hawk_memory_store",
-		Description: "Store information in hawk's local persistent memory for future recall.",
+		Name:        "rho_memory_store",
+		Description: "Store information in rho's local persistent memory for future recall.",
 		Annotations: &ToolAnnotations{
-			Title:           "Store in hawk memory",
+			Title:           "Store in rho memory",
 			ReadOnlyHint:    boolPtr(false),
 			DestructiveHint: boolPtr(false), // additive write, does not destroy existing data
 		},
@@ -208,11 +208,11 @@ func hawkMemoryStoreTool(executor ToolExecutor) MCPToolHandler {
 	}
 }
 
-// hawkCompressTool compresses text via the embedded token engine.
-func hawkCompressTool(executor ToolExecutor) MCPToolHandler {
+// rhoCompressTool compresses text via the embedded token engine.
+func rhoCompressTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
-		Name:        "hawk_compress",
-		Description: "Compress text using hawk's embedded token engine to reduce token usage while preserving meaning.",
+		Name:        "rho_compress",
+		Description: "Compress text using rho's embedded token engine to reduce token usage while preserving meaning.",
 		Annotations: readOnlyAnnotations("Compress text (token engine)"),
 		InputSchema: map[string]interface{}{
 			"type": "object",

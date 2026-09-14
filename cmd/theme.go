@@ -1,11 +1,11 @@
 package cmd
 
-// theme.go — the single source of truth for hawk's visual identity.
+// theme.go — the single source of truth for rho's visual identity.
 //
 // All color constants (24-bit RGB via lipgloss), raw ANSI escape codes
 // (used by the spinner line), and glyph/icon constants live here. Every
 // other file in the package references these names instead of repeating
-// hex codes or magic strings. To rebrand hawk, edit this file; to audit
+// hex codes or magic strings. To rebrand rho, edit this file; to audit
 // what's used where, grep this file.
 //
 // Organization:
@@ -24,17 +24,17 @@ import (
 	lipgloss "charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/compat"
 
-	internaltheme "github.com/GrayCodeAI/hawk/internal/theme"
+	internaltheme "github.com/GrayCodeAI/rho/internal/theme"
 )
 
 // ---------------------------------------------------------------------------
 // 1. Brand & identity
 // ---------------------------------------------------------------------------
 
-// hawkColor is Talon Gold (#FFD700). Used for the HAWK wordmark, hawk,
+// rhoColor is Talon Gold (#FFD700). Used for the RHO wordmark, rho,
 // ⛬ assistant prefix, prompt arrow, cursor, exit prompt, and
 // any place that should "speak" as the brand.
-var hawkColor = lipgloss.Color(internaltheme.BrandPrimary)
+var rhoColor = lipgloss.Color(internaltheme.BrandPrimary)
 
 // ---------------------------------------------------------------------------
 // 2. UI state
@@ -197,7 +197,7 @@ const (
 // ---------------------------------------------------------------------------
 // 10. Icons & glyphs
 //
-// Hawk's icon registry lives in internal/ui/icons. Every call site
+// Rho's icon registry lives in internal/ui/icons. Every call site
 // references icons.ChevronRight() / icons.Robot() / etc. directly; this
 // file no longer holds any glyph constants. The audit test in
 // internal/testaudit fails CI if any non-ASCII literal appears in
@@ -240,7 +240,7 @@ func ApplyTheme(name string) {
 	p := entry.Palette
 
 	// 1. Brand — fixed across themes; palette accents remain theme-specific.
-	hawkColor = lipgloss.Color(internaltheme.BrandPrimary)
+	rhoColor = lipgloss.Color(internaltheme.BrandPrimary)
 
 	// 2. Semantic feedback.
 	successTeal = lipgloss.Color(p.Green)
@@ -280,13 +280,20 @@ func ApplyTheme(name string) {
 	borderDim = compat.AdaptiveColor{Light: lipgloss.Color("#C6C6C6"), Dark: lipgloss.Color(p.Line2)}
 	bgCode = lipgloss.Color(p.Panel)
 
-	// 9. Dark-background flag is now handled via LightDark in v2; no setter needed.
+	// 9. Minimal chrome: the Tau theme (and any future low-chrome theme) uses
+	// a hairline separator under the input instead of a full box border.
+	// refreshThemeStyles rebuilds inputBorderStyle from this flag.
+	minimalChrome = entry.Name == "tau"
 
 	// 10. Rebuild package-level styles that snapshotted the old colors at
 	// init time. Without this, markdown/chat/agent-grid styles keep the
 	// default palette after a live theme switch.
 	refreshThemeStyles()
 }
+
+// minimalChrome is set by ApplyTheme when the active theme prefers a
+// low-chrome layout (no box borders around the input).
+var minimalChrome bool
 
 // refreshThemeStyles rebuilds every package-level lipgloss.Style var that
 // captures a theme color at package-init time. ApplyTheme mutates the color
@@ -298,12 +305,12 @@ func ApplyTheme(name string) {
 // unsynchronized from View.
 func refreshThemeStyles() {
 	// markdown.go
-	mdH1Style = lipgloss.NewStyle().Foreground(hawkColor).Bold(true).Underline(true)
+	mdH1Style = lipgloss.NewStyle().Foreground(rhoColor).Bold(true).Underline(true)
 	mdH2Style = lipgloss.NewStyle().Foreground(successTeal).Bold(true)
 	mdH3Style = lipgloss.NewStyle().Foreground(infoSky).Bold(true)
 	mdH4Style = lipgloss.NewStyle().Foreground(costViolet).Bold(true)
 	mdHeaderStyle = lipgloss.NewStyle().Foreground(textPrimary).Bold(true)
-	mdBoldStyle = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
+	mdBoldStyle = lipgloss.NewStyle().Foreground(rhoColor).Bold(true)
 	mdInlineCodeStyle = lipgloss.NewStyle().Foreground(infoSky)
 	mdCodeBlockStyle = lipgloss.NewStyle().Background(bgCode)
 	mdCodeLabelStyle = lipgloss.NewStyle().Foreground(textDisabled).Background(bgCode)
@@ -322,13 +329,18 @@ func refreshThemeStyles() {
 	toolDimStyle = lipgloss.NewStyle().Foreground(textDisabled)
 	slashCmdStyle = lipgloss.NewStyle().Foreground(textDisabled)
 	slashDescStyle = lipgloss.NewStyle().Foreground(textDisabled)
-	slashSelCmdStyle = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
-	slashSelDescStyle = lipgloss.NewStyle().Foreground(hawkColor)
-	inputBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
+	slashSelCmdStyle = lipgloss.NewStyle().Foreground(rhoColor).Bold(true)
+	slashSelDescStyle = lipgloss.NewStyle().Foreground(rhoColor)
+	if minimalChrome {
+		// Tau-style: a single hairline rule under the input, no side borders.
+		inputBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, true, false).BorderForeground(borderDim)
+	} else {
+		inputBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
+	}
 	dimColor = textDisabled
 
 	// agent_grid.go
-	agentActiveStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(hawkColor).Padding(0, 1)
+	agentActiveStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(rhoColor).Padding(0, 1)
 	agentDoneStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(doneGreen).Padding(0, 1)
 	agentFailStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(errorCoral).Padding(0, 1)
 	agentIdleStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(textDisabled).Padding(0, 1)
@@ -336,5 +348,5 @@ func refreshThemeStyles() {
 	agentStatusStyle = lipgloss.NewStyle().Foreground(textMuted)
 
 	// chat_scrollbar.go
-	scrollbarThumbStyle = lipgloss.NewStyle().Foreground(hawkColor)
+	scrollbarThumbStyle = lipgloss.NewStyle().Foreground(rhoColor)
 }

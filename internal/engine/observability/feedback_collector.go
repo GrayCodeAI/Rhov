@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 // Feedback represents explicit user feedback on an interaction.

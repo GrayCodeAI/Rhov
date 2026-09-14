@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 // GoalStatus represents the current state of a goal.

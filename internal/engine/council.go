@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	routing "github.com/GrayCodeAI/hawk/internal/provider/routing"
+	routing "github.com/GrayCodeAI/rho/internal/provider/routing"
 )
 
 // CouncilConfig controls the Karpathy LLM Council pattern.

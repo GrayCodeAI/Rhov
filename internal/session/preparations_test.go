@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 func mkPrepSource(id string) *PreparedSource {

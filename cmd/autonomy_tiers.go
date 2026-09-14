@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 // Five container autonomy tiers (Scout → Builder → Operator → Autonomous → Always Ask).

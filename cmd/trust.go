@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GrayCodeAI/hawk/internal/theme"
+	"github.com/GrayCodeAI/rho/internal/theme"
 
-	"github.com/GrayCodeAI/hawk/internal/flags"
-	"github.com/GrayCodeAI/hawk/internal/trust"
+	"github.com/GrayCodeAI/rho/internal/flags"
+	"github.com/GrayCodeAI/rho/internal/trust"
 	"github.com/spf13/cobra"
 )
 
@@ -18,10 +18,10 @@ var trustCmd = &cobra.Command{
 	Long: `Folder trust controls whether project-scoped hooks, MCP servers, LSP
 configs, and plugins may load from a repository.
 
-When HAWK_Y0_FOLDER_TRUST is enabled (default after Year 0 PACK-03),
+When RHO_Y0_FOLDER_TRUST is enabled (default after Year 0 PACK-03),
 untrusted projects cannot run project automation (RCE mitigation).
 
-User-global plugins under the Hawk state directory always load.`,
+User-global plugins under the Rho state directory always load.`,
 }
 
 var trustAddCmd = &cobra.Command{
@@ -103,7 +103,7 @@ var trustListCmd = &cobra.Command{
 				fmt.Println("[]")
 			} else {
 				cmd.Println(auditTint("No trusted directories.", textMuted))
-				cmd.Printf("%s\n", auditTint(fmt.Sprintf("Folder trust enforcement: %v (HAWK_Y0_FOLDER_TRUST)", flags.FolderTrust()), textMuted))
+				cmd.Printf("%s\n", auditTint(fmt.Sprintf("Folder trust enforcement: %v (RHO_Y0_FOLDER_TRUST)", flags.FolderTrust()), textMuted))
 			}
 			return nil
 		}

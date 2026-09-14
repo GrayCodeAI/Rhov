@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 func setupHooksTestDir(t *testing.T) string {
@@ -35,7 +35,7 @@ func TestNewGitHookInstaller(t *testing.T) {
 func TestNewGitHookInstaller_DetectsExisting(t *testing.T) {
 	dir := setupHooksTestDir(t)
 	hookPath := filepath.Join(dir, ".git", "hooks", "pre-commit")
-	content := "#!/bin/sh\n# hawk-managed: pre-commit hook\necho hello\n"
+	content := "#!/bin/sh\n# rho-managed: pre-commit hook\necho hello\n"
 	if err := os.WriteFile(hookPath, []byte(content), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestInstall_Basic(t *testing.T) {
 
 	hook := HookConfig{
 		Name:     "pre-commit",
-		Script:   "#!/bin/sh\n# hawk-managed: pre-commit hook\necho test\n",
+		Script:   "#!/bin/sh\n# rho-managed: pre-commit hook\necho test\n",
 		Enabled:  true,
 		Priority: 1,
 	}
@@ -67,8 +67,8 @@ func TestInstall_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read hook: %v", err)
 	}
-	if !strings.Contains(string(data), "hawk-managed") {
-		t.Error("hook file does not contain hawk-managed marker")
+	if !strings.Contains(string(data), "rho-managed") {
+		t.Error("hook file does not contain rho-managed marker")
 	}
 
 	// Verify permissions.
@@ -110,7 +110,7 @@ func TestInstall_PreservesExisting(t *testing.T) {
 	dir := setupHooksTestDir(t)
 	hookPath := filepath.Join(dir, ".git", "hooks", "pre-commit")
 
-	// Write existing non-hawk hook.
+	// Write existing non-rho hook.
 	existing := "#!/bin/sh\necho existing\n"
 	if err := os.WriteFile(hookPath, []byte(existing), 0o755); err != nil {
 		t.Fatal(err)
@@ -119,7 +119,7 @@ func TestInstall_PreservesExisting(t *testing.T) {
 	installer := NewGitHookInstaller(dir)
 	hook := HookConfig{
 		Name:     "pre-commit",
-		Script:   "#!/bin/sh\n# hawk-managed: pre-commit hook\necho hawk\n",
+		Script:   "#!/bin/sh\n# rho-managed: pre-commit hook\necho rho\n",
 		Enabled:  true,
 		Priority: 1,
 	}
@@ -143,8 +143,8 @@ func TestInstall_PreservesExisting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "hawk-managed") {
-		t.Error("hook does not contain hawk-managed marker")
+	if !strings.Contains(string(data), "rho-managed") {
+		t.Error("hook does not contain rho-managed marker")
 	}
 	if !strings.Contains(string(data), "echo existing") {
 		t.Error("hook does not chain existing script")
@@ -157,7 +157,7 @@ func TestUninstall(t *testing.T) {
 
 	hook := HookConfig{
 		Name:     "pre-commit",
-		Script:   "#!/bin/sh\n# hawk-managed: pre-commit hook\necho test\n",
+		Script:   "#!/bin/sh\n# rho-managed: pre-commit hook\necho test\n",
 		Enabled:  true,
 		Priority: 1,
 	}
@@ -182,7 +182,7 @@ func TestUninstall_RestoresBackup(t *testing.T) {
 	dir := setupHooksTestDir(t)
 	hookPath := filepath.Join(dir, ".git", "hooks", "pre-commit")
 
-	// Write existing non-hawk hook.
+	// Write existing non-rho hook.
 	existing := "#!/bin/sh\necho original\n"
 	if err := os.WriteFile(hookPath, []byte(existing), 0o755); err != nil {
 		t.Fatal(err)
@@ -191,7 +191,7 @@ func TestUninstall_RestoresBackup(t *testing.T) {
 	installer := NewGitHookInstaller(dir)
 	hook := HookConfig{
 		Name:     "pre-commit",
-		Script:   "#!/bin/sh\n# hawk-managed: pre-commit hook\necho hawk\n",
+		Script:   "#!/bin/sh\n# rho-managed: pre-commit hook\necho rho\n",
 		Enabled:  true,
 		Priority: 1,
 	}
@@ -232,8 +232,8 @@ func TestInstallAll(t *testing.T) {
 			t.Errorf("cannot read %s: %v", name, err)
 			continue
 		}
-		if !strings.Contains(string(data), "# hawk-managed") {
-			t.Errorf("hook %s missing hawk-managed marker", name)
+		if !strings.Contains(string(data), "# rho-managed") {
+			t.Errorf("hook %s missing rho-managed marker", name)
 		}
 	}
 }
@@ -245,8 +245,8 @@ func TestGeneratePreCommit(t *testing.T) {
 	if !strings.HasPrefix(script, "#!/bin/sh") {
 		t.Error("script must start with shebang")
 	}
-	if !strings.Contains(script, "hawk-managed") {
-		t.Error("missing hawk-managed marker")
+	if !strings.Contains(script, "rho-managed") {
+		t.Error("missing rho-managed marker")
 	}
 	if !strings.Contains(script, "gofmt") {
 		t.Error("missing format check")
@@ -266,11 +266,11 @@ func TestGeneratePrepareCommitMsg(t *testing.T) {
 	if !strings.HasPrefix(script, "#!/bin/sh") {
 		t.Error("script must start with shebang")
 	}
-	if !strings.Contains(script, "hawk-managed") {
-		t.Error("missing hawk-managed marker")
+	if !strings.Contains(script, "rho-managed") {
+		t.Error("missing rho-managed marker")
 	}
-	if !strings.Contains(script, "hawk commit-msg") {
-		t.Error("missing hawk commit-msg invocation")
+	if !strings.Contains(script, "rho commit-msg") {
+		t.Error("missing rho commit-msg invocation")
 	}
 	if !strings.Contains(script, "COMMIT_MSG_FILE") {
 		t.Error("missing COMMIT_MSG_FILE handling")
@@ -284,10 +284,10 @@ func TestGeneratePostCommit(t *testing.T) {
 	if !strings.HasPrefix(script, "#!/bin/sh") {
 		t.Error("script must start with shebang")
 	}
-	if !strings.Contains(script, "hawk-managed") {
-		t.Error("missing hawk-managed marker")
+	if !strings.Contains(script, "rho-managed") {
+		t.Error("missing rho-managed marker")
 	}
-	if !strings.Contains(script, "hawk swift") {
+	if !strings.Contains(script, "rho swift") {
 		t.Error("missing trace notification")
 	}
 	if !strings.Contains(script, "post-commit") {
@@ -302,8 +302,8 @@ func TestGeneratePrePush(t *testing.T) {
 	if !strings.HasPrefix(script, "#!/bin/sh") {
 		t.Error("script must start with shebang")
 	}
-	if !strings.Contains(script, "hawk-managed") {
-		t.Error("missing hawk-managed marker")
+	if !strings.Contains(script, "rho-managed") {
+		t.Error("missing rho-managed marker")
 	}
 	if !strings.Contains(script, "go test") {
 		t.Error("missing go test")
@@ -321,8 +321,8 @@ func TestListInstalled(t *testing.T) {
 		t.Errorf("expected empty list, got %v", got)
 	}
 
-	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# hawk-managed\n", Enabled: true})
-	installer.Install(HookConfig{Name: "pre-push", Script: "#!/bin/sh\n# hawk-managed\n", Enabled: true})
+	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# rho-managed\n", Enabled: true})
+	installer.Install(HookConfig{Name: "pre-push", Script: "#!/bin/sh\n# rho-managed\n", Enabled: true})
 
 	got := installer.ListInstalled()
 	if len(got) != 2 {
@@ -342,7 +342,7 @@ func TestIsInstalled(t *testing.T) {
 		t.Error("should not be installed initially")
 	}
 
-	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# hawk-managed\n", Enabled: true})
+	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# rho-managed\n", Enabled: true})
 
 	if !installer.IsInstalled("pre-commit") {
 		t.Error("should be installed after Install")
@@ -387,8 +387,8 @@ func TestFormatStatus(t *testing.T) {
 	installer := NewGitHookInstaller(dir)
 
 	// Install only two hooks.
-	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# hawk-managed\n", Enabled: true})
-	installer.Install(HookConfig{Name: "prepare-commit-msg", Script: "#!/bin/sh\n# hawk-managed\n", Enabled: true})
+	installer.Install(HookConfig{Name: "pre-commit", Script: "#!/bin/sh\n# rho-managed\n", Enabled: true})
+	installer.Install(HookConfig{Name: "prepare-commit-msg", Script: "#!/bin/sh\n# rho-managed\n", Enabled: true})
 
 	status := installer.FormatStatus()
 
@@ -422,7 +422,7 @@ func TestConcurrentInstall(t *testing.T) {
 			defer wg.Done()
 			hook := HookConfig{
 				Name:    n,
-				Script:  "#!/bin/sh\n# hawk-managed: " + n + "\necho " + n + "\n",
+				Script:  "#!/bin/sh\n# rho-managed: " + n + "\necho " + n + "\n",
 				Enabled: true,
 			}
 			if err := installer.Install(hook); err != nil {

@@ -1,0 +1,33 @@
+{
+    "name": "@graycodeai/rho",
+    "version": "0.0.0-development",
+    "description": "Bring Rho into your terminal",
+    "license": "Apache-2.0",
+    "os": [
+        "darwin",
+        "linux",
+        "win32"
+    ],
+    "cpu": [
+        "arm64",
+        "x64"
+    ],
+    "scripts": {
+        "assemble": "node scripts/assemble-platform-packages.js",
+        "postinstall": "node bin/postinstall.js"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "optionalDependencies": {
+        "@graycodeai/rho-darwin-arm64": "0.0.0-development",
+        "@graycodeai/rho-darwin-x64": "0.0.0-development",
+        "@graycodeai/rho-linux-arm64": "0.0.0-development",
+        "@graycodeai/rho-linux-x64": "0.0.0-development",
+        "@graycodeai/rho-win32-arm64": "0.0.0-development",
+        "@graycodeai/rho-win32-x64": "0.0.0-development"
+    }
+}

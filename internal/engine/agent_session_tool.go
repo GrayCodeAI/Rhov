@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	agentcontracts "github.com/GrayCodeAI/hawk/internal/contracts/agent"
+	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 
-	engagent "github.com/GrayCodeAI/hawk/internal/engine/agent"
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
-	"github.com/GrayCodeAI/hawk/internal/gitworktree"
-	"github.com/GrayCodeAI/hawk/internal/hooks"
-	"github.com/GrayCodeAI/hawk/internal/prompts"
-	"github.com/GrayCodeAI/hawk/internal/session"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	engagent "github.com/GrayCodeAI/rho/internal/engine/agent"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/gitworktree"
+	"github.com/GrayCodeAI/rho/internal/hooks"
+	"github.com/GrayCodeAI/rho/internal/prompts"
+	"github.com/GrayCodeAI/rho/internal/session"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // WireAgentTool sets up typed sub-agent spawning via SpawnController.
@@ -54,7 +54,7 @@ func (s *Session) spawnSubAgentRequest(ctx context.Context, req agentcontracts.S
 			Agent:         string(mode),
 			Depth:         depth,
 			Mode:          "one-shot",
-			Provider:      "hawk",
+			Provider:      "rho",
 			Label:         truncateSummary(norm.Prompt, 200),
 			AgentProvider: s.ChatLLM().Provider(),
 			AgentModel:    s.ChatLLM().Model(),

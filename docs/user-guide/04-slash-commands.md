@@ -186,7 +186,7 @@ Install a skill from a source.
 
 ```
 /skills install go-review
-hawk skills install go-review
+rho skills install go-review
 ```
 
 ### `/skills audit`
@@ -195,7 +195,7 @@ Security scan installed skills.
 
 ```
 /skills audit
-hawk skills audit
+rho skills audit
 ```
 
 ---

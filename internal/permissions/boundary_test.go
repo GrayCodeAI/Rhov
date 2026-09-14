@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/home"
+	"github.com/GrayCodeAI/rho/internal/home"
 )
 
 func TestNewBoundaryChecker(t *testing.T) {

@@ -83,13 +83,13 @@ func (NotebookEditTool) Execute(ctx context.Context, input json.RawMessage) (str
 	return fmt.Sprintf("Edited cell %d in %s", p.CellNumber, p.Path), nil
 }
 
-// ConfigTool reads/writes hawk settings.
+// ConfigTool reads/writes rho settings.
 type ConfigTool struct{}
 
 func (ConfigTool) Name() string      { return "Config" }
 func (ConfigTool) Aliases() []string { return []string{"config"} }
 func (ConfigTool) Description() string {
-	return "Read or modify hawk configuration settings."
+	return "Read or modify rho configuration settings."
 }
 
 func (ConfigTool) Parameters() map[string]interface{} {

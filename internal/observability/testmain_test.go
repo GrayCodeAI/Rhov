@@ -7,7 +7,7 @@ import (
 
 func TestMain(m *testing.M) {
 	if _, err := os.UserHomeDir(); err != nil {
-		dir, mkErr := os.MkdirTemp("", "hawk-observability-home-*")
+		dir, mkErr := os.MkdirTemp("", "rho-observability-home-*")
 		if mkErr != nil {
 			os.Exit(1)
 		}

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/circuitbreaker"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/circuitbreaker"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // AutoCompactor orchestrates compaction with circuit breaker protection.

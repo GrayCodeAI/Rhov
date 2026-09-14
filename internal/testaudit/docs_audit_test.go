@@ -14,9 +14,9 @@ func TestArchitectureDocsDoNotContainStaleContractsLanguage(t *testing.T) {
 		"README.md",
 		"AGENTS.md",
 		"docs/architecture/README.md",
-		"docs/architecture/hawk-product-architecture.md",
-		"docs/architecture/hawk-contract-spec.md",
-		"docs/plans/hawk-contracts-migration-backlog.md",
+		"docs/architecture/rho-product-architecture.md",
+		"docs/architecture/rho-contract-spec.md",
+		"docs/plans/rho-contracts-migration-backlog.md",
 	}
 
 	forbiddenPhrases := []string{
@@ -48,11 +48,11 @@ func TestArchitectureDocsMentionCurrentReviewVerifyContracts(t *testing.T) {
 			"contracts/review",
 			"contracts/verify",
 		},
-		"docs/architecture/hawk-product-architecture.md": {
+		"docs/architecture/rho-product-architecture.md": {
 			"contracts/review",
 			"contracts/verify",
 		},
-		"docs/architecture/hawk-contract-spec.md": {
+		"docs/architecture/rho-contract-spec.md": {
 			"contracts/review",
 			"contracts/verify",
 		},

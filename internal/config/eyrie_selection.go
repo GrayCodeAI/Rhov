@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 type (
@@ -29,7 +29,7 @@ func EffectiveSelectionWithSettings(ctx context.Context, settings Settings, opts
 	return engine.EffectiveSelection(ctx, opts)
 }
 
-// ActiveModel returns the selected model from eyrie provider.json (not hawk settings).
+// ActiveModel returns the selected model from eyrie provider.json (not rho settings).
 func ActiveModel(ctx context.Context) string {
 	if ctx == nil {
 		ctx = context.Background()

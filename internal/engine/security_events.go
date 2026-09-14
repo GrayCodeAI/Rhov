@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/GrayCodeAI/hawk/internal/securitylog"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/securitylog"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // securityLog is the session's tamper-evident event log. It is opened lazily

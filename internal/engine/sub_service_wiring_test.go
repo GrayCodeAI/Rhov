@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // TestSession_NewSessionWithClient_WiresAllSubServices proves that the
@@ -17,7 +17,7 @@ import (
 // s.Tools() without losing backward compat.
 func TestSession_NewSessionWithClient_WiresAllSubServices(t *testing.T) {
 	registry := tool.NewRegistry()
-	s := NewSession("anthropic", "claude-sonnet-4-20250514", "you are hawk", registry)
+	s := NewSession("anthropic", "claude-sonnet-4-20250514", "you are rho", registry)
 
 	// ChatService: provider, model, client, router, rate limiter.
 	if s.ChatLLM() == nil {
@@ -67,8 +67,8 @@ func TestSession_NewSessionWithClient_WiresAllSubServices(t *testing.T) {
 	if s.Persistence() == nil {
 		t.Fatal("Persistence() should not be nil after NewSessionWithClient")
 	}
-	if got := s.Persistence().System(); got != "you are hawk" {
-		t.Errorf("Persistence().System() = %q, want %q", got, "you are hawk")
+	if got := s.Persistence().System(); got != "you are rho" {
+		t.Errorf("Persistence().System() = %q, want %q", got, "you are rho")
 	}
 	if got := s.Persistence().MessageCount(); got != 0 {
 		t.Errorf("Persistence().MessageCount() = %d, want 0", got)

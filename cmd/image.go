@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/tui"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/tui"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // ImageAttachment represents an image ready to be attached to a message.

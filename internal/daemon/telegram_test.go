@@ -28,22 +28,22 @@ func newIPv4TelegramServer(t *testing.T, h http.Handler) *httptest.Server {
 	return srv
 }
 
-// telegramMockAPI captures sendMessage calls and serves a fake Telegram + hawk
+// telegramMockAPI captures sendMessage calls and serves a fake Telegram + rho
 // endpoint. The Telegram bot API base is hardcoded in telegram.go, so we instead
 // drive handleMessage directly and observe outbound sends via a mock daemon.
 func TestTelegram_HandleMessage_Authorization(t *testing.T) {
-	// Mock hawk daemon /v1/chat.
-	hawk := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, ChatResponse{Response: "hawk-reply"})
+	// Mock rho daemon /v1/chat.
+	rho := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, ChatResponse{Response: "rho-reply"})
 	}))
-	defer hawk.Close()
+	defer rho.Close()
 
 	// Mock Telegram sendMessage endpoint by intercepting via a custom transport.
 	var mu sync.Mutex
 	var sends []string
 	tg := newTelegramGatewayFromConfig(
 		TelegramConfig{Token: "tok", PairingCode: "open"},
-		hawk.URL, "apikey",
+		rho.URL, "apikey",
 	)
 	tg.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		if strings.Contains(req.URL.Path, "/sendMessage") {
@@ -53,7 +53,7 @@ func TestTelegram_HandleMessage_Authorization(t *testing.T) {
 			mu.Unlock()
 			return jsonResp(`{"ok":true}`), nil
 		}
-		// forward-to-hawk goes to the real mock server; let it through.
+		// forward-to-rho goes to the real mock server; let it through.
 		return http.DefaultTransport.RoundTrip(req)
 	})}
 
@@ -64,13 +64,13 @@ func TestTelegram_HandleMessage_Authorization(t *testing.T) {
 		return m
 	}
 
-	// 1. Unauthorized non-pair message -> "Unauthorized" reply, no hawk call.
+	// 1. Unauthorized non-pair message -> "Unauthorized" reply, no rho call.
 	tg.handleMessage(context.Background(), mkMsg("hello"))
 	// 2. Wrong pairing code -> failure reply.
 	tg.handleMessage(context.Background(), mkMsg("/pair wrong"))
 	// 3. Correct pairing code -> paired reply.
 	tg.handleMessage(context.Background(), mkMsg("/pair open"))
-	// 4. Now authorized -> hawk reply forwarded.
+	// 4. Now authorized -> rho reply forwarded.
 	tg.handleMessage(context.Background(), mkMsg("do something"))
 
 	mu.Lock()
@@ -87,8 +87,8 @@ func TestTelegram_HandleMessage_Authorization(t *testing.T) {
 	if !strings.Contains(sends[2], "Paired") {
 		t.Errorf("send[2]=%q want Paired", sends[2])
 	}
-	if sends[3] != "hawk-reply" {
-		t.Errorf("send[3]=%q want hawk-reply", sends[3])
+	if sends[3] != "rho-reply" {
+		t.Errorf("send[3]=%q want rho-reply", sends[3])
 	}
 	if !tg.auth.allowed("alice") {
 		t.Errorf("alice should be allowed after pairing")
@@ -112,16 +112,16 @@ func TestTelegramSenderID(t *testing.T) {
 
 func TestTelegram_BareConstructorFailsClosed(t *testing.T) {
 	// The bare constructor seeds an empty authorizer, so it must refuse all
-	// senders (no pairing code / allowlist) rather than forwarding to hawk.
-	hawkCalled := false
-	hawk := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		hawkCalled = true
+	// senders (no pairing code / allowlist) rather than forwarding to rho.
+	rhoCalled := false
+	rho := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rhoCalled = true
 		writeJSON(w, http.StatusOK, ChatResponse{Response: "ok"})
 	}))
-	defer hawk.Close()
+	defer rho.Close()
 
 	var sends []string
-	tg := NewTelegramGateway("tok", hawk.URL)
+	tg := NewTelegramGateway("tok", rho.URL)
 	tg.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		if strings.Contains(req.URL.Path, "/sendMessage") {
 			_ = req.ParseForm()
@@ -137,8 +137,8 @@ func TestTelegram_BareConstructorFailsClosed(t *testing.T) {
 	if len(sends) != 1 || !strings.Contains(sends[0], "Unauthorized") {
 		t.Fatalf("expected an Unauthorized reply, got %v", sends)
 	}
-	if hawkCalled {
-		t.Fatal("bare constructor must not forward unauthorized messages to hawk")
+	if rhoCalled {
+		t.Fatal("bare constructor must not forward unauthorized messages to rho")
 	}
 }
 
@@ -166,14 +166,14 @@ func TestTelegramSafeFileName(t *testing.T) {
 }
 
 func TestTelegramVoiceWithoutTranscriberFallsBackToText(t *testing.T) {
-	hawk := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, ChatResponse{Response: "hawk-reply"})
+	rho := newIPv4TelegramServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, ChatResponse{Response: "rho-reply"})
 	}))
-	defer hawk.Close()
+	defer rho.Close()
 
 	// No STT transcriber installed: a voice message must fall back to the
 	// existing text path (transcribeAudio returns "" with no reply).
-	tg := newTelegramGatewayFromConfig(TelegramConfig{Token: "tok", AllowList: []string{"user"}}, hawk.URL, "k")
+	tg := newTelegramGatewayFromConfig(TelegramConfig{Token: "tok", AllowList: []string{"user"}}, rho.URL, "k")
 	tg.handleMessage(context.Background(), &TelegramMessage{
 		Text: "hello",
 		Chat: struct {

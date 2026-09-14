@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func TestFilePathCompletions_CurrentDir(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	contracts "github.com/GrayCodeAI/hawk/internal/contracts/policy"
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestPermissionPromptTimeoutClearsStaleState(t *testing.T) {

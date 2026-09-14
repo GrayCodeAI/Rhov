@@ -10,7 +10,7 @@ import (
 func TestSetGatewayRegion_XiaomiClearsStaleBaseHost(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("HAWK_CONFIG_DIR", dir)
+	t.Setenv("RHO_CONFIG_DIR", dir)
 	t.Setenv("EYRIE_CONFIG_DIR", dir)
 	t.Setenv("XIAOMI_MIMO_TOKEN_PLAN_BASE_URL", "https://caller-owned.example.test/v1")
 	cfg := &eyriecfg.ProviderConfig{
@@ -36,7 +36,7 @@ func TestSetGatewayRegion_XiaomiClearsStaleBaseHost(t *testing.T) {
 func TestNeedsGatewayRegion_XiaomiInvalidAndMissing(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("HAWK_CONFIG_DIR", dir)
+	t.Setenv("RHO_CONFIG_DIR", dir)
 	t.Setenv("EYRIE_CONFIG_DIR", dir)
 
 	if !NeedsGatewayRegion(ProviderXiaomiTokenPlan) {

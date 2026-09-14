@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -91,23 +91,23 @@ func TestFormatContextUsedLabel(t *testing.T) {
 }
 
 func TestChatConnectionStatus_WithModel(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	isolateCredentialHome(t)
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	ctx := context.Background()
 	if err := store.Set(ctx, gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
-	_ = hawkconfig.SetActiveProvider(ctx, "openrouter")
-	_ = hawkconfig.SetActiveModel(ctx, "moonshotai/kimi-k2.6")
-	hawkconfig.RefreshConfigCredSnapshot(ctx)
+	rhoconfig.InvalidateConfigUICache()
+	_ = rhoconfig.SetActiveProvider(ctx, "openrouter")
+	_ = rhoconfig.SetActiveModel(ctx, "moonshotai/kimi-k2.6")
+	rhoconfig.RefreshConfigCredSnapshot(ctx)
 
 	sess := engine.NewSession("openrouter", "moonshotai/kimi-k2.6", "", nil)
 
@@ -125,23 +125,23 @@ func TestChatConnectionStatus_WithModel(t *testing.T) {
 }
 
 func TestChatConnectionStatus_KeyNoModel(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	isolateCredentialHome(t)
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	ctx := context.Background()
 	if err := store.Set(ctx, gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
-	_ = hawkconfig.ClearActiveSelection(ctx)
-	_ = hawkconfig.SetActiveProvider(ctx, "openrouter")
-	hawkconfig.RefreshConfigCredSnapshot(ctx)
+	rhoconfig.InvalidateConfigUICache()
+	_ = rhoconfig.ClearActiveSelection(ctx)
+	_ = rhoconfig.SetActiveProvider(ctx, "openrouter")
+	rhoconfig.RefreshConfigCredSnapshot(ctx)
 
 	m := chatModel{session: &engine.Session{}}
 	got := m.chatConnectionStatus()
@@ -151,22 +151,22 @@ func TestChatConnectionStatus_KeyNoModel(t *testing.T) {
 }
 
 func TestChatConnectionStatus_NoGatewayNoModel(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	isolateCredentialHome(t)
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	ctx := context.Background()
 	if err := store.Set(ctx, gateway.AccountForEnv("ANTHROPIC_API_KEY"), "sk-ant-test-key-long-enough"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
-	_ = hawkconfig.ClearActiveSelection(ctx)
-	hawkconfig.RefreshConfigCredSnapshot(ctx)
+	rhoconfig.InvalidateConfigUICache()
+	_ = rhoconfig.ClearActiveSelection(ctx)
+	rhoconfig.RefreshConfigCredSnapshot(ctx)
 
 	m := chatModel{session: &engine.Session{}}
 	got := m.chatConnectionStatus()
@@ -183,7 +183,7 @@ func TestStartupWarmMsg_RefreshesFooterCache(t *testing.T) {
 		statusLeftBranch: "main",
 		connStatusVal:    "OpenRouter · gpt-4",
 		connStatusKey:    "cache-key",
-		welcomeSetup:     hawkconfig.SetupState{NeedsSetup: true},
+		welcomeSetup:     rhoconfig.SetupState{NeedsSetup: true},
 		welcomeAgentsOK:  true,
 	})
 	next := nextModel.(chatModel)
@@ -247,7 +247,7 @@ func TestShowWelcomeBanner_WithMessages(t *testing.T) {
 
 func TestBuildWelcomeMessage_UsesDisplayVersion(t *testing.T) {
 	SetVersion("dev")
-	msg := buildWelcomeMessage(nil, "", nil, nil, hawkconfig.Settings{}, 0, false, 80, 24)
+	msg := buildWelcomeMessage(nil, "", nil, nil, rhoconfig.Settings{}, 0, false, 80, 24)
 	if strings.Contains(msg, "vdev") {
 		t.Fatal("welcome should not show vdev; DisplayVersion should read VERSION file or dev")
 	}

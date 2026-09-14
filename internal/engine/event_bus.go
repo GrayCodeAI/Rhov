@@ -24,7 +24,7 @@ type Event struct {
 	Payload interface{}
 }
 
-// EventBus is a lightweight pub/sub system for decoupling hawk components.
+// EventBus is a lightweight pub/sub system for decoupling rho components.
 type EventBus struct {
 	mu   sync.RWMutex
 	subs map[EventType][]chan Event

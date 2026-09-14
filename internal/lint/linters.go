@@ -103,10 +103,11 @@ func (c *customLinter) Name() string { return "custom:" + c.lang }
 
 func (c *customLinter) Lint(ctx context.Context, file string) Result {
 	command := c.command
+	quoted := shellQuote(file)
 	if strings.Contains(command, "{file}") {
-		command = strings.ReplaceAll(command, "{file}", file)
+		command = strings.ReplaceAll(command, "{file}", quoted)
 	} else {
-		command = command + " " + file
+		command = command + " " + quoted
 	}
 	cmd := exec.CommandContext(ctx, "sh", "-c", command) // #nosec G204 -- command from user-supplied --lint config, not external/untrusted input
 	cmd.Dir = filepath.Dir(file)
@@ -118,6 +119,14 @@ func (c *customLinter) Lint(ctx context.Context, file string) Result {
 		out = err.Error()
 	}
 	return Result{Linter: c.Name(), Output: out, OK: false, Ran: true}
+}
+
+// shellQuote wraps s in single quotes so it is passed to a shell as one
+// literal argument. Embedded single quotes are escaped with the standard
+// '\” sequence. This prevents a workspace-controlled filename containing
+// shell metacharacters from injecting commands into a custom linter command.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // ParseCustomFlag parses a "--lint 'lang: cmd'" style value into a (lang, cmd)

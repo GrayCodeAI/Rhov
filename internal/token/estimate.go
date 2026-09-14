@@ -1,4 +1,4 @@
-// Package token is Hawk's self-contained token/context engine. It replaces the
+// Package token is Rho's self-contained token/context engine. It replaces the
 // former external shrike dependency with local implementations of token
 // estimation, compression, usage tracking, secret detection, code chunking,
 // and runtime-graph projection. The public surface is unchanged so existing

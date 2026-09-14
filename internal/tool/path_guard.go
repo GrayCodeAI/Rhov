@@ -11,6 +11,11 @@ import (
 func validatePathAllowed(ctx context.Context, path string) error {
 	tc := GetToolContext(ctx)
 	if tc == nil {
+		// No ToolContext: there is no allowed-directory policy to enforce.
+		// Model-facing tools are always dispatched with a ToolContext attached
+		// (engine/tool_service.go), so this branch is only reachable from
+		// internal helpers and tests. Those internal callers use the pinned
+		// helpers below, which still pin the parent directory with os.Root.
 		return nil
 	}
 	path = strings.TrimSpace(path)
@@ -61,6 +66,14 @@ func guardedRootPath(ctx context.Context, path string) (*os.Root, string, error)
 	if err := validatePathAllowed(ctx, path); err != nil {
 		return nil, "", err
 	}
+	return openGuardedRoot(path)
+}
+
+// openGuardedRoot pins the canonical parent directory of a path with os.Root
+// but performs no allowed-directory check. It is reserved for internal
+// callers (the pinned file helpers) that are not driven by the model and
+// therefore have no ToolContext to enforce against.
+func openGuardedRoot(path string) (*os.Root, string, error) {
 	absPath, err := guardedAbs(path)
 	if err != nil {
 		return nil, "", err
@@ -92,13 +105,25 @@ func writeGuardedFile(ctx context.Context, path string, data []byte, perm os.Fil
 
 // readPinnedFile and writePinnedFile are for lower-level tool APIs that do not
 // carry a context. They still pin the canonical parent directory with os.Root,
-// preventing a symlink swap between path resolution and the file operation.
+// preventing a symlink swap between path resolution and the file operation,
+// but deliberately skip the allowed-directory check (there is no ToolContext
+// to enforce).
 func readPinnedFile(path string) ([]byte, error) {
-	return readGuardedFile(context.Background(), path)
+	root, name, err := openGuardedRoot(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	return root.ReadFile(name)
 }
 
 func writePinnedFile(path string, data []byte, perm os.FileMode) error {
-	return writeGuardedFile(context.Background(), path, data, perm)
+	root, name, err := openGuardedRoot(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	return root.WriteFile(name, data, perm)
 }
 
 // ReadPinnedFile exposes the same root-pinned read for engine components that

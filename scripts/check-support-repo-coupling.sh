@@ -52,7 +52,7 @@ if [[ -n "${violations}" ]]; then
   echo "forbidden cross-repo peer imports found:"
   echo "${violations}"
   echo
-  echo "support engines must not import each other; Hawk is the orchestrator and shared contracts belong in hawk's internal/contracts"
+  echo "support engines must not import each other; Rho is the orchestrator and shared contracts belong in rho's internal/contracts"
   exit 1
 fi
 

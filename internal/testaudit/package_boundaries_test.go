@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	hawkModule  = "github.com/GrayCodeAI/hawk"
+	rhoModule   = "github.com/GrayCodeAI/rho"
 	eyrieModule = "github.com/GrayCodeAI/eyrie"
 )
 
 // supportEngines lists the sibling repos checked for boundary violations.
-// Hawk now depends only on eyrie.
+// Rho now depends only on eyrie.
 var supportEngines = []string{"eyrie"}
 
 type packageImport struct {
@@ -34,12 +34,12 @@ type packageImport struct {
 func TestPackageDependencyGraph(t *testing.T) {
 	root := repoRoot(t)
 
-	checkHawkEyrieFacade(t, root)
-	checkHawkInternalLayers(t, root)
+	checkRhoEyrieFacade(t, root)
+	checkRhoInternalLayers(t, root)
 	checkSupportRepositoryBoundaries(t, root)
 }
 
-func checkHawkEyrieFacade(t *testing.T, root string) {
+func checkRhoEyrieFacade(t *testing.T, root string) {
 	paths := []string{filepath.Join(root, "internal"), filepath.Join(root, "cmd")}
 	var violations []string
 
@@ -51,7 +51,7 @@ func checkHawkEyrieFacade(t *testing.T, root string) {
 			if imp.path == eyrieModule+"/engine" || strings.HasPrefix(imp.path, eyrieModule+"/engine/") {
 				continue
 			}
-			// Hawk uses the full vendored Eyrie API surface for provider, graph,
+			// Rho uses the full vendored Eyrie API surface for provider, graph,
 			// and tooling contracts that the engine facade does not re-export.
 			switch imp.path {
 			case eyrieModule + "/llm", eyrieModule + "/graph", eyrieModule + "/tools":
@@ -61,10 +61,10 @@ func checkHawkEyrieFacade(t *testing.T, root string) {
 		}
 	}
 
-	assertNoPackageViolations(t, "Hawk Eyrie facade", violations)
+	assertNoPackageViolations(t, "Rho Eyrie facade", violations)
 }
 
-func checkHawkInternalLayers(t *testing.T, root string) {
+func checkRhoInternalLayers(t *testing.T, root string) {
 	rules := map[string][]string{
 		"internal/engine":      {"cmd", "internal/daemon", "internal/platform", "internal/bridge"},
 		"internal/permissions": {"cmd", "internal/daemon", "internal/engine", "internal/platform", "internal/bridge"},
@@ -80,18 +80,18 @@ func checkHawkInternalLayers(t *testing.T, root string) {
 			if err != nil {
 				t.Fatalf("relative path for %s: %v", imp.file, err)
 			}
-			if !strings.HasPrefix(imp.path, hawkModule+"/") {
+			if !strings.HasPrefix(imp.path, rhoModule+"/") {
 				continue
 			}
 			for _, prefix := range forbidden {
-				if strings.HasPrefix(imp.path, hawkModule+"/"+prefix+"/") || imp.path == hawkModule+"/"+prefix {
+				if strings.HasPrefix(imp.path, rhoModule+"/"+prefix+"/") || imp.path == rhoModule+"/"+prefix {
 					violations = append(violations, fmt.Sprintf("%s:%d imports %s (%s); %s must not depend on %s", filepath.ToSlash(rel), imp.line, imp.path, source, source, prefix))
 				}
 			}
 		}
 	}
 
-	assertNoPackageViolations(t, "Hawk internal layers", violations)
+	assertNoPackageViolations(t, "Rho internal layers", violations)
 }
 
 func checkSupportRepositoryBoundaries(t *testing.T, root string) {
@@ -100,8 +100,8 @@ func checkSupportRepositoryBoundaries(t *testing.T, root string) {
 	for _, owner := range supportEngines {
 		for _, repoRoot := range repositoryRoots(root, owner) {
 			for _, imp := range productionImports(t, root, repoRoot) {
-				if strings.HasPrefix(imp.path, hawkModule+"/internal/") {
-					violations = append(violations, formatImportViolation(root, imp, "support engines must not import Hawk internals"))
+				if strings.HasPrefix(imp.path, rhoModule+"/internal/") {
+					violations = append(violations, formatImportViolation(root, imp, "support engines must not import Rho internals"))
 					continue
 				}
 

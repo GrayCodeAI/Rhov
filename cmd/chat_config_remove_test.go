@@ -4,22 +4,22 @@ import (
 	"strings"
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 func TestConfigGatewayRows_ShowsSavedKey(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 	if err := store.Set(t.Context(), gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 
 	rows := chatModel{}.configGatewayRows()
 	var found bool
@@ -35,36 +35,36 @@ func TestConfigGatewayRows_ShowsSavedKey(t *testing.T) {
 }
 
 func TestConfiguredCredentialProviders_UsedByGatewaysTab(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 	if err := store.Set(t.Context(), gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 
-	got := hawkconfig.ConfiguredCredentialProviders()
+	got := rhoconfig.ConfiguredCredentialProviders()
 	if len(got) != 1 || got[0] != "openrouter" {
 		t.Fatalf("configured = %v", got)
 	}
 }
 
 func TestRemoveCredentialAsync(t *testing.T) {
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 	if err := store.Set(t.Context(), gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatalf("store.Set: %v", err)
 	}
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 
 	cmd := removeCredentialAsync("openrouter")
 	if cmd == nil {

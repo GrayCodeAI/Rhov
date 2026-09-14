@@ -7,15 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func TestDoctorOutputContainsSections(t *testing.T) {
 	preserveCLICompilerVersionState(t)
 	version = "test-dx-version"
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Provider: "openai",
 		Model:    "gpt-4o",
 	}
@@ -23,7 +23,7 @@ func TestDoctorOutputContainsSections(t *testing.T) {
 	out := doctorOutput(settings)
 
 	sections := []string{
-		"Hawk Doctor",
+		"Rho Doctor",
 		"Go version:",
 		"OS:",
 		"Arch:",
@@ -50,10 +50,10 @@ func TestDoctorOutputContainsSections(t *testing.T) {
 func TestDoctorOutputWithMCPServers(t *testing.T) {
 	preserveCLICompilerVersionState(t)
 	version = "test-dx-version"
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Provider: "anthropic",
 		Model:    "claude-sonnet-4-20250514",
-		MCPServers: []hawkconfig.MCPServerConfig{
+		MCPServers: []rhoconfig.MCPServerConfig{
 			{Name: "test-mcp", Command: "test-cmd"},
 		},
 	}
@@ -67,10 +67,10 @@ func TestDoctorOutputWithMCPServers(t *testing.T) {
 func TestDoctorJSONIsValidStructuredOutput(t *testing.T) {
 	preserveCLICompilerVersionState(t)
 	version = "test-dx-version"
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Provider: "anthropic",
 		Model:    "claude-sonnet-4-20250514",
-		MCPServers: []hawkconfig.MCPServerConfig{
+		MCPServers: []rhoconfig.MCPServerConfig{
 			{Name: "test-mcp", Command: "test-cmd"},
 		},
 	}
@@ -168,7 +168,7 @@ func TestExportMarkdownCreatesFile(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	messages := []displayMsg{
-		{role: "user", content: "Hello hawk"},
+		{role: "user", content: "Hello rho"},
 		{role: "assistant", content: "Hello! How can I help?"},
 		{role: "system", content: "System message here"},
 		{role: "welcome", content: "Should be skipped"},
@@ -189,10 +189,10 @@ func TestExportMarkdownCreatesFile(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "# Hawk Session: test-export-id") {
+	if !strings.Contains(content, "# Rho Session: test-export-id") {
 		t.Errorf("export missing session header")
 	}
-	if !strings.Contains(content, "Hello hawk") {
+	if !strings.Contains(content, "Hello rho") {
 		t.Errorf("export missing user message")
 	}
 	if !strings.Contains(content, "Hello! How can I help?") {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func (m *chatModel) ensureDeferredSystemContext() {
@@ -32,12 +32,12 @@ func explicitSelection(ctx context.Context) (provider, model string) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return strings.TrimSpace(hawkconfig.ActiveGateway(ctx)), strings.TrimSpace(hawkconfig.ActiveModel(ctx))
+	return strings.TrimSpace(rhoconfig.ActiveGateway(ctx)), strings.TrimSpace(rhoconfig.ActiveModel(ctx))
 }
 
 // syncSessionFromPersistedSelection copies explicit eyrie provider.json
 // selection into the live session when the session fields are empty.
-// It intentionally avoids runtime defaults so Hawk can preserve the
+// It intentionally avoids runtime defaults so Rho can preserve the
 // "gateway selected, model still missing" setup state.
 func syncSessionFromPersistedSelection(sess *engine.Session) {
 	if sess == nil {

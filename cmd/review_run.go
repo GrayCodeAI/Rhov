@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	reviewcontracts "github.com/GrayCodeAI/hawk/internal/contracts/review"
-	contracts "github.com/GrayCodeAI/hawk/internal/contracts/types"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/types"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	reviewcontracts "github.com/GrayCodeAI/rho/internal/contracts/review"
+	contracts "github.com/GrayCodeAI/rho/internal/contracts/types"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/types"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 	"github.com/spf13/cobra"
 )
 
@@ -121,9 +121,9 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	// Resolve the provider through Hawk's Eyrie engine boundary.
+	// Resolve the provider through Rho's Eyrie engine boundary.
 	ctx := context.Background()
-	selection := hawkconfig.EffectiveSelection(ctx, hawkconfig.SelectionOptions{
+	selection := rhoconfig.EffectiveSelection(ctx, rhoconfig.SelectionOptions{
 		ProviderOverride: strings.TrimSpace(provider),
 		ModelOverride:    strings.TrimSpace(reviewRunModel),
 	})
@@ -144,7 +144,7 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		defer cancel()
 	}
 
-	// Run Hawk's own multi-concern review pipeline through the provider.
+	// Run Rho's own multi-concern review pipeline through the provider.
 	concerns := DefaultConcerns()
 	if strings.TrimSpace(reviewRunConcerns) != "" {
 		wanted := map[string]bool{}

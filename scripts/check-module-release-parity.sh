@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Workspace release parity: verify every ecosystem module Hawk requires
+# Workspace release parity: verify every ecosystem module Rho requires
 # resolves to a published, reachable commit. This is a multi-repository
 # check; the repositories are sibling checkouts, not Git submodules.
-# Run from the Hawk repository root.
+# Run from the Rho repository root.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="${ROOT_DIR}/ecosystem.yaml"
 repos=()
 while IFS= read -r repo; do
-  [[ "${repo}" != "hawk" && -n "${repo}" ]] && repos+=("${repo}")
+  [[ "${repo}" != "rho" && -n "${repo}" ]] && repos+=("${repo}")
 done < <("${ROOT_DIR}/scripts/ecosystem-manifest.sh" list workspace)
 failed=0
 

@@ -7,23 +7,23 @@ Linux Foundation / Agentic AI Foundation)
 
 ## Executive Decision
 
-Goose's audit against hawk found that most of its runtime concepts already have
-a native hawk implementation (providers via eyrie, sessions, MCP, ACP, skills,
-native sandboxing, permissions). The genuinely novel, hawk-relevant ideas are
-adopted here in Go, without copying Rust code or weakening hawk's native
+Goose's audit against rho found that most of its runtime concepts already have
+a native rho implementation (providers via eyrie, sessions, MCP, ACP, skills,
+native sandboxing, permissions). The genuinely novel, rho-relevant ideas are
+adopted here in Go, without copying Rust code or weakening rho's native
 sandboxing model.
 
-## Existing Hawk Capabilities
+## Existing Rho Capabilities
 
-| Goose package/concept | Hawk implementation | Decision |
+| Goose package/concept | Rho implementation | Decision |
 |---|---|---|
-| Provider abstraction (~36) | sibling `eyrie` (28 built-in + 75+ live) | Keep hawk |
-| Sessions (SQLite WAL) | `internal/session` JSONL+WAL+zstd + sibling `swift` (Swift) | Keep hawk |
-| MCP (client+server) | `internal/mcp` + sibling `falcon` | Keep hawk |
-| ACP | `internal/acp` | Keep hawk |
-| Extensions/skills | `internal/plugin`, skills registry | Keep hawk |
-| OS sandboxing | `internal/sandbox` seatbelt/landlock/seccomp/ACL | **hawk ahead** (goose has none) |
-| OSV malware gate | `internal/permissions/osv_checker.go` (`CheckCommand`/`CheckPackage`) | Keep hawk |
+| Provider abstraction (~36) | sibling `eyrie` (28 built-in + 75+ live) | Keep rho |
+| Sessions (SQLite WAL) | `internal/session` JSONL+WAL+zstd + sibling `swift` (Swift) | Keep rho |
+| MCP (client+server) | `internal/mcp` + sibling `falcon` | Keep rho |
+| ACP | `internal/acp` | Keep rho |
+| Extensions/skills | `internal/plugin`, skills registry | Keep rho |
+| OS sandboxing | `internal/sandbox` seatbelt/landlock/seccomp/ACL | **rho ahead** (goose has none) |
+| OSV malware gate | `internal/permissions/osv_checker.go` (`CheckCommand`/`CheckPackage`) | Keep rho |
 | Hints / AGENTS.md | `internal/config` AGENTS.md loader | **Adopt** @file references + subdir hints |
 | Context compaction | sibling `shrike` (Shrike) + `internal/engine/compaction` | **Adopt** structured-summary retry ladder |
 | Extension env safety | none (only OSV gate) | **Adopt** disallowed-env-var filter |
@@ -31,7 +31,7 @@ sandboxing model.
 
 ## Priority Model
 
-- **P0:** Security-relevant, bounded, hawk-native adoptions.
+- **P0:** Security-relevant, bounded, rho-native adoptions.
 - **P1:** High-value product improvements.
 - **Defer:** Larger or cross-cutting changes needing an RFC.
 
@@ -114,7 +114,7 @@ strict size/depth budgets — matching goose `hints/import_files.rs`.
 
 ### Goal
 
-Upgrade hawk's context compaction to a structured summary with a progressive
+Upgrade rho's context compaction to a structured summary with a progressive
 tool-response-dropping retry ladder on overflow, and token-estimator-backed
 accounting, matching `goose-context-management`.
 
@@ -142,18 +142,18 @@ accounting, matching `goose-context-management`.
 
 ## Deliberately Deferred
 
-- Goose's SQLite session store (`usage_ledger`, token/cost schema): hawk's
+- Goose's SQLite session store (`usage_ledger`, token/cost schema): rho's
   JSONL/WAL + swift + cost tracker cover it; a schema migration is a larger
   change and is tracked separately.
 - MCP Apps / agent-provided HTML UIs: novel but requires UI-layer design.
 - ACP-as-provider wrapping other CLIs: larger provider abstraction change.
 - Local-inference tool emulation / toolshim: depends on eyrie's local-model
   path.
-- Recipe security scanner / cron recipes: hawk already has schedule/cron.
+- Recipe security scanner / cron recipes: rho already has schedule/cron.
 
 ## Verification
 
 - `go test ./...` full suite.
-- `make vet`, `make lint`, `hawk verify`.
+- `make vet`, `make lint`, `rho verify`.
 - Focused tests for the env filter, AGENTS.md references, and compaction retry.
 - markdownlint on this document.

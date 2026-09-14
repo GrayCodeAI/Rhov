@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // TestSessionLifecycle tests the full session lifecycle.
@@ -21,7 +21,7 @@ func TestSessionLifecycle(t *testing.T) {
 		t.Fatal("expected session")
 	}
 
-	// Test basic properties: no implicit provider/model defaults in Hawk.
+	// Test basic properties: no implicit provider/model defaults in Rho.
 	if sess.Provider() != "" {
 		t.Fatalf("expected empty provider by default, got %q", sess.Provider())
 	}

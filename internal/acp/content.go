@@ -17,7 +17,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/attachment"
+	"github.com/GrayCodeAI/rho/internal/attachment"
 )
 
 // Raster formats shared by ACP image blocks and the core attachment

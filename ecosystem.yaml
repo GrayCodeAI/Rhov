@@ -6,17 +6,17 @@ schema_version: 1
 # file instead of carrying its own repo-name list. Only repositories that
 # exist are listed: removed siblings stay out until they are restored.
 contracts:
-  portable_graph_schema: hawk.graph/v1
+  portable_graph_schema: rho.graph/v1
   cloud_graph_schema: graycode-cloud.graph/v1
   usage_event: usage.recorded.v1
 
 repositories:
-  - directory: hawk
-    github_repo: hawk
-    product_name: Hawk
+  - directory: rho
+    github_repo: rho
+    product_name: Rho
     kind: product
     language: go
-    module: github.com/GrayCodeAI/hawk
+    module: github.com/GrayCodeAI/rho
     workspace: true
 
   - directory: eyrie
@@ -30,7 +30,7 @@ repositories:
 
   - directory: graycode-skills
     github_repo: graycode-skills
-    product_name: Hawk Community Skills
+    product_name: Rho Community Skills
     kind: extension
     language: python
     workspace: false

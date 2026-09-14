@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/netutil"
+	"github.com/GrayCodeAI/rho/internal/netutil"
 )
 
 const (

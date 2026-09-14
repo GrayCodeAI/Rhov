@@ -1,5 +1,5 @@
-// Package daemon provides a Telegram gateway for hawk.
-// Allows users to interact with hawk via Telegram bot messages.
+// Package daemon provides a Telegram gateway for rho.
+// Allows users to interact with rho via Telegram bot messages.
 package daemon
 
 import (
@@ -15,13 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/stt"
+	"github.com/GrayCodeAI/rho/internal/stt"
 )
 
-// TelegramGateway connects hawk to a Telegram bot.
+// TelegramGateway connects rho to a Telegram bot.
 type TelegramGateway struct {
 	Token      string
-	DaemonAddr string // hawk daemon address to forward messages to
+	DaemonAddr string // rho daemon address to forward messages to
 	client     *http.Client
 	offset     int
 
@@ -188,7 +188,7 @@ func (tg *TelegramGateway) handleMessage(ctx context.Context, msg *TelegramMessa
 	sender := telegramSenderID(msg)
 	if isPair, ok := tg.auth.tryPair(sender, msg.Text); isPair {
 		if ok {
-			tg.reply(ctx, msg.Chat.ID, "Paired. You can now chat with hawk.")
+			tg.reply(ctx, msg.Chat.ID, "Paired. You can now chat with rho.")
 		} else {
 			tg.reply(ctx, msg.Chat.ID, "Pairing failed: invalid code.")
 		}
@@ -213,8 +213,8 @@ func (tg *TelegramGateway) handleMessage(ctx context.Context, msg *TelegramMessa
 		}
 	}
 
-	// Forward to hawk daemon
-	response, err := tg.forwardToHawk(ctx, prompt)
+	// Forward to rho daemon
+	response, err := tg.forwardToRho(ctx, prompt)
 	if err != nil {
 		response = fmt.Sprintf("Error: %v", err)
 	}
@@ -311,7 +311,7 @@ func (tg *TelegramGateway) reply(ctx context.Context, chatID int64, text string)
 	}
 }
 
-func (tg *TelegramGateway) forwardToHawk(ctx context.Context, prompt string) (string, error) {
+func (tg *TelegramGateway) forwardToRho(ctx context.Context, prompt string) (string, error) {
 	// Use json.Marshal for safe JSON encoding instead of fmt.Sprintf
 	// with %q, which does not handle all JSON edge cases (e.g., control
 	// characters, surrogate pairs).
@@ -337,7 +337,7 @@ func (tg *TelegramGateway) forwardToHawk(ctx context.Context, prompt string) (st
 	// Limit response body to 1 MiB to prevent memory exhaustion.
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		slog.Warn("partial read in forwardToHawk response", "error", err)
+		slog.Warn("partial read in forwardToRho response", "error", err)
 	}
 	var chatResp struct {
 		Response string `json:"response"`

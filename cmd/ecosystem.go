@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +13,7 @@ var ecosystemJSON bool
 var ecosystemCmd = &cobra.Command{
 	Use:   "ecosystem",
 	Short: "Show eyrie and token-pipeline integration status",
-	Long:  "Print the ecosystem panel summarizing the LLM provider runtime (eyrie) and the local token/compression pipeline. Same block as the top of hawk doctor.",
+	Long:  "Print the ecosystem panel summarizing the LLM provider runtime (eyrie) and the local token/compression pipeline. Same block as the top of rho doctor.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		settings, err := loadEffectiveSettings()
 		if err != nil {
@@ -24,12 +24,12 @@ var ecosystemCmd = &cobra.Command{
 			providerName = "auto"
 		}
 		if ecosystemJSON {
-			report := hawkconfig.BuildEcosystemReport(context.Background(), providerName, modelName)
+			report := rhoconfig.BuildEcosystemReport(context.Background(), providerName, modelName)
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 			return enc.Encode(report)
 		}
-		cmd.Println(hawkconfig.FormatEcosystemPanel(context.Background(), providerName, modelName))
+		cmd.Println(rhoconfig.FormatEcosystemPanel(context.Background(), providerName, modelName))
 		return nil
 	},
 }

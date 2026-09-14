@@ -3,7 +3,7 @@ package session
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 func setTestSessionsDir(t *testing.T, root string) string {

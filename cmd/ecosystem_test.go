@@ -4,16 +4,16 @@ import (
 	"strings"
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 )
 
 func TestEcosystemCmdRuns(t *testing.T) {
-	settings := hawkconfig.Settings{}
+	settings := rhoconfig.Settings{}
 	model, provider := effectiveModelAndProvider(settings)
 	if provider == "" {
 		provider = "auto"
 	}
-	out := hawkconfig.FormatEcosystemPanel(t.Context(), provider, model)
+	out := rhoconfig.FormatEcosystemPanel(t.Context(), provider, model)
 	if !strings.Contains(out, "Ecosystem (eyrie · token engine)") {
 		t.Fatalf("unexpected panel: %q", out)
 	}

@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/testutil"
+	"github.com/GrayCodeAI/rho/internal/testutil"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func TestDetectURLs_HTTPAndHTTPS(t *testing.T) {
@@ -153,13 +154,13 @@ func TestExtractHTML_MetaDescription(t *testing.T) {
 }
 
 func TestExtractJSON_PrettyPrints(t *testing.T) {
-	input := `{"name":"hawk","version":"1.0","active":true}`
+	input := `{"name":"rho","version":"1.0","active":true}`
 	result := ExtractJSON(input)
 
 	if !strings.Contains(result, "  ") {
 		t.Error("expected indented JSON output")
 	}
-	if !strings.Contains(result, `"name": "hawk"`) {
+	if !strings.Contains(result, `"name": "rho"`) {
 		t.Error("expected formatted key-value pair")
 	}
 }
@@ -329,7 +330,7 @@ func TestCachePreventsRefetch(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	ctx := context.Background()
+	ctx := tool.WithSSRFSkip(context.Background())
 
 	// First fetch should hit server.
 	_, err := scraper.Fetch(ctx, ts.URL)
@@ -358,7 +359,7 @@ func TestFetch_HTMLContent(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(context.Background(), ts.URL)
+	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
@@ -380,12 +381,12 @@ func TestFetch_HTMLContent(t *testing.T) {
 func TestFetch_JSONContent(t *testing.T) {
 	ts := testutil.NewLoopbackHTTPServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"name":"hawk","items":[1,2,3,4,5,6,7,8]}`)
+		fmt.Fprint(w, `{"name":"rho","items":[1,2,3,4,5,6,7,8]}`)
 	}))
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(context.Background(), ts.URL)
+	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
@@ -456,8 +457,8 @@ func TestNewURLScraper_Defaults(t *testing.T) {
 	if s.Timeout != 15*time.Second {
 		t.Errorf("expected Timeout=15s, got %v", s.Timeout)
 	}
-	if s.UserAgent != "hawk/1.0" {
-		t.Errorf("expected UserAgent='hawk/1.0', got '%s'", s.UserAgent)
+	if s.UserAgent != "rho/1.0" {
+		t.Errorf("expected UserAgent='rho/1.0', got '%s'", s.UserAgent)
 	}
 	if s.Cache == nil {
 		t.Error("expected non-nil cache map")
@@ -493,7 +494,7 @@ func TestTokenEstimate(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(context.Background(), ts.URL)
+	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}

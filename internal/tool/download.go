@@ -47,6 +47,9 @@ func (DownloadTool) Execute(ctx context.Context, input json.RawMessage) (string,
 	if err := validatePathAllowed(ctx, p.Destination); err != nil {
 		return "", err
 	}
+	if reason := IsSensitivePath(p.Destination); reason != "" {
+		return "", fmt.Errorf("write blocked: %s", reason)
+	}
 	pinnedURL, origHost, err := validateURLPublic(ctx, p.URL)
 	if err != nil {
 		return "", err

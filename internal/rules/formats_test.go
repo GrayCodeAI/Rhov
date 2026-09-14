@@ -79,9 +79,9 @@ func TestSplitSections_SingleSection(t *testing.T) {
 
 func TestSplitSections_SourcePreserved(t *testing.T) {
 	text := "## Test\n\nContent.\n"
-	rules := splitSections(text, FormatHawk)
-	if rules[0].Source != FormatHawk {
-		t.Errorf("source = %q, want %q", rules[0].Source, FormatHawk)
+	rules := splitSections(text, FormatRho)
+	if rules[0].Source != FormatRho {
+		t.Errorf("source = %q, want %q", rules[0].Source, FormatRho)
 	}
 }
 
@@ -233,7 +233,7 @@ func TestReadMDDir_MultipleFiles(t *testing.T) {
 	os.WriteFile(filepath.Join(rulesDir, "testing.md"), []byte("Write tests."), 0o644)
 	os.WriteFile(filepath.Join(rulesDir, "readme.txt"), []byte("Not an md file."), 0o644)
 
-	rules, err := readMDDir(rulesDir, ".md", FormatHawk)
+	rules, err := readMDDir(rulesDir, ".md", FormatRho)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,8 +244,8 @@ func TestReadMDDir_MultipleFiles(t *testing.T) {
 	names := map[string]bool{}
 	for _, r := range rules {
 		names[r.Name] = true
-		if r.Source != FormatHawk {
-			t.Errorf("source = %q, want %q", r.Source, FormatHawk)
+		if r.Source != FormatRho {
+			t.Errorf("source = %q, want %q", r.Source, FormatRho)
 		}
 	}
 	if !names["style"] {
@@ -263,7 +263,7 @@ func TestReadMDDir_WithFrontmatter(t *testing.T) {
 	content := "---\ndescription: coding style\n---\nUse gofmt.\n"
 	os.WriteFile(filepath.Join(dir, "style.md"), []byte(content), 0o644)
 
-	rules, err := readMDDir(dir, ".md", FormatHawk)
+	rules, err := readMDDir(dir, ".md", FormatRho)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestReadMDDir_WithFrontmatter(t *testing.T) {
 
 func TestReadMDDir_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	rules, err := readMDDir(dir, ".md", FormatHawk)
+	rules, err := readMDDir(dir, ".md", FormatRho)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestReadMDDir_WrongExtension(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "file.txt"), []byte("content"), 0o644)
 
-	rules, err := readMDDir(dir, ".md", FormatHawk)
+	rules, err := readMDDir(dir, ".md", FormatRho)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestReadMDDir_WrongExtension(t *testing.T) {
 }
 
 func TestReadMDDir_NonexistentDir(t *testing.T) {
-	_, err := readMDDir("/nonexistent/path/12345", ".md", FormatHawk)
+	_, err := readMDDir("/nonexistent/path/12345", ".md", FormatRho)
 	if err == nil {
 		t.Error("expected error for nonexistent directory")
 	}
@@ -317,11 +317,11 @@ func TestHasFormatExt(t *testing.T) {
 		format Format
 		want   bool
 	}{
-		{"style.md", FormatHawk, true},
+		{"style.md", FormatRho, true},
 		{"style.mdc", FormatCursor, true},
-		{"style.txt", FormatHawk, false},
+		{"style.txt", FormatRho, false},
 		{"style.md", FormatCursor, false},
-		{"CLAUDE.md", FormatClaudeCode, false}, // hasFormatExt only handles hawk/cursor
+		{"CLAUDE.md", FormatClaudeCode, false}, // hasFormatExt only handles rho/cursor
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -337,8 +337,8 @@ func TestHasFormatExt(t *testing.T) {
 // formatCandidates
 // ---------------------------------------------------------------------------
 
-func TestFormatCandidates_Hawk(t *testing.T) {
-	candidates := formatCandidates("/project", FormatHawk)
+func TestFormatCandidates_Rho(t *testing.T) {
+	candidates := formatCandidates("/project", FormatRho)
 	if len(candidates) != 1 {
 		t.Fatalf("expected 1 candidate, got %d", len(candidates))
 	}

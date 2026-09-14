@@ -7,9 +7,9 @@
 <p align="center">
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
-  <a href="https://github.com/GrayCodeAI/hawk/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GrayCodeAI/hawk/ci.yml?style=flat-square&label=tests" alt="CI"></a>
-  <a href="https://github.com/GrayCodeAI/hawk/releases"><img src="https://img.shields.io/github/v/release/GrayCodeAI/hawk?style=flat-square&label=release&color=green" alt="Release"></a>
-  <a href="https://pkg.go.dev/github.com/GrayCodeAI/hawk"><img src="https://img.shields.io/badge/godoc-reference-00ADD8?style=flat-square&logo=go" alt="GoDoc"></a>
+  <a href="https://github.com/GrayCodeAI/rho/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GrayCodeAI/rho/ci.yml?style=flat-square&label=tests" alt="CI"></a>
+  <a href="https://github.com/GrayCodeAI/rho/releases"><img src="https://img.shields.io/github/v/release/GrayCodeAI/rho?style=flat-square&label=release&color=green" alt="Release"></a>
+  <a href="https://pkg.go.dev/github.com/GrayCodeAI/rho"><img src="https://img.shields.io/badge/godoc-reference-00ADD8?style=flat-square&logo=go" alt="GoDoc"></a>
 </p>
 
 <p align="center">
@@ -25,13 +25,13 @@
 
 ---
 
-## Why hawk
+## Why rho
 
-hawk is an AI-powered coding agent that lives in your terminal. It reads your codebase, writes and edits files, runs tests, and manages git — all through natural language. Unlike IDE-bound tools, hawk works over SSH and on any machine with a shell.
+rho is an AI-powered coding agent that lives in your terminal. It reads your codebase, writes and edits files, runs tests, and manages git — all through natural language. Unlike IDE-bound tools, rho works over SSH and on any machine with a shell.
 
-**Developer path:** one machine, keychain credentials, local memory. Run `hawk path` to check readiness.
+**Developer path:** one machine, keychain credentials, local memory. Run `rho path` to check readiness.
 
-- **Model-agnostic** — supports many first-class providers through [eyrie](https://github.com/GrayCodeAI/eyrie) (the exact count is dynamic — see `hawk --help`), including Anthropic, OpenAI, Gemini, Fireworks AI, Concentrate AI (pay-as-you-go), DeepSeek, and Ollama
+- **Model-agnostic** — supports many first-class providers through [eyrie](https://github.com/GrayCodeAI/eyrie) (the exact count is dynamic — see `rho --help`), including Anthropic, OpenAI, Gemini, Fireworks AI, Concentrate AI (pay-as-you-go), DeepSeek, and Ollama
 - **Zero CGO** — single static binary, cross-compiled for linux/darwin/windows on amd64/arm64
 - **Privacy-first** — your code never leaves your machine except to the LLM API you choose
 - **Runs anywhere** — host execution on any machine with a shell, including over SSH
@@ -39,58 +39,58 @@ hawk is an AI-powered coding agent that lives in your terminal. It reads your co
 
 ## Status
 
-**Hawk is in active development.** Contributor source builds are the primary path today while we keep hardening the product in the open. Tagged releases and install assets may exist for validation, but they are not the recommended first path yet.
+**Rho is in active development.** Contributor source builds are the primary path today while we keep hardening the product in the open. Tagged releases and install assets may exist for validation, but they are not the recommended first path yet.
 
-Follow [GrayCode](https://github.com/GrayCodeAI) for progress. When Hawk is ready to try, we will announce it on [graycodeai.com](https://graycodeai.com/changelog).
+Follow [GrayCode](https://github.com/GrayCodeAI) for progress. When Rho is ready to try, we will announce it on [graycodeai.com](https://graycodeai.com/changelog).
 
 ## Install (60 seconds)
 
-Pick one — all install the same `hawk` binary (versioned into `~/.hawk/bin`, symlinked as `hawk`):
+Pick one — all install the same `rho` binary (versioned into `~/.rho/bin`, symlinked as `rho`):
 
 ```bash
 # 1. Script (any shell, verifies checksum; cosign signature when available)
-curl -fsSL https://raw.githubusercontent.com/GrayCodeAI/hawk/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/GrayCodeAI/rho/main/install.sh | sh
 
 # 2. Homebrew (macOS / Linuxbrew) — after the next tagged release
-brew install graycodeai/tap/hawk
+brew install graycodeai/tap/rho
 
 # 3. npm (wraps the same release binaries)
-npm install -g @graycodeai/hawk
+npm install -g @graycodeai/rho
 ```
 
-If `~/.hawk/bin` is not on your `PATH`, add it to your shell profile.
+If `~/.rho/bin` is not on your `PATH`, add it to your shell profile.
 
 Then:
 
 ```bash
-hawk            # interactive REPL (/config on first run: API key + model)
-hawk path       # verify readiness
+rho            # interactive REPL (/config on first run: API key + model)
+rho path       # verify readiness
 ```
 
 ## Quick Start (contributors — from source)
 
 ```bash
-git clone https://github.com/GrayCodeAI/hawk && cd hawk
+git clone https://github.com/GrayCodeAI/rho && cd rho
 make setup   # generates go.work referencing sibling support repos in the graycode-eco workspace
-go build -o hawk ./cmd/hawk
-./hawk
+go build -o rho ./cmd/rho
+./rho
 
 # First run — paste API key in /config (stored in macOS Keychain / Linux keyring)
 # Verify readiness
-./hawk path
+./rho path
 ```
 
-**No Docker or container runtime is required.** Hawk executes agent commands
-directly on the host. Run `hawk path` (or `hawk doctor`) to see an onboarding
+**No Docker or container runtime is required.** Rho executes agent commands
+directly on the host. Run `rho path` (or `rho doctor`) to see an onboarding
 checklist: credentials → model → catalog → ecosystem.
 
 See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md) for the credential model.
-Do not put API keys in shell env or `.env` for hawk.
+Do not put API keys in shell env or `.env` for rho.
 
 Optional for contributors:
 
 ```bash
-go install github.com/GrayCodeAI/hawk/cmd/hawk@latest
+go install github.com/GrayCodeAI/rho/cmd/rho@latest
 ```
 
 ## Features
@@ -113,22 +113,22 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) for a smooth
 
 ### Portable Execution Graph
 
-Export the latest or a selected Hawk session as validated graph nodes, edges,
+Export the latest or a selected Rho session as validated graph nodes, edges,
 and lifecycle events:
 
 ```bash
-hawk graph export
-hawk graph export <session-id>
-hawk graph export --mission-dir /path/to/mission
+rho graph export
+rho graph export <session-id>
+rho graph export --mission-dir /path/to/mission
 
 # Explicitly privacy-normalize and sync the graph for a connected cloud project
-hawk cloud graph sync <session-id>
-hawk cloud graph sync --mission-dir /path/to/mission
+rho cloud graph sync <session-id>
+rho cloud graph sync --mission-dir /path/to/mission
 ```
 
 Cloud commands require an endpoint. There is no default: pass `--endpoint` or
-set `HAWK_CLOUD_URL` to your Hawk Cloud worker URL before running
-`hawk cloud login`. `https://api.graycodeai.com` is the browser BFF and
+set `RHO_CLOUD_URL` to your Rho Cloud worker URL before running
+`rho cloud login`. `https://api.graycodeai.com` is the browser BFF and
 will reject a device token.
 
 The export contains metadata and hashes, not prompts, tool arguments/results,
@@ -143,7 +143,7 @@ synchronized explicitly with the `--mission-dir` variants above.
 For larger tasks, decompose work into parallel feature branches (power-user / future team workflows):
 
 ```bash
-hawk mission "Add auth, rate limiting, and logging"
+rho mission "Add auth, rate limiting, and logging"
 ```
 
 Each sub-agent runs in its own git worktree with full autonomy.
@@ -153,14 +153,14 @@ Each sub-agent runs in its own git worktree with full autonomy.
 Discover and install modular instruction packages for specialized workflows:
 
 ```bash
-hawk skills search api        # Search community registry
-hawk skills install go-review # Install from GitHub
-hawk skills audit             # Security scan installed skills
+rho skills search api        # Search community registry
+rho skills install go-review # Install from GitHub
+rho skills audit             # Security scan installed skills
 ```
 
 ### Permission Center
 
-hawk exposes two independent chat command centers — trust tier and the
+rho exposes two independent chat command centers — trust tier and the
 spec-driven workflow gate — rather than one merged permission mode:
 
 ```text
@@ -192,7 +192,7 @@ The model is:
 - `Rules` control explicit allow/deny exceptions.
 - `Spec` is a separate, independent workflow gate (bare `/spec` opens a
   picker): starting it walks the model through `Specify → Plan → Tasks`,
-  writing real files to `.hawk/specs/<slug>/`, and blocks Write/Edit/Bash
+  writing real files to `.rho/specs/<slug>/`, and blocks Write/Edit/Bash
   until you approve moving to implementation — at **any** trust tier,
   including Autonomous.
 
@@ -206,23 +206,23 @@ Connect external tools via [Model Context Protocol](https://modelcontextprotocol
 
 ### Watch Mode (AI-comment loop)
 
-`hawk --watch` watches your tree for `AI!` (do it now) and `AI?` (answer my question) comments and acts on them automatically — leave a directive in code, save, and hawk responds. Off by default; enabled via the `--watch` flag.
+`rho --watch` watches your tree for `AI!` (do it now) and `AI?` (answer my question) comments and acts on them automatically — leave a directive in code, save, and rho responds. Off by default; enabled via the `--watch` flag.
 
 ### CI / GitHub Action
 
-A bundled GitHub Action (`.github/actions/hawk`) runs hawk in your pipeline: interactive mode on `@hawk` mentions in issue/PR comments, automation mode on labeled issues/PRs, and skill dispatch when a prompt begins with `/` (e.g. `/code-review`).
+A bundled GitHub Action (`.github/actions/rho`) runs rho in your pipeline: interactive mode on `@rho` mentions in issue/PR comments, automation mode on labeled issues/PRs, and skill dispatch when a prompt begins with `/` (e.g. `/code-review`).
 
 ### Messaging Gateways (opt-in)
 
-The daemon exposes Telegram, Discord, and Slack gateways so you can chat with hawk from your messaging app. Disabled by default; enabled per-channel via daemon config.
+The daemon exposes Telegram, Discord, and Slack gateways so you can chat with rho from your messaging app. Disabled by default; enabled per-channel via daemon config.
 
 ### AST Repo-Map & Codebase Analysis
 
-An AST-based repository map (`internal/context/repomap`) gives the model a structural overview of your code. On first run, hawk can auto-analyze the codebase to seed context (default-off, opt-in).
+An AST-based repository map (`internal/context/repomap`) gives the model a structural overview of your code. On first run, rho can auto-analyze the codebase to seed context (default-off, opt-in).
 
 ### Auto-Lint / Auto-Fix Cycle
 
-After edits, hawk can run the matching linter and iterate on fixes (bounded retries) before handing back. Opt-in; preserves existing behavior when disabled.
+After edits, rho can run the matching linter and iterate on fixes (bounded retries) before handing back. Opt-in; preserves existing behavior when disabled.
 
 ### Image / Multimodal Context
 
@@ -258,16 +258,16 @@ Features adopted from open-source agent projects. All are off by default unless 
 
 | Feature | Flag / Command | What it does |
 |---|---|---|
-| Best-of-N fan-out | `hawk exec --fanout N` | Run the same prompt in N isolated worktrees, compare, merge winner |
-| Completion notifications | `HAWK_NOTIFY_WEBHOOK_URL` / `HAWK_NOTIFY_TELEGRAM_TOKEN` + `_CHAT_ID` | Webhook or Telegram ping when a run finishes |
-| Incremental system-context | `HAWK_INCREMENTAL_CONTEXT=1` | Reconcile dynamic sections instead of rebuilding the prompt |
-| Tool-catalog shrink | `HAWK_TOOL_SHRINK=1` | Compress the tool catalog sent on every request |
-| Compaction segments | `HAWK_COMPACTION_SEGMENT_DETAIL=verbose\|balanced\|minimal\|none` | Persist verbatim compacted turns to disk |
-| Skill curator | `hawk skills curator status/run/pin/unpin/archive` + `HAWK_SKILL_CURATOR=1` | Auto-archive cold agent-created skills (recoverable) |
+| Best-of-N fan-out | `rho exec --fanout N` | Run the same prompt in N isolated worktrees, compare, merge winner |
+| Completion notifications | `RHO_NOTIFY_WEBHOOK_URL` / `RHO_NOTIFY_TELEGRAM_TOKEN` + `_CHAT_ID` | Webhook or Telegram ping when a run finishes |
+| Incremental system-context | `RHO_INCREMENTAL_CONTEXT=1` | Reconcile dynamic sections instead of rebuilding the prompt |
+| Tool-catalog shrink | `RHO_TOOL_SHRINK=1` | Compress the tool catalog sent on every request |
+| Compaction segments | `RHO_COMPACTION_SEGMENT_DETAIL=verbose\|balanced\|minimal\|none` | Persist verbatim compacted turns to disk |
+| Skill curator | `rho skills curator status/run/pin/unpin/archive` + `RHO_SKILL_CURATOR=1` | Auto-archive cold agent-created skills (recoverable) |
 | Structural code match | `CodeMatch` tool | Tree-sitter query search over Go/Python/TS/TSX |
-| Composable toolsets | `hawk toolset [name]` + `Toolset` tool | Named tool groups (research, dev, ops, full_stack) |
+| Composable toolsets | `rho toolset [name]` + `Toolset` tool | Named tool groups (research, dev, ops, full_stack) |
 | App verification | `AppVerify` tool | Boot-smoke check with readiness polling and evidence artifacts |
-| Media generation | `GenerateMedia` tool | Image/video generation with local persistence. Backend via `tool.SetMediaEngine`; an OpenAI-compatible client ships in `eyrie/client` (`ImageClient`), wired by the host (boundary-guarded — hawk routes through the eyrie facade) |
+| Media generation | `GenerateMedia` tool | Image/video generation with local persistence. Backend via `tool.SetMediaEngine`; an OpenAI-compatible client ships in `eyrie/client` (`ImageClient`), wired by the host (boundary-guarded — rho routes through the eyrie facade) |
 | Voice transcription | Telegram voice notes + `stt` package | Transcribe Telegram voice/audio into the prompt. Backend via `stt.SetTranscriber`; an OpenAI-compatible client ships in `eyrie/client` (`AudioClient`), wired by the host |
 | Bounded autonomous budgets | `internal/engine` (`AutonomousBudget`) | Track turns/tokens/time/continuations; report why a run stopped (budget vs gate-passed vs error) |
 | Agent family messaging | `internal/multiagent` (`FamilyMessenger`) | Direct parent/sibling/child messages with pending caps + rate limits |
@@ -276,27 +276,27 @@ Features adopted from open-source agent projects. All are off by default unless 
 | X/Twitter search | `SearchX` tool | Live X search by forwarding a query to an xAI endpoint with server-side search; returns a cited summary. Requires `XAI_API_KEY` (or `GROK_API_KEY`) |
 | Desktop computer-use | `ComputerUse` tool | snapshot/click/type/scroll/press/screenshot via a pluggable `tool.SetComputerBackend` seam (host wires a native macOS accessibility backend) |
 | Token-cheaper file views | `Read` tool `--minify` | Read-only, comment-stripped, whitespace-dense file view (Go via `go/parser`; other languages string-aware; never touches disk) — fewer tokens per read |
-| Classified provider hints | `internal/errhint` | Buckets provider errors (Auth/RateLimit/Connectivity/ModelNotFound/ContextOverflow) into a one-line fixable next step. Wired into TUI error rows (`friendlyErrorMessage`) and `hawk exec` CLI errors |
+| Classified provider hints | `internal/errhint` | Buckets provider errors (Auth/RateLimit/Connectivity/ModelNotFound/ContextOverflow) into a one-line fixable next step. Wired into TUI error rows (`friendlyErrorMessage`) and `rho exec` CLI errors |
 | Atomic install transactions | `internal/installtxn` | Cross-process staged install/remove with rollback. Wired into skill install (atomic `SKILL.md` publish) |
-| Test command discovery | `internal/testrunner` | Auto-detect test/verify commands (Go/npm/bun/pnpm/yarn/pytest/cargo) and parse runner output into structured results. Wired into `hawk verify` |
+| Test command discovery | `internal/testrunner` | Auto-detect test/verify commands (Go/npm/bun/pnpm/yarn/pytest/cargo) and parse runner output into structured results. Wired into `rho verify` |
 | Circuit breaker | `internal/circuitbreaker` | Closed/open/half-open retry-storm protection with cooldown. Wired into auto-compaction (cooldown + half-open auto-retry) |
 | Smart turn routing | `internal/smartrouting` | Deterministic simple/strong turn classifier with fail-toward-strong safety. Wired into per-turn model selection (`settings.smart_routing`) |
 | Conversation arc | `internal/conversationarc` | Durable sidecar memory of goals/decisions/milestones/phase with a byte-stable summary. Wired into sessions (loaded on open, saved on close, injected into the system prompt) |
 | Relevance pruning | `internal/relevanceprune` | Token-budgeted context pruning preserving recent turns/tool calls/errors. Wired into compaction as a `relevance` strategy |
 | Tool-result clearing | `internal/engine` (`ClearOldToolResults`) | Two-tier context management: at 80% of the context window, stale tool-result content is replaced with `[output cleared]` placeholders (tool_use kept intact) before compacting — a gentler tier below compaction |
 | Approval pause timing | `internal/permissions` | Approval requests record decision timestamp + human deliberation duration (`DecisionAt`/`PauseDuration`) for approval-latency observability |
-| Graceful exhaustion | `internal/engine` (`SynthesisForExhaustion`) | When turn/token/time limits hit, one final tools-disabled LLM call synthesizes a coherent completion (accomplished/remaining/next steps) instead of a bare stop line. Opt-in via `HAWK_GRACEFUL_EXHAUSTION=1` |
-| Deterministic replay cache | `internal/replaycache` (`HAWK_REPLAY_CACHE_DIR`) | Disk-persisted SHA-256-keyed cache of completions; identical requests replay stored responses for reproducible regression runs |
+| Graceful exhaustion | `internal/engine` (`SynthesisForExhaustion`) | When turn/token/time limits hit, one final tools-disabled LLM call synthesizes a coherent completion (accomplished/remaining/next steps) instead of a bare stop line. Opt-in via `RHO_GRACEFUL_EXHAUSTION=1` |
+| Deterministic replay cache | `internal/replaycache` (`RHO_REPLAY_CACHE_DIR`) | Disk-persisted SHA-256-keyed cache of completions; identical requests replay stored responses for reproducible regression runs |
 
 ## Usage
 
 ### Interactive Mode
 
 ```bash
-hawk                              # Start REPL
-hawk -r abc123                    # Resume session
-hawk -c                           # Continue latest session
-hawk --provider openai --model gpt-4o  # Override provider
+rho                              # Start REPL
+rho -r abc123                    # Resume session
+rho -c                           # Continue latest session
+rho --provider openai --model gpt-4o  # Override provider
 ```
 
 ### Permission Examples
@@ -315,21 +315,21 @@ hawk --provider openai --model gpt-4o  # Override provider
 ### Non-Interactive Mode
 
 ```bash
-hawk -p "explain this repo"                    # Print response, exit
-hawk -p "fix tests" --allowed-tools "Bash(go test:*) Edit Read"
-hawk exec "refactor auth module"               # Full engine, non-interactive
-hawk exec --auto full "add error handling"     # Full autonomy
-hawk exec --worktree "add rate limiting"       # Isolated branch
-hawk exec --agent reviewer "review last commit" # Custom persona
+rho -p "explain this repo"                    # Print response, exit
+rho -p "fix tests" --allowed-tools "Bash(go test:*) Edit Read"
+rho exec "refactor auth module"               # Full engine, non-interactive
+rho exec --auto full "add error handling"     # Full autonomy
+rho exec --worktree "add rate limiting"       # Isolated branch
+rho exec --agent reviewer "review last commit" # Custom persona
 ```
 
 ### Diagnostics & ecosystem
 
 ```bash
-hawk path                   # Developer path readiness (setup + security)
-hawk doctor                  # Full health report (eyrie + token pipeline panel)
-hawk ecosystem               # Ecosystem panel only
-hawk preflight               # Quick ready-to-chat check
+rho path                   # Developer path readiness (setup + security)
+rho doctor                  # Full health report (eyrie + token pipeline panel)
+rho ecosystem               # Ecosystem panel only
+rho preflight               # Quick ready-to-chat check
 make path                    # Developer path verification
 make smoke                   # Build + quick verification script
 ```
@@ -343,9 +343,9 @@ In the TUI: `/path`, `/ecosystem`, `/memory` (AGENTS.md).
 ### Daemon Mode
 
 ```bash
-hawk daemon start              # Background HTTP server on port 4590
-hawk daemon status             # Check if running
-hawk daemon stop               # Graceful shutdown
+rho daemon start              # Background HTTP server on port 4590
+rho daemon status             # Check if running
+rho daemon stop               # Graceful shutdown
 ```
 
 Endpoints: `GET /v1/health`, `GET /v1/ready` (dependency-aware readiness), `POST /v1/chat` (JSON or SSE streaming)
@@ -353,15 +353,15 @@ Endpoints: `GET /v1/health`, `GET /v1/ready` (dependency-aware readiness), `POST
 ### Mission Mode
 
 ```bash
-hawk mission "Add auth, rate limiting, and logging"
-hawk mission --workers 6 "Refactor into microservices"
-hawk mission --dry-run "What would this decompose into?"
-hawk mission --from-tasks                 # Execute validated dependency waves
+rho mission "Add auth, rate limiting, and logging"
+rho mission --workers 6 "Refactor into microservices"
+rho mission --dry-run "What would this decompose into?"
+rho mission --from-tasks                 # Execute validated dependency waves
 ```
 
 ## Providers
 
-hawk works with any LLM provider. **Developer path:** paste keys in `/config` (stored in OS keychain) — not shell env or `.env`. Use `hawk credentials status` to verify.
+rho works with any LLM provider. **Developer path:** paste keys in `/config` (stored in OS keychain) — not shell env or `.env`. Use `rho credentials status` to verify.
 
 | Provider | ID | Key (via `/config`) |
 |---|---|---|
@@ -380,19 +380,19 @@ hawk works with any LLM provider. **Developer path:** paste keys in `/config` (s
 | Ollama (local) | `ollama` | `OLLAMA_BASE_URL` (no API key) |
 
 Provider routing, model resolution, and retries are handled by [eyrie](https://github.com/GrayCodeAI/eyrie).
-For deployment-aware routing, set `"deployment_routing": true` in `.hawk/settings.json`
-or export `HAWK_DEPLOYMENT_ROUTING=true`. Hawk will route canonical model IDs through
+For deployment-aware routing, set `"deployment_routing": true` in `.rho/settings.json`
+or export `RHO_DEPLOYMENT_ROUTING=true`. Rho will route canonical model IDs through
 Eyrie's deployment catalog, so new models can be exposed by refreshing the catalog
-instead of changing Hawk. In chat, run `/refresh-model-catalog` to fetch the latest
+instead of changing Rho. In chat, run `/refresh-model-catalog` to fetch the latest
 deployment-aware catalog into `~/.eyrie/model_catalog.json`.
 
 ## Architecture
 
-hawk is built in Go with a modular, layered architecture:
+rho is built in Go with a modular, layered architecture:
 
 ```
-hawk/
-├── bin/                    # Built binaries (hawk, hawk_bin)
+rho/
+├── bin/                    # Built binaries (rho, rho_bin)
 ├── cmd/                    # CLI entry point (Cobra + Bubble Tea TUI)
 ├── internal/
 │   ├── engine/             # Agent loop, compaction, self-improvement
@@ -425,15 +425,15 @@ folder):
 
 ### Ecosystem
 
-hawk is the main CLI/product and integrates these GrayCodeAI repositories in
+rho is the main CLI/product and integrates these GrayCodeAI repositories in
 three runtime layers plus optional tooling/platform services:
 
-- **Primary product:** **hawk** is the only end-user product surface in this ecosystem.
-- **Provider engine mounted by Hawk:** **eyrie** is the LLM provider runtime, consumed through its stable engine facade.
-- **API consumers/extensions:** **graycode-skills** provides Hawk skills
-  installed on demand (`hawk skills install`).
-- **Tooling/platform:** **graycode-platform** contains the optional web/BFF/Hawk
-  Cloud plane and is outside the Hawk Go runtime graph.
+- **Primary product:** **rho** is the only end-user product surface in this ecosystem.
+- **Provider engine mounted by Rho:** **eyrie** is the LLM provider runtime, consumed through its stable engine facade.
+- **API consumers/extensions:** **graycode-skills** provides Rho skills
+  installed on demand (`rho skills install`).
+- **Tooling/platform:** **graycode-platform** contains the optional web/BFF/Rho
+  Cloud plane and is outside the Rho Go runtime graph.
 
 Local development uses:
 
@@ -443,7 +443,7 @@ Local development uses:
 
 Cross-repo contracts now live in `internal/contracts` (vendored from the
 removed `github.com/GrayCodeAI/eagle` module) so support repos do not depend
-on Hawk internals. External consumers should vendor the needed DTOs from `internal/contracts`
+on Rho internals. External consumers should vendor the needed DTOs from `internal/contracts`
 until a published contracts module exists.
 
 Current contract packages (`internal/contracts/`):
@@ -461,17 +461,17 @@ You may keep a **personal** parent **`go.work`** that lists alternate clones on 
 
 | Component | Repository | Purpose |
 |---|---|---|
-| **hawk** | This repo | AI coding agent |
+| **rho** | This repo | AI coding agent |
 | **eyrie** | [GrayCodeAI/eyrie](https://github.com/GrayCodeAI/eyrie) | LLM provider runtime |
 | **graycode-skills** | [GrayCodeAI/graycode-skills](https://github.com/GrayCodeAI/graycode-skills) | Community skill registry |
-| **graycode-platform** | [GrayCodeAI/graycode-platform](https://github.com/GrayCodeAI/graycode-platform) | Web, BFF, and Hawk Cloud |
+| **graycode-platform** | [GrayCodeAI/graycode-platform](https://github.com/GrayCodeAI/graycode-platform) | Web, BFF, and Rho Cloud |
 
 `ecosystem.yaml` is the canonical inventory of repositories cloned as
 siblings in this local workspace; tooling reads it rather than carrying its
 own repo-name list. `eyrie` is the only Go module dependency outside this
 repo; it is consumed through its stable engine facade.
 
-For the consolidated repo map and the current-vs-proposed architecture diagrams, see [docs/architecture/hawk-current-vs-proposed.md](docs/architecture/hawk-current-vs-proposed.md).
+For the consolidated repo map and the current-vs-proposed architecture diagrams, see [docs/architecture/rho-current-vs-proposed.md](docs/architecture/rho-current-vs-proposed.md).
 For execution-graph ownership, automatic capture seams, and export/sync
 commands, see
 [docs/architecture/execution-graph.md](docs/architecture/execution-graph.md).
@@ -485,7 +485,7 @@ commands, see
 ### Build & Test
 
 ```bash
-go build ./cmd/hawk           # Build binary
+go build ./cmd/rho           # Build binary
 go test -race ./...           # Run all tests with race detector
 make ci                       # Run full CI suite (lint, test, security)
 make cover                    # Generate coverage report
@@ -509,7 +509,7 @@ Headline numbers (Go 1.26.6, AMD EPYC 7543P, `go test -bench -benchmem -count=3`
 
 ### Project Structure
 
-hawk follows Go conventions: `cmd/` for entry points, `internal/` for private code, tests alongside source files. See [docs/architecture.md](docs/architecture.md) for details.
+rho follows Go conventions: `cmd/` for entry points, `internal/` for private code, tests alongside source files. See [docs/architecture.md](docs/architecture.md) for details.
 
 ## Contributing
 

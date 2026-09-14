@@ -24,7 +24,7 @@ type SuggestedTask struct {
 	Category    string // "fix", "improve", "test", "docs", "cleanup", "security"
 	Source      string // "git", "lint", "test", "todo", "pr"
 	Actionable  bool
-	Command     string // suggested hawk command to run
+	Command     string // suggested rho command to run
 }
 
 // TaskQueue manages a queue of suggested tasks with dismissal tracking.
@@ -98,7 +98,7 @@ func ScanGitTasks(projectDir string) []*SuggestedTask {
 			Category:    "cleanup",
 			Source:      "git",
 			Actionable:  true,
-			Command:     `hawk exec "commit the pending changes with a descriptive message"`,
+			Command:     `rho exec "commit the pending changes with a descriptive message"`,
 		})
 	}
 
@@ -120,7 +120,7 @@ func ScanGitTasks(projectDir string) []*SuggestedTask {
 				Category:    "fix",
 				Source:      "git",
 				Actionable:  true,
-				Command:     fmt.Sprintf(`hawk exec "resolve the merge conflict in %s"`, f),
+				Command:     fmt.Sprintf(`rho exec "resolve the merge conflict in %s"`, f),
 			})
 		}
 	}
@@ -140,7 +140,7 @@ func ScanGitTasks(projectDir string) []*SuggestedTask {
 				Category:    "improve",
 				Source:      "git",
 				Actionable:  true,
-				Command:     `hawk exec "pull the latest changes from remote"`,
+				Command:     `rho exec "pull the latest changes from remote"`,
 			})
 		}
 	}
@@ -173,7 +173,7 @@ func ScanGitTasks(projectDir string) []*SuggestedTask {
 					Category:    "cleanup",
 					Source:      "git",
 					Actionable:  true,
-					Command:     `hawk exec "clean up stale git branches"`,
+					Command:     `rho exec "clean up stale git branches"`,
 				})
 			} else {
 				tasks = append(tasks, &SuggestedTask{
@@ -184,7 +184,7 @@ func ScanGitTasks(projectDir string) []*SuggestedTask {
 					Category:    "improve",
 					Source:      "git",
 					Actionable:  true,
-					Command:     `hawk exec "clean up stale git branches"`,
+					Command:     `rho exec "clean up stale git branches"`,
 				})
 			}
 		}
@@ -294,7 +294,7 @@ func ScanTODOs(projectDir string) []*SuggestedTask {
 						Category:    category,
 						Source:      "todo",
 						Actionable:  true,
-						Command:     fmt.Sprintf(`hawk exec "implement the %s at %s:%d"`, marker, relPath, lineNum),
+						Command:     fmt.Sprintf(`rho exec "implement the %s at %s:%d"`, marker, relPath, lineNum),
 					})
 					break // Only count one marker per line
 				}
@@ -373,7 +373,7 @@ func ScanTestFailures(projectDir string) []*SuggestedTask {
 			Category:    "test",
 			Source:      "test",
 			Actionable:  true,
-			Command:     fmt.Sprintf(`hawk exec "fix the failing test %s"`, testName),
+			Command:     fmt.Sprintf(`rho exec "fix the failing test %s"`, testName),
 		})
 	}
 
@@ -387,7 +387,7 @@ func ScanTestFailures(projectDir string) []*SuggestedTask {
 			Category:    "test",
 			Source:      "test",
 			Actionable:  true,
-			Command:     `hawk exec "fix the failing tests"`,
+			Command:     `rho exec "fix the failing tests"`,
 		})
 	}
 
@@ -467,7 +467,7 @@ func scanDocsTasks(projectDir string) []*SuggestedTask {
 							Category:    "docs",
 							Source:      "lint",
 							Actionable:  true,
-							Command:     fmt.Sprintf(`hawk exec "add godoc to %s"`, funcName),
+							Command:     fmt.Sprintf(`rho exec "add godoc to %s"`, funcName),
 						})
 					}
 				}
@@ -597,7 +597,7 @@ func scanSecurityTasks(projectDir string) []*SuggestedTask {
 						Category:    "security",
 						Source:      "lint",
 						Actionable:  true,
-						Command:     fmt.Sprintf(`hawk exec "review %s for hardcoded secrets"`, relPath),
+						Command:     fmt.Sprintf(`rho exec "review %s for hardcoded secrets"`, relPath),
 					})
 				}
 			}

@@ -5,7 +5,7 @@
 **Date:** 2026-07-05
 **Source:** Historical comparison document; feature and market claims require
 independent revalidation. Architecture status is tracked in
-`docs/architecture/hawk-architecture-baseline.md`.
+`docs/architecture/rho-architecture-baseline.md`.
 
 ---
 
@@ -27,14 +27,14 @@ Numeric scores are intentionally not used as current architecture evidence.
 
 ## Phase 1: High Priority (Immediate - Score Impact: +0.5)
 
-### 1. Add VS Code Extension Integration (hawk repo)
+### 1. Add VS Code Extension Integration (rho repo)
 
 **Effort:** Large (2-3 weeks)
 **Priority:** HIGH
 
 **What:**
-- Create `hawk-vscode` repo for VS Code extension
-- Use Hawk SDK for communication
+- Create `rho-vscode` repo for VS Code extension
+- Use Rho SDK for communication
 - Add WebSocket transport for real-time updates
 
 **Why:**
@@ -45,12 +45,12 @@ Numeric scores are intentionally not used as current architecture evidence.
 **Implementation Plan:**
 ```bash
 # Create new repo
-mkdir hawk-vscode
-cd hawk-vscode
+mkdir rho-vscode
+cd rho-vscode
 
 # Initialize
 git init
-go mod init github.com/GrayCodeAI/hawk-vscode
+go mod init github.com/GrayCodeAI/rho-vscode
 
 # Add extension scaffold
 mkdir -p cmd extension/src
@@ -64,8 +64,8 @@ go get golang.org/x/net/websocket
 # Create extension files
 cat > extension/package.json << 'EOF'
 {
-  "name": "hawk",
-  "displayName": "Hawk",
+  "name": "rho",
+  "displayName": "Rho",
   "description": "AI coding assistant in terminal",
   "version": "0.1.0",
   "engines": { "vscode": "^1.90.0" },
@@ -75,14 +75,14 @@ cat > extension/package.json << 'EOF'
   "contributes": {
     "commands": [
       {
-        "command": "hawk.activate",
-        "title": "Activate Hawk"
+        "command": "rho.activate",
+        "title": "Activate Rho"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "hawk.activate",
+          "command": "rho.activate",
           "when": "editorLangId"
         }
       ]
@@ -94,22 +94,22 @@ EOF
 # Add extension scaffold
 cat > extension/src/extension.ts << 'EOF'
 import * as vscode from 'vscode';
-import * as hawksdk from '@graycodeai/hawksdk';
+import * as rhosdk from '@graycodeai/rhosdk';
 
 export function activate(context: vscode.ExtensionContext) {
-  const client = new hawksdk.Client();
+  const client = new rhosdk.Client();
   
   // Register completion provider
   vscode.languages.registerCompletionItemProvider(
     'go',
-    new HawkCompletionProvider(client),
+    new RhoCompletionProvider(client),
     'g', 'h'
   );
   
   // Register hover provider
   vscode.languages.registerHoverProvider(
     'go',
-    new HawkHoverProvider(client)
+    new RhoHoverProvider(client)
   );
 }
 EOF
@@ -123,7 +123,7 @@ vsce publish
 
 **Repository Structure:**
 ```
-hawk-vscode/
+rho-vscode/
 ├── extension/           # VS Code extension code
 │   ├── src/
 │   │   ├── extension.ts
@@ -140,25 +140,25 @@ hawk-vscode/
 
 ---
 
-### 2. Add Extension Marketplace (hawk repo)
+### 2. Add Extension Marketplace (rho repo)
 
 **Effort:** Medium (1-2 weeks)
 **Priority:** HIGH
 
 **What:**
 - Create marketplace for community extensions
-- Add extension discovery endpoint to hawk
+- Add extension discovery endpoint to rho
 - Create `starling` integration
 - Add version compatibility checking
 
 **Why:**
 - Top agents have 100+ extensions
-- Build ecosystem around Hawk
+- Build ecosystem around Rho
 - Increase adoption
 
 **Implementation Plan:**
 ```go
-// Add to hawk
+// Add to rho
 package marketplace
 
 // Extension represents a community extension
@@ -305,12 +305,12 @@ cat >> SKILL.md << 'EOF'
 
 To discover available extensions, use:
 ```
-hawk extensions list
+rho extensions list
 ```
 
 To install an extension:
 ```
-hawk extensions install <extension-id>
+rho extensions install <extension-id>
 ```
 EOF
 ```
@@ -431,7 +431,7 @@ go build forum.go
 
 ---
 
-### 5. Add More Extension Points (hawk)
+### 5. Add More Extension Points (rho)
 
 **Effort:** Small (3-5 days)
 **Priority:** MEDIUM
@@ -514,7 +514,7 @@ func main() {
 
 ---
 
-### 7. Add Debugging Support (hawk)
+### 7. Add Debugging Support (rho)
 
 **Effort:** Large (2-3 weeks)
 **Priority:** LOW
@@ -530,7 +530,7 @@ func main() {
 
 ---
 
-### 8. Add Web UI for Monitoring (hawk)
+### 8. Add Web UI for Monitoring (rho)
 
 **Effort:** Small (3-5 days)
 **Priority:** LOW
@@ -579,7 +579,7 @@ func main() {
 
 ## Detailed Repo-Specific Roadmap
 
-### **hawk** (Main Repo) - Primary Product
+### **rho** (Main Repo) - Primary Product
 
 | Phase | Improvement | Effort | Impact | Status |
 |-------|--------------|--------|--------|--------|
@@ -590,7 +590,7 @@ func main() {
 | 3 | Add Web UI for monitoring | Small | +0.2 | Planned |
 | 3 | Add SDK analytics | Small | +0.1 | Planned |
 
-Current architecture status: see `docs/architecture/hawk-architecture-baseline.md`.
+Current architecture status: see `docs/architecture/rho-architecture-baseline.md`.
 
 ---
 
@@ -657,7 +657,7 @@ Current architecture status: see `docs/architecture/hawk-architecture-baseline.m
 
 The roadmap is sequenced by product value and implementation effort. It does
 not assign target architecture scores. Current architecture status is tracked
-in `docs/architecture/hawk-architecture-baseline.md`.
+in `docs/architecture/rho-architecture-baseline.md`.
 
 ---
 
@@ -667,7 +667,7 @@ in `docs/architecture/hawk-architecture-baseline.md`.
 |------|--------|------------|
 | Marketplace competition | High | Focus on quality extensions |
 | Community building | Medium | Active engagement, good docs |
-| Development velocity | Medium | Prioritize hawk SDK first |
+| Development velocity | Medium | Prioritize rho SDK first |
 | Adoption curve | Medium | VS Code extension is key |
 
 ---

@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/fsutil"
+	"github.com/GrayCodeAI/rho/internal/fsutil"
 	"github.com/fsnotify/fsnotify"
 )
 

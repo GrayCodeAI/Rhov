@@ -3,13 +3,14 @@ package git
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/gitcmd"
 )
 
 // GitContext provides git-aware context enrichment for files and sessions.
@@ -58,7 +59,7 @@ func NewGitContext(repoDir string) *GitContext {
 
 // runGit executes a git command in the repo directory and returns its output.
 func (gc *GitContext) runGit(args ...string) (string, error) {
-	cmd := exec.CommandContext(context.Background(), "git", args...) // #nosec G204 -- fixed git executable
+	cmd := gitcmd.Command(context.Background(), args...) // #nosec G204 -- fixed git executable
 	cmd.Dir = gc.RepoDir
 	out, err := cmd.Output()
 	if err != nil {

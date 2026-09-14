@@ -7,11 +7,11 @@ Constraint (non-negotiable): mandatory Docker isolation, fail-closed, never host
 See `docs/SECURITY-DEVELOPER.md:71-73` and `internal/sandbox/container.go:72-74`.
 This plan adds zero execution paths. It only improves messaging/docs.
 
-## Existing hawk capabilities (verified)
+## Existing rho capabilities (verified)
 
-- `hawk path` / `preflight` / `doctor` / `ecosystem` commands (`README.md:346-356`).
-- `scripts/verify-developer-path.sh` (`make path`) and `scripts/smoke-hawk.sh` (`make smoke`).
-- Sandbox image auto-pull (`graycodeai/hawk-sandbox`) with local Dockerfile build fallback (`docs/SECURITY-DEVELOPER.md:75-79`).
+- `rho path` / `preflight` / `doctor` / `ecosystem` commands (`README.md:346-356`).
+- `scripts/verify-developer-path.sh` (`make path`) and `scripts/smoke-rho.sh` (`make smoke`).
+- Sandbox image auto-pull (`graycodeai/rho-sandbox`) with local Dockerfile build fallback (`docs/SECURITY-DEVELOPER.md:75-79`).
 
 ## Decision
 

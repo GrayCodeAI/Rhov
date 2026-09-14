@@ -3,7 +3,7 @@ package safety
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // AutonomyLevel controls how much the agent can do without asking the user.

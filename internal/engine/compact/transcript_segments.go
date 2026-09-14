@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/storage"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // Compaction transcript segments, adopted from grok-build's

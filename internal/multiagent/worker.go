@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // EngineWorker returns a WorkerFunc that runs an actual engine session
@@ -53,11 +53,11 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 
 		// Create engine session with tools
 		registry := tool.NewRegistry(baseWorkerTools()...)
-		selection := hawkconfig.EffectiveSelection(ctx, hawkconfig.SelectionOptions{
+		selection := rhoconfig.EffectiveSelection(ctx, rhoconfig.SelectionOptions{
 			ProviderOverride: provider,
 			ModelOverride:    model,
 		})
-		sess := engine.NewHawkSession(ctx, selection, provider, model, systemPrompt, registry)
+		sess := engine.NewRhoSession(ctx, selection, provider, model, systemPrompt, registry)
 
 		// Configure for autonomous operation
 		level := engine.AutonomyLevel(cfg.AutonomyLevel)
@@ -242,11 +242,11 @@ func ReadOnlyValidationWorker(provider, model, systemPrompt string) WorkerFunc {
 		)
 
 		registry := tool.NewRegistry(readOnlyWorkerTools()...)
-		selection := hawkconfig.EffectiveSelection(ctx, hawkconfig.SelectionOptions{
+		selection := rhoconfig.EffectiveSelection(ctx, rhoconfig.SelectionOptions{
 			ProviderOverride: provider,
 			ModelOverride:    model,
 		})
-		sess := engine.NewHawkSession(ctx, selection, provider, model, systemPrompt, registry)
+		sess := engine.NewRhoSession(ctx, selection, provider, model, systemPrompt, registry)
 
 		level := engine.AutonomyLevel(cfg.AutonomyLevel)
 		if level < engine.AutonomyFull {
@@ -389,7 +389,7 @@ func truncate(s string, max int) string {
 }
 
 // attemptFromBranch extracts the attempt number from an attempt-suffixed
-// mission branch ("hawk-mission/<id>/<feat>/attempt-N"), or 0 when the
+// mission branch ("rho-mission/<id>/<feat>/attempt-N"), or 0 when the
 // branch does not carry an attempt suffix.
 func attemptFromBranch(branch string) int {
 	idx := strings.LastIndex(branch, "/attempt-")

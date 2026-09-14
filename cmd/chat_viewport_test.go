@@ -8,7 +8,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 )
 
 func TestRouteKeyToViewport_ArrowsInPromptFocus(t *testing.T) {
@@ -84,20 +84,20 @@ func TestShouldRouteMouseToViewport_SplitPaneUX(t *testing.T) {
 }
 
 func TestSyncViewportMouseWheel_ManualRouting(t *testing.T) {
-	t.Setenv("HAWK_MOUSE", "")
+	t.Setenv("RHO_MOUSE", "")
 	vp := viewport.New(viewport.WithWidth(80), viewport.WithHeight(10))
 	m := chatModel{viewport: vp, uiFocus: focusPrompt}
 	m = m.syncViewportMouseWheel()
 	if m.viewport.MouseWheelEnabled {
-		t.Fatal("viewport auto-wheel must stay off; hawk routes wheel by pane")
+		t.Fatal("viewport auto-wheel must stay off; rho routes wheel by pane")
 	}
 }
 
 func TestSyncViewportMouseWheel_DisabledWithOptOut(t *testing.T) {
-	t.Setenv("HAWK_MOUSE", "0")
+	t.Setenv("RHO_MOUSE", "0")
 	vp := viewport.New(viewport.WithWidth(80), viewport.WithHeight(10))
 	disabled := false
-	m := chatModel{viewport: vp, uiFocus: focusPrompt, settings: hawkconfig.Settings{TuiMouse: &disabled}}
+	m := chatModel{viewport: vp, uiFocus: focusPrompt, settings: rhoconfig.Settings{TuiMouse: &disabled}}
 	m = m.syncViewportMouseWheel()
 	if m.viewport.MouseWheelEnabled {
 		t.Fatal("wheel should be disabled when mouse capture is off")

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/eventlog"
+	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
 // mustJSON encodes v to json.RawMessage, failing the test on error.

@@ -9,11 +9,11 @@ import (
 
 	eyrieengine "github.com/GrayCodeAI/eyrie/engine"
 	eyriegraph "github.com/GrayCodeAI/eyrie/graph"
-	graphcontracts "github.com/GrayCodeAI/hawk/internal/contracts/graph"
-	policycontracts "github.com/GrayCodeAI/hawk/internal/contracts/policy"
-	"github.com/GrayCodeAI/hawk/internal/engine/token"
-	"github.com/GrayCodeAI/hawk/internal/graphjournal"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	graphcontracts "github.com/GrayCodeAI/rho/internal/contracts/graph"
+	policycontracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+	"github.com/GrayCodeAI/rho/internal/graphjournal"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 func (s *Session) recordPolicyObservation(tc types.ToolCall, stage string, allowed bool, reason string) {
@@ -29,10 +29,10 @@ func (s *Session) recordPolicyObservation(tc types.ToolCall, stage string, allow
 	}
 	verdict := policycontracts.Allow(reason)
 	verdict.Rule = strings.TrimSpace(stage)
-	verdict.Source = "hawk." + strings.TrimSpace(stage)
+	verdict.Source = "rho." + strings.TrimSpace(stage)
 	if !allowed {
 		verdict = policycontracts.Deny(reason, strings.TrimSpace(stage))
-		verdict.Source = "hawk." + strings.TrimSpace(stage)
+		verdict.Source = "rho." + strings.TrimSpace(stage)
 	}
 	if err := graphjournal.AppendPolicy(sessionID, tc.ID, stage, verdict, time.Now()); err != nil {
 		s.Logger().Warn("graph observation append failed", map[string]interface{}{
@@ -315,7 +315,7 @@ func (s *Session) recordEyrieOperationObservation(
 }
 
 // The following helpers convert Eyrie's vendored graph contract types into
-// Hawk's contracts/graph contract types. The definitions are byte-identical, so
+// Rho's contracts/graph contract types. The definitions are byte-identical, so
 // conversion is a field-by-field copy at the sibling boundary.
 
 func toContractNodes(nodes []eyriegraph.Node) []graphcontracts.Node {

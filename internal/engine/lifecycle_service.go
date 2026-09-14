@@ -5,14 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/engine/branching"
-	"github.com/GrayCodeAI/hawk/internal/engine/token"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
-	"github.com/GrayCodeAI/hawk/internal/observability/logger"
-	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/prompts"
-	"github.com/GrayCodeAI/hawk/internal/smartrouting"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/engine/branching"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
+	"github.com/GrayCodeAI/rho/internal/observability/logger"
+	"github.com/GrayCodeAI/rho/internal/plugin"
+	"github.com/GrayCodeAI/rho/internal/prompts"
+	"github.com/GrayCodeAI/rho/internal/smartrouting"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // LifecycleService is the Session's view of the self-improvement and

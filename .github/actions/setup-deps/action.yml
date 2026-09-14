@@ -28,7 +28,7 @@ runs:
         ws_parent="$(cd "${GITHUB_WORKSPACE}/.." && pwd)"
         mkdir -p "$ws_parent"
         while IFS= read -r repo; do
-          [ "$repo" = hawk ] && continue
+          [ "$repo" = rho ] && continue
           dest="$ws_parent/$repo"
           if [ -d "$dest/.git" ]; then
             echo "$repo already present at $dest"

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestRenderContextUsageBar(t *testing.T) {
@@ -32,7 +32,7 @@ func TestContextUsagePercentForBar(t *testing.T) {
 func TestRenderCompactProgressPanel(t *testing.T) {
 	m := chatModel{
 		session:          &engine.Session{},
-		brailleSpinner:   NewBrailleSpinner(SpinnerHawk, "Compacting conversation"),
+		brailleSpinner:   NewBrailleSpinner(SpinnerRho, "Compacting conversation"),
 		manualCompacting: true,
 	}
 	out := m.renderCompactProgressPanel(80)

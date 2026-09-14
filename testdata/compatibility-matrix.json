@@ -4,11 +4,11 @@
   "version": "1",
   "updated": "2026-09-14",
   "components": [
-    "hawk",
+    "rho",
     "eyrie"
   ],
   "dependencies": {
-    "hawk": [
+    "rho": [
       "eyrie"
     ],
     "eyrie": []
@@ -18,7 +18,7 @@
       "name": "stable",
       "description": "Latest tested-together stable combination across the eco. This is what new users get when installing.",
       "components": {
-        "hawk": "0.0.1",
+        "rho": "0.0.1",
         "eyrie": "0.0.1"
       }
     },
@@ -26,7 +26,7 @@
       "name": "next",
       "description": "Combination that the upcoming release will ship — kept up to date by release-please as components advance. Tested in CI on every PR.",
       "components": {
-        "hawk": "main",
+        "rho": "main",
         "eyrie": "main"
       }
     }

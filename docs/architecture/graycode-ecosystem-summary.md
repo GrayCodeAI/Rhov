@@ -1,12 +1,12 @@
 # GrayCode Ecosystem Summary
 
 > **Historical.** This document describes the pre-2026-09 multi-engine
-> ecosystem. Hawk now depends only on `eyrie` and embeds its own token engine;
+> ecosystem. Rho now depends only on `eyrie` and embeds its own token engine;
 > the harrier, kestrel, merlin, shrike, and swift integrations have been
 > removed. Kept for record.
 
-`graycode-eco` is only a local parent folder. `hawk` is the main CLI and the
-only primary Hawk product; the other repositories provide capabilities,
+`graycode-eco` is only a local parent folder. `rho` is the main CLI and the
+only primary Rho product; the other repositories provide capabilities,
 contracts, integrations, tooling, or optional platform services.
 
 ## Repository layers
@@ -15,7 +15,7 @@ contracts, integrations, tooling, or optional platform services.
 API consumers/extensions
   sparrow   robin   wren   starling
        \      |      |       /
-                    hawk
+                    rho
              (main CLI and daemon)
                       |
 Support engines
@@ -26,7 +26,7 @@ Foundations
 
 Outside the Go runtime graph
   owl                  architecture tooling
-  graycode-platform    web, BFF, and Hawk Cloud Worker
+  graycode-platform    web, BFF, and Rho Cloud Worker
 ```
 
 Product labels map to directories as follows: `harrier`/Harrier, `shrike`/Shrike,
@@ -35,20 +35,20 @@ Product labels map to directories as follows: `harrier`/Harrier, `shrike`/Shrike
 ## Dependency direction
 
 ```text
-hawk -> eyrie / harrier / shrike / swift / kestrel / merlin / eagle
+rho -> eyrie / harrier / shrike / swift / kestrel / merlin / eagle
 engines -> eagle                  # when shared contracts are needed
 harrier / kestrel / merlin -> falcon
-sparrow / robin / wren -> Hawk daemon API
-starling -> Hawk skill/plugin API
+sparrow / robin / wren -> Rho daemon API
+starling -> Rho skill/plugin API
 ```
 
-Forbidden edges are engine-to-engine, engine-to-Hawk-internal, SDK-to-engine,
+Forbidden edges are engine-to-engine, engine-to-Rho-internal, SDK-to-engine,
 skills-to-engine, and any Go-module dependency on GrayCode Platform.
 
 ## Runtime and hosted plane
 
 ```text
-Hawk main CLI
+Rho main CLI
   ├── Eyrie provider execution
   ├── Harrier memory
   ├── Shrike token/context management
@@ -56,20 +56,20 @@ Hawk main CLI
   ├── Kestrel review
   └── Merlin verification
 
-hawk ── optional authenticated HTTP ──> graycode-platform/apps/worker
+rho ── optional authenticated HTTP ──> graycode-platform/apps/worker
 web ──> graycode-platform/apps/bff ── private Service Binding ──> worker
 worker ──> control-plane D1 + usage Queue + R2
 ```
 
 The Worker is deployed as `graycode-cloud`, but that is an application name,
-not a repository. GrayCode Platform remains outside the Hawk Go module graph.
-Hawk's cloud usage path is fail-open; graph synchronization is explicit.
+not a repository. GrayCode Platform remains outside the Rho Go module graph.
+Rho's cloud usage path is fail-open; graph synchronization is explicit.
 
 ## Repository roles
 
 | Repository | Role | Direct dependency rule |
 |---|---|---|
-| `hawk` | Main CLI, daemon, orchestration, policy | Integrates engines and contracts |
+| `rho` | Main CLI, daemon, orchestration, policy | Integrates engines and contracts |
 | `eyrie` | Provider runtime | Uses Eagle contracts; exposes `engine` |
 | `harrier` | Harrier memory | Uses Eagle/Falcon where required |
 | `shrike` | Shrike context engine | Uses Eagle where required |
@@ -78,10 +78,10 @@ Hawk's cloud usage path is fail-open; graph synchronization is explicit.
 | `merlin` | Merlin verification | Uses Eagle and Falcon |
 | `eagle` | Neutral shared contracts | Leaf module |
 | `falcon` | MCP kit | Upstream MCP library only |
-| `sparrow` | Go SDK | Hawk API contract |
-| `robin` | Python SDK | Hawk API contract |
-| `wren` | TypeScript SDK | Hawk API contract |
-| `starling` | Skills/extensions | Hawk skill surface |
+| `sparrow` | Go SDK | Rho API contract |
+| `robin` | Python SDK | Rho API contract |
+| `wren` | TypeScript SDK | Rho API contract |
+| `starling` | Skills/extensions | Rho skill surface |
 | `owl` | Architecture explorer | Generated read-only projection |
 | `graycode-platform` | Web/BFF/cloud | HTTP and Service Binding only |
 
@@ -91,5 +91,5 @@ The repository-level target is implemented: independent Git repositories,
 canonical manifest, generated Owl inventory, sibling Go workspace, Eagle parity,
 and dependency boundary checks are all present. Remaining work is to publish
 the Eagle-compatible Eyrie revision, remove the transitional
-`hawk-core-contracts` dependency from the standalone graph, and decide whether
-Hawk's graph/projection packages need additional engine-owned facades.
+`rho-core-contracts` dependency from the standalone graph, and decide whether
+Rho's graph/projection packages need additional engine-owned facades.

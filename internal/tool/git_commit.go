@@ -4,12 +4,29 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+
+	"github.com/GrayCodeAI/rho/internal/gitcmd"
 )
 
-var lastAutoCommitHash string
+var (
+	lastAutoCommitMu   sync.Mutex
+	lastAutoCommitHash string
+)
+
+func setLastAutoCommitHash(hash string) {
+	lastAutoCommitMu.Lock()
+	lastAutoCommitHash = hash
+	lastAutoCommitMu.Unlock()
+}
+
+func getLastAutoCommitHash() string {
+	lastAutoCommitMu.Lock()
+	defer lastAutoCommitMu.Unlock()
+	return lastAutoCommitHash
+}
 
 // CommitMessageChatFn is the seam through which the LLM-based Conventional
 // Commits generator reaches a fast model: it takes a prompt and returns the
@@ -47,7 +64,7 @@ type AttributionModes struct {
 
 // IsGitRepo checks if the current directory is inside a git repository.
 func IsGitRepo() bool {
-	return exec.CommandContext(context.Background(), "git", "rev-parse", "--git-dir").Run() == nil
+	return gitcmd.Command(context.Background(), "rev-parse", "--git-dir").Run() == nil
 }
 
 func autoCommitEnabled(ctx context.Context) bool {
@@ -63,49 +80,49 @@ func AutoCommit(ctx context.Context, path, toolName, description string) error {
 		return fmt.Errorf("not a git repository")
 	}
 
-	add := exec.CommandContext(context.Background(), "git", "add", "--", path) // #nosec G204 -- fixed git subcommand and path after argument separator
+	add := gitcmd.Command(context.Background(), "add", "--", path) // #nosec G204 -- fixed git subcommand and path after argument separator
 	if out, err := add.CombinedOutput(); err != nil {
 		return fmt.Errorf("git add: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
 
 	base := filepath.Base(path)
-	msg := fmt.Sprintf("hawk: %s %s — %s", toolName, base, description)
+	msg := fmt.Sprintf("rho: %s %s — %s", toolName, base, description)
 
 	if tc := GetToolContext(ctx); tc != nil && tc.Attribution != nil {
 		attr := tc.Attribution
 		switch attr.TrailerStyle {
 		case "assisted-by":
-			msg += "\n\nAssisted-by: Hawk <hawk@hawk.ai>"
+			msg += "\n\nAssisted-by: Rho <rho@rho.ai>"
 		case "none", "":
 		default:
 			// co-authored-by and unknown styles are treated as none
 		}
 		if attr.GeneratedWith {
-			msg += "\nGenerated-with: Hawk"
+			msg += "\nGenerated-with: Rho"
 		}
 	}
 
-	commit := exec.CommandContext(context.Background(), "git", "commit", "-m", msg) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
+	commit := gitcmd.Command(context.Background(), "commit", "-m", msg) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
 	if out, err := commit.CombinedOutput(); err != nil {
 		return fmt.Errorf("git commit: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
 
 	hash, err := gitHeadHash()
 	if err == nil {
-		lastAutoCommitHash = hash
+		setLastAutoCommitHash(hash)
 	}
 	return nil
 }
 
 func RevertLastAutoCommit() error {
-	if lastAutoCommitHash == "" {
+	if getLastAutoCommitHash() == "" {
 		return fmt.Errorf("no auto-commit to revert")
 	}
-	reset := exec.CommandContext(context.Background(), "git", "reset", "--soft", "HEAD~1")
+	reset := gitcmd.Command(context.Background(), "reset", "--soft", "HEAD~1")
 	if out, err := reset.CombinedOutput(); err != nil {
 		return fmt.Errorf("git reset: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
-	unstage := exec.CommandContext(context.Background(), "git", "restore", "--staged", ".")
+	unstage := gitcmd.Command(context.Background(), "restore", "--staged", ".")
 	if out, err := unstage.CombinedOutput(); err != nil {
 		return fmt.Errorf("git restore: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
@@ -113,11 +130,11 @@ func RevertLastAutoCommit() error {
 }
 
 func LastAutoCommitHash() string {
-	return lastAutoCommitHash
+	return getLastAutoCommitHash()
 }
 
 func gitHeadHash() (string, error) {
-	out, err := exec.CommandContext(context.Background(), "git", "rev-parse", "--short", "HEAD").CombinedOutput()
+	out, err := gitcmd.Command(context.Background(), "rev-parse", "--short", "HEAD").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
@@ -125,7 +142,7 @@ func gitHeadHash() (string, error) {
 }
 
 func gitHeadMessage() (string, error) {
-	out, err := exec.CommandContext(context.Background(), "git", "log", "-1", "--format=%s").CombinedOutput()
+	out, err := gitcmd.Command(context.Background(), "log", "-1", "--format=%s").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
@@ -207,14 +224,14 @@ func CommitStaged(ctx context.Context, message string, modes *AttributionModes) 
 	}
 	message = applyAttributionModes(message, modes)
 
-	commit := exec.CommandContext(ctx, "git", "commit", "-m", message) // #nosec G204 -- fixed git subcommand and message passed as one argument
+	commit := gitcmd.Command(ctx, "commit", "-m", message) // #nosec G204 -- fixed git subcommand and message passed as one argument
 	commit.Env = commitEnv(os.Environ(), modes)
 	if out, err := commit.CombinedOutput(); err != nil {
 		return fmt.Errorf("git commit: %s (%w)", strings.TrimSpace(string(out)), err)
 	}
 
 	if hash, err := gitHeadHash(); err == nil {
-		lastAutoCommitHash = hash
+		setLastAutoCommitHash(hash)
 	}
 	return nil
 }

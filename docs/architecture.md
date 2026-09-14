@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> hawk Architecture
+# <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> rho Architecture
 
 **AI Coding Agent for Your Terminal**
 
@@ -14,19 +14,19 @@
 
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/target.svg" width="16" height="16" alt="target" /> Overview
 
-hawk is an AI-powered coding agent for the terminal. It reads codebases, writes and edits files, runs tests, and manages git — all through natural language. Zero CGO, single static binary for linux/darwin/windows on amd64/arm64.
+rho is an AI-powered coding agent for the terminal. It reads codebases, writes and edits files, runs tests, and manages git — all through natural language. Zero CGO, single static binary for linux/darwin/windows on amd64/arm64.
 
-Detailed planning docs for the Hawk product architecture live in [`docs/architecture/`](architecture/README.md).
+Detailed planning docs for the Rho product architecture live in [`docs/architecture/`](architecture/README.md).
 
 ---
 
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/blocks.svg" width="16" height="16" alt="blocks" /> Layered Architecture
 
 ```
-hawk/
+rho/
 ├── api/openapi.yaml           <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/file-text.svg" width="16" height="16" alt="file-text" /> Daemon REST API contract (OpenAPI 3.1)
 ├── cmd/                       <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/terminal.svg" width="16" height="16" alt="terminal" /> Cobra CLI commands (200+ files)
-│   ├── hawk/main.go           <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/zap.svg" width="16" height="16" alt="zap" /> Entry point — calls cmd.Execute()
+│   ├── rho/main.go           <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/zap.svg" width="16" height="16" alt="zap" /> Entry point — calls cmd.Execute()
 │   ├── root.go                <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/settings.svg" width="16" height="16" alt="settings" /> Root command, flag definitions
 │   ├── daemon.go              <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/server.svg" width="16" height="16" alt="server" /> Daemon start/stop/status
 │   ├── chat.go                <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/message-square.svg" width="16" height="16" alt="message-square" /> Interactive TUI chat
@@ -62,8 +62,8 @@ hawk/
 | | |
 |---|---|
 | **Contract** | [`api/openapi.yaml`](../api/openapi.yaml) |
-| **Port** | `:4590` (default). Override: `HAWK_DAEMON_PORT` |
-| **Auth** | Bearer token or `X-API-Key`. Set via `HAWK_DAEMON_API_KEY` |
+| **Port** | `:4590` (default). Override: `RHO_DAEMON_PORT` |
+| **Auth** | Bearer token or `X-API-Key`. Set via `RHO_DAEMON_API_KEY` |
 
 <details>
 <summary><b><img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/radio.svg" width="16" height="16" alt="radio" /> Endpoint Summary</b></summary>
@@ -100,7 +100,7 @@ hawk/
 
 All three SDKs share types from **eagle** and consume the daemon REST API (:4590).
 
-> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> **hawk never talks to LLM APIs directly** — all calls go through eyrie.
+> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> **rho never talks to LLM APIs directly** — all calls go through eyrie.
 
 ---
 
@@ -118,9 +118,9 @@ Tool Call → <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/i
 
 | Decision | Rationale |
 |----------|-----------|
-| `cmd/hawk/main.go` entry point | Standard Go layout — goreleaser builds with `main: ./cmd/hawk` producing `hawk` binary |
+| `cmd/rho/main.go` entry point | Standard Go layout — goreleaser builds with `main: ./cmd/rho` producing `rho` binary |
 | `cmd/` is CLI library | Not a binary sub-directory — holds 200+ cobra command files |
 | Zero CGO | Pure Go, cross-compilable. Tree-sitter is optional |
 | `internal/` is private | Other repos should not import `internal/*` |
 | `go.work` | Resolves the ecosystem siblings (`../<repo>`) for local and CI workspace integration |
-| `eagle` | Shared cross-repo severity, findings, review, verify, tools, events, and policy contracts — engines import this instead of `hawk/internal` |
+| `eagle` | Shared cross-repo severity, findings, review, verify, tools, events, and policy contracts — engines import this instead of `rho/internal` |

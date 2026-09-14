@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/theme"
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/theme"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 // ProjectSignal represents a detected project characteristic.
@@ -184,7 +184,7 @@ func RunAutoSkill(dir string) (string, error) {
 	}
 
 	if installed > 0 {
-		_, _ = fmt.Fprintf(&b, "\n%s", theme.Tint(fmt.Sprintf("Installed %d skill(s) to Hawk user state", installed), theme.ReportSuccess))
+		_, _ = fmt.Fprintf(&b, "\n%s", theme.Tint(fmt.Sprintf("Installed %d skill(s) to Rho user state", installed), theme.ReportSuccess))
 	}
 	return b.String(), nil
 }

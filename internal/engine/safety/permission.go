@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	contracts "github.com/GrayCodeAI/hawk/internal/contracts/policy"
-	"github.com/GrayCodeAI/hawk/internal/permissions"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
+	"github.com/GrayCodeAI/rho/internal/permissions"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // PermissionRequest is sent from engine to TUI when a tool needs approval.
@@ -198,6 +198,10 @@ func ToolNeedsPermission(name string, args map[string]interface{}) bool {
 	switch canonicalToolName(name) {
 	case "Write", "Edit", "NotebookEdit":
 		return true
+	case "TerminalCreate", "TerminalSend":
+		// These hand a model-supplied string to a live shell and can mutate
+		// arbitrary state; always require approval like Bash.
+		return true
 	case "Bash":
 		// Check if the command is suspicious
 		if cmd, ok := args["command"].(string); ok {
@@ -377,6 +381,10 @@ func canonicalToolName(name string) string {
 		return "Converge"
 	case "notebook_edit", "notebookedit":
 		return "NotebookEdit"
+	case "terminal_create", "terminalcreate", "pty_create":
+		return "TerminalCreate"
+	case "terminal_send", "terminalsend", "pty_send":
+		return "TerminalSend"
 	case "config":
 		return "Config"
 	case "brief", "sendusermessage":

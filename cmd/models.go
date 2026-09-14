@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +20,11 @@ var (
 var modelsCmd = &cobra.Command{
 	Use:   "models",
 	Short: "Deployment-aware model catalog (via eyrie)",
-	Long: `Manage the eyrie model catalog used by hawk for models, pricing, and deployment routing.
+	Long: `Manage the eyrie model catalog used by rho for models, pricing, and deployment routing.
 
 The catalog is stored at ~/.eyrie/model_catalog.json (override with EYRIE_MODEL_CATALOG_PATH).
-Hawk refreshes the catalog automatically on startup when the cache is missing, empty, or stale (disable with --no-auto-catalog-refresh or HAWK_AUTO_REFRESH_CATALOG=0).
-Use 'hawk models refresh' for a manual refresh or full discover report.`,
+Rho refreshes the catalog automatically on startup when the cache is missing, empty, or stale (disable with --no-auto-catalog-refresh or RHO_AUTO_REFRESH_CATALOG=0).
+Use 'rho models refresh' for a manual refresh or full discover report.`,
 }
 
 var modelsRefreshCmd = &cobra.Command{
@@ -41,7 +41,7 @@ var modelsRefreshCmd = &cobra.Command{
 		prog := NewCLIProgress("Models", []string{"Discovering catalog"})
 		defer prog.Abort()
 		prog.StartStep(0)
-		summary, err := hawkconfig.RefreshModelCatalogV1WithSettings(ctx, settings)
+		summary, err := rhoconfig.RefreshModelCatalogV1WithSettings(ctx, settings)
 		if err != nil {
 			prog.FailStep(0, err.Error())
 			return err
@@ -62,13 +62,13 @@ var modelsStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cmd.Println(hawkconfig.FormatCatalogHealth(hawkconfig.CatalogHealthReport(ctx)))
+		cmd.Println(rhoconfig.FormatCatalogHealth(rhoconfig.CatalogHealthReport(ctx)))
 		cmd.Println()
 		modelName, _ := effectiveModelAndProvider(settings)
 		if len(args) > 0 {
 			modelName = args[0]
 		}
-		report, err := hawkconfig.DeploymentStatusReportWithSettings(ctx, settings, modelName)
+		report, err := rhoconfig.DeploymentStatusReportWithSettings(ctx, settings, modelName)
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ var modelsRoutingPreviewCmd = &cobra.Command{
 			return err
 		}
 		modelName := args[0]
-		out, err := hawkconfig.RoutingPreviewJSONWithSettings(cmd.Context(), settings, modelName)
+		out, err := rhoconfig.RoutingPreviewJSONWithSettings(cmd.Context(), settings, modelName)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ var modelsListCmd = &cobra.Command{
 			providerName = args[0]
 		}
 		ctx := cmd.Context()
-		var models []hawkconfig.EngineModel
+		var models []rhoconfig.EngineModel
 		// Only the live provider fetch is slow enough to animate, and only when
 		// the output is a human table (JSON/raw must stay pure).
 		animate := modelsListLive && !modelsListJSON && !modelsListRaw
@@ -121,11 +121,11 @@ var modelsListCmd = &cobra.Command{
 		}
 		if modelsListLive {
 			if providerName == "" {
-				return fmt.Errorf("provider required with --live (e.g. hawk models list canopywave --live --json)")
+				return fmt.Errorf("provider required with --live (e.g. rho models list canopywave --live --json)")
 			}
-			models, err = hawkconfig.ListLiveEngineModelsWithSettings(ctx, settings, hawkconfig.ActiveProviderID(providerName))
+			models, err = rhoconfig.ListLiveEngineModelsWithSettings(ctx, settings, rhoconfig.ActiveProviderID(providerName))
 		} else {
-			models, err = hawkconfig.FetchModelsForProviderWithSettings(ctx, settings, providerName)
+			models, err = rhoconfig.FetchModelsForProviderWithSettings(ctx, settings, providerName)
 		}
 		if err != nil {
 			if prog != nil {
@@ -159,9 +159,9 @@ var modelsListCmd = &cobra.Command{
 	},
 }
 
-// modelListJSONEntry is Hawk's versioned command-output contract. Keep this
+// modelListJSONEntry is Rho's versioned command-output contract. Keep this
 // separate from Eyrie's host-facing Model DTO so engine-only fields can evolve
-// without breaking users that consume `hawk models list --json`.
+// without breaking users that consume `rho models list --json`.
 type modelListJSONEntry struct {
 	ID               string          `json:"id"`
 	InputPricePer1M  float64         `json:"input_price_per_1m"`
@@ -175,7 +175,7 @@ type modelListJSONEntry struct {
 	LiveMetadata     json.RawMessage `json:"live_metadata,omitempty"`
 }
 
-func modelListJSONEntryFromEngine(m hawkconfig.EngineModel) modelListJSONEntry {
+func modelListJSONEntryFromEngine(m rhoconfig.EngineModel) modelListJSONEntry {
 	return modelListJSONEntry{
 		ID:               m.ID,
 		InputPricePer1M:  m.InputPricePer1M,
@@ -198,7 +198,7 @@ func validModelLiveMetadata(raw json.RawMessage) json.RawMessage {
 	return append(json.RawMessage(nil), metadata...)
 }
 
-func marshalModelListJSON(models []hawkconfig.EngineModel, rawOnly, live bool) ([]byte, error) {
+func marshalModelListJSON(models []rhoconfig.EngineModel, rawOnly, live bool) ([]byte, error) {
 	entries := make([]modelListJSONEntry, len(models))
 	for i, model := range models {
 		entries[i] = modelListJSONEntryFromEngine(model)

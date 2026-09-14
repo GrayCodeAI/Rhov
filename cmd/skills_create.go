@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/tool"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/plugin"
+	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ func runSkillsCreate(_ *cobra.Command, args []string) error {
 		return err
 	}
 	model, provider := effectiveModelAndProvider(settings)
-	sess := newHawkSession(settings, provider, model, "You are a skill author.", tool.NewRegistry())
+	sess := newRhoSession(settings, provider, model, "You are a skill author.", tool.NewRegistry())
 
 	prompt := plugin.BuildNewSkillPrompt(desc)
 	resp, err := sess.Chat(context.Background(), []types.EyrieMessage{

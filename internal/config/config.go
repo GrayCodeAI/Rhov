@@ -23,6 +23,14 @@ var agentFiles = []string{
 	"AGENTS.md",
 }
 
+// sharedAgentFiles lists instruction files under a shared resource directory.
+// Tau reads `.agents/` resources; Rho honors the same layout in addition to
+// the root-level AGENTS.md, so a repo can keep shared agent instructions in
+// `.agents/AGENTS.md`.
+var sharedAgentFiles = []string{
+	filepath.Join(".agents", "AGENTS.md"),
+}
+
 // LoadAgentsMDFrom reads AGENTS.md from start or its parents.
 func LoadAgentsMDFrom(start string) string {
 	dir := start
@@ -33,7 +41,9 @@ func LoadAgentsMDFrom(start string) string {
 		dir = abs
 	}
 	for {
-		for _, name := range agentFiles {
+		// Root-level instruction files win over shared-resource ones in the
+		// same directory.
+		for _, name := range append(append([]string{}, agentFiles...), sharedAgentFiles...) {
 			path := filepath.Join(dir, name)
 			data, err := os.ReadFile(path) // #nosec G304 -- dir is the working directory or an ancestor of it; name is a fixed constant
 			if err == nil {

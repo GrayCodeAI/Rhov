@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
-	"github.com/GrayCodeAI/hawk/internal/observability/logger"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
+	"github.com/GrayCodeAI/rho/internal/observability/logger"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // MemoryService is the Session's view of the memory layer: recall/remember

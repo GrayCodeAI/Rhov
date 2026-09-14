@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 const (

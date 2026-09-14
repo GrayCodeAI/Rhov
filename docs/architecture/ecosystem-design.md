@@ -2,7 +2,7 @@
 
 ## Authority
 
-[`hawk/ecosystem.yaml`](../../ecosystem.yaml) is the canonical repository
+[`rho/ecosystem.yaml`](../../ecosystem.yaml) is the canonical repository
 inventory. It defines the repositories, their directory names, product
 labels, Go modules, and workspace membership. It is the single source of
 truth; other ecosystem documents must not maintain a second repository list.
@@ -14,7 +14,7 @@ workspace root provides local coordination; it is not itself a Git repository.
 
 ```text
 graycode-eco/
-├── hawk                 # product, CLI, daemon, orchestration, policy
+├── rho                 # product, CLI, daemon, orchestration, policy
 ├── eagle                # shared neutral contracts
 ├── falcon               # shared MCP transport/handler kit
 ├── eyrie                # provider runtime (product label: Eyrie)
@@ -28,13 +28,13 @@ graycode-eco/
 ├── wren                 # TypeScript SDK
 ├── starling             # community skills/extensions
 ├── owl                  # architecture visualization tooling
-└── graycode-platform    # web, browser BFF, and Hawk Cloud Worker
+└── graycode-platform    # web, browser BFF, and Rho Cloud Worker
 ```
 
 ## Compile-time dependency graph
 
 ```text
-sparrow / robin / wren ── Hawk daemon API ──> hawk <── skill API ── starling
+sparrow / robin / wren ── Rho daemon API ──> rho <── skill API ── starling
                                              │
                                              ├── eyrie/engine
                                              ├── harrier       (Harrier)
@@ -48,8 +48,8 @@ eyrie / harrier / shrike / swift / kestrel / merlin ──> eagle (as needed)
 harrier / kestrel / merlin ──> falcon ──> mark3labs/mcp-go
 ```
 
-Hawk is the only orchestration root. Engines are peers: they do not import
-Hawk internals and do not import one another. Eagle owns neutral contracts;
+Rho is the only orchestration root. Engines are peers: they do not import
+Rho internals and do not import one another. Eagle owns neutral contracts;
 Falcon owns reusable MCP scaffolding. SDKs are API consumers, not Go imports
 of the engines.
 
@@ -66,7 +66,7 @@ CI must test both workspace mode and `GOWORK=off` module mode.
 ## Runtime/API connectivity
 
 ```text
-Hawk local runtime
+Rho local runtime
   ├── Eyrie provider generation
   ├── Harrier memory and retrieval
   ├── Shrike token budgeting/compression
@@ -74,7 +74,7 @@ Hawk local runtime
   ├── Kestrel review
   └── Merlin verification
 
-Hawk ── optional authenticated HTTP ──> graycode-platform/apps/worker
+Rho ── optional authenticated HTTP ──> graycode-platform/apps/worker
 web ──> graycode-platform/apps/bff ── private Service Binding ──> worker
 worker ──> control-plane D1, usage Queue, and R2 archive
 
@@ -84,10 +84,10 @@ Owl <── manifest and read-only generated repository artifacts
 The Worker deployment is named `graycode-cloud`, but it is an application
 inside the `graycode-platform` repository, not a separate repository. The BFF
 owns browser identity and forwards authenticated requests over the private
-`HawkCloudService` binding. Hawk Cloud owns Hawk-specific projects, devices,
+`RhoCloudService` binding. Rho Cloud owns Rho-specific projects, devices,
 usage, billing, audit, and graph records.
 
-Cloud is optional. Hawk local execution must never depend on the platform being
+Cloud is optional. Rho local execution must never depend on the platform being
 available; automatic usage delivery is fail-open, while graph synchronization
 is an explicit user operation.
 
@@ -96,25 +96,25 @@ is an explicit user operation.
 Allowed:
 
 ```text
-hawk -> engine facades and Eagle contracts
+rho -> engine facades and Eagle contracts
 engine -> Eagle when a shared contract is required
 harrier / kestrel / merlin -> Falcon for MCP serving
-SDK -> Hawk public HTTP/OpenAPI contract
-Starling -> Hawk skill/plugin surface
-Hawk -> deployed Hawk Cloud over authenticated HTTP only
+SDK -> Rho public HTTP/OpenAPI contract
+Starling -> Rho skill/plugin surface
+Rho -> deployed Rho Cloud over authenticated HTTP only
 ```
 
 Forbidden:
 
 ```text
 engine -> engine
-engine -> hawk/internal/*
+engine -> rho/internal/*
 SDK -> engine
 skills -> engine
 any Go module -> graycode-platform code
 ```
 
-Graph and quality-projection packages imported by Hawk are explicit integration
+Graph and quality-projection packages imported by Rho are explicit integration
 surfaces. If they become replaceability-sensitive, move them behind the
 corresponding engine facade rather than exporting implementation types further.
 
@@ -122,12 +122,12 @@ corresponding engine facade rather than exporting implementation types further.
 
 1. Publish Eagle contract changes.
 2. Publish the Eagle-compatible engine revisions.
-3. Update Hawk's engine pins and verify `GOWORK=off` builds.
-4. Validate SDK OpenAPI snapshots against Hawk.
+3. Update Rho's engine pins and verify `GOWORK=off` builds.
+4. Validate SDK OpenAPI snapshots against Rho.
 5. Deploy GrayCode Platform independently after its Worker/BFF contract tests
    pass.
 
-The current local Eyrie checkout is Eagle-compatible, but Hawk's published
-Eyrie pin still has a transitive `hawk-core-contracts` dependency. That is a
+The current local Eyrie checkout is Eagle-compatible, but Rho's published
+Eyrie pin still has a transitive `rho-core-contracts` dependency. That is a
 release-order issue, not a reason to add a local `replace` directive or a
 platform dependency.

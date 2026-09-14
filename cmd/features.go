@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/feature"
+	"github.com/GrayCodeAI/rho/internal/feature"
 	"github.com/spf13/cobra"
 )
 
@@ -21,14 +21,14 @@ capabilities without code changes or restarts (some changes may require
 a daemon restart).
 
 Override a flag via environment variable:
-    HAWK_FEATURE_<FLAG_NAME>=1 hawk daemon start
+    RHO_FEATURE_<FLAG_NAME>=1 rho daemon start
 
 Show a specific flag:
-    hawk features get <flag-name>`,
+    rho features get <flag-name>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 && args[0] == "get" {
 			if len(args) < 2 {
-				return fmt.Errorf("usage: hawk features get <flag-name>")
+				return fmt.Errorf("usage: rho features get <flag-name>")
 			}
 			f, ok := feature.Info(args[1])
 			if !ok {
@@ -38,7 +38,7 @@ Show a specific flag:
 			fmt.Printf("%s\n", auditTint("Default:     ", textMuted)+auditTint(fmt.Sprintf("%v", f.DefaultValue()), textPrimary))
 			fmt.Printf("%s\n", auditTint("Current:     ", textMuted)+auditTint(fmt.Sprintf("%v", feature.EnabledByName(args[1])), textPrimary))
 			fmt.Printf("%s\n", auditTint("Description: ", textMuted)+auditTint(f.Description(), textPrimary))
-			envVar := "HAWK_FEATURE_" + strings.ReplaceAll(strings.ToUpper(args[1]), "-", "_")
+			envVar := "RHO_FEATURE_" + strings.ReplaceAll(strings.ToUpper(args[1]), "-", "_")
 			fmt.Printf("%s\n", auditTint("Env var:     ", textMuted)+auditTint(envVar, textPrimary))
 			return nil
 		}
@@ -50,7 +50,7 @@ Show a specific flag:
 		}
 		sort.Strings(names)
 
-		fmt.Println(auditTint("Feature Flags:", hawkColor))
+		fmt.Println(auditTint("Feature Flags:", rhoColor))
 		fmt.Println()
 		for _, name := range names {
 			f, _ := feature.Info(name)
@@ -65,7 +65,7 @@ Show a specific flag:
 			if f != nil {
 				fmt.Printf("%s\n", auditTint(fmt.Sprintf("    default: %v", f.DefaultValue()), textMuted))
 				fmt.Printf("%s\n", auditTint("    description: "+f.Description(), textMuted))
-				envVar := "HAWK_FEATURE_" + strings.ReplaceAll(strings.ToUpper(name), "-", "_")
+				envVar := "RHO_FEATURE_" + strings.ReplaceAll(strings.ToUpper(name), "-", "_")
 				fmt.Printf("%s\n", auditTint("    env: "+envVar, textMuted))
 			}
 			fmt.Println()

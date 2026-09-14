@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/sessionquery"
+	"github.com/GrayCodeAI/rho/internal/sessionquery"
 )
 
 // SessionQueryTool enables the agent to search past and current conversation sessions via FTS5.

@@ -136,6 +136,6 @@
     ]
   },
   "ecosystem_compatibility": {
-    "hawk+eyrie": "full"
+    "rho+eyrie": "full"
   }
 }

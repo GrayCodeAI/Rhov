@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/taskruntime"
+	"github.com/GrayCodeAI/rho/internal/taskruntime"
 )
 
 func TestWaitTasksAndKillMonitor(t *testing.T) {

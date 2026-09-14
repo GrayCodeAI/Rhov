@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/hawk/internal/contracts/graph"
+	graphcontracts "github.com/GrayCodeAI/rho/internal/contracts/graph"
 )
 
 func TestChunkCodeEmpty(t *testing.T) {

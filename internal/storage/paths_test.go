@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,22 +26,22 @@ func TestStorageDirsRespectOverrides(t *testing.T) {
 	}
 }
 
-func TestProviderConfigPathUsesEyrieOverrideWithoutMovingHawkSettings(t *testing.T) {
-	hawkDir := filepath.Join(t.TempDir(), "hawk")
+func TestProviderConfigPathUsesEyrieOverrideWithoutMovingRhoSettings(t *testing.T) {
+	rhoDir := filepath.Join(t.TempDir(), "rho")
 	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
-	t.Setenv(envConfigDir, hawkDir)
+	t.Setenv(envConfigDir, rhoDir)
 	t.Setenv(envEyrieConfigDir, eyrieDir)
 
 	if got, want := ProviderConfigPath(), filepath.Join(eyrieDir, "provider.json"); got != want {
 		t.Fatalf("ProviderConfigPath() = %q, want EYRIE_CONFIG_DIR path %q", got, want)
 	}
-	if got, want := SettingsPath(), filepath.Join(hawkDir, "settings.json"); got != want {
-		t.Fatalf("SettingsPath() = %q, want HAWK_CONFIG_DIR path %q", got, want)
+	if got, want := SettingsPath(), filepath.Join(rhoDir, "settings.json"); got != want {
+		t.Fatalf("SettingsPath() = %q, want RHO_CONFIG_DIR path %q", got, want)
 	}
 }
 
 func TestProviderConfigPathDefaultsToEyrieDir(t *testing.T) {
-	t.Setenv(envConfigDir, filepath.Join(t.TempDir(), "hawk"))
+	t.Setenv(envConfigDir, filepath.Join(t.TempDir(), "rho"))
 	t.Setenv(envEyrieConfigDir, "  ")
 
 	if got, want := ProviderConfigPath(), filepath.Join(mustUserConfigDir(), "eyrie", "provider.json"); got != want {
@@ -77,5 +78,40 @@ func TestProjectStateAndCacheUseHashedProjectRoot(t *testing.T) {
 	}
 	if got := ProjectCacheDir(project); got != filepath.Join(cache, "projects", id) {
 		t.Fatalf("ProjectCacheDir() = %q", got)
+	}
+}
+
+func TestLegacyEnvOverridesStillResolve(t *testing.T) {
+	// A pre-rename install set HAWK_CONFIG_DIR; the new build must honor it.
+	legacyCfg := filepath.Join(t.TempDir(), "legacy-cfg")
+	t.Setenv(envConfigDir, "")
+	t.Setenv("HAWK_CONFIG_DIR", legacyCfg)
+	if got := ConfigDir(); got != legacyCfg {
+		t.Fatalf("ConfigDir() = %q, want legacy override %q", got, legacyCfg)
+	}
+}
+
+func TestResolveAppDirPrefersLegacyWhenPresent(t *testing.T) {
+	root := t.TempDir()
+	legacy := filepath.Join(root, legacyAppName)
+	if err := os.MkdirAll(legacy, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveAppDir(root); got != legacy {
+		t.Fatalf("resolveAppDir = %q, want existing legacy dir %q", got, legacy)
+	}
+}
+
+func TestResolveAppDirPrefersCurrentWhenPresent(t *testing.T) {
+	root := t.TempDir()
+	current := filepath.Join(root, appName)
+	if err := os.MkdirAll(current, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, legacyAppName), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveAppDir(root); got != current {
+		t.Fatalf("resolveAppDir = %q, want current dir %q", got, current)
 	}
 }

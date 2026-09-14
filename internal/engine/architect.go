@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/planning"
-	"github.com/GrayCodeAI/hawk/internal/provider/routing"
-	"github.com/GrayCodeAI/hawk/internal/types"
+	"github.com/GrayCodeAI/rho/internal/planning"
+	"github.com/GrayCodeAI/rho/internal/provider/routing"
+	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 // ArchitectConfig configures the two-model architect/editor pipeline.

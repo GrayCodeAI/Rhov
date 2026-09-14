@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/permissions/stableid"
+	"github.com/GrayCodeAI/rho/internal/permissions/stableid"
 )
 
 func newTempStore(t *testing.T) *StableRuleStore {

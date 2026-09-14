@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/feature"
-	"github.com/GrayCodeAI/hawk/internal/testutil"
+	"github.com/GrayCodeAI/rho/internal/feature"
+	"github.com/GrayCodeAI/rho/internal/testutil"
 )
 
 // TestE2E_HealthEndpoint verifies the health endpoint returns the expected
@@ -83,11 +83,11 @@ func TestE2E_MetricsEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(body), "hawk_daemon_active_sessions") {
-		t.Error("expected hawk_daemon_active_sessions metric in output")
+	if !strings.Contains(string(body), "rho_daemon_active_sessions") {
+		t.Error("expected rho_daemon_active_sessions metric in output")
 	}
-	if !strings.Contains(string(body), "hawk_daemon_uptime_seconds") {
-		t.Error("expected hawk_daemon_uptime_seconds metric in output")
+	if !strings.Contains(string(body), "rho_daemon_uptime_seconds") {
+		t.Error("expected rho_daemon_uptime_seconds metric in output")
 	}
 
 	// Test JSON format too.

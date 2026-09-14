@@ -5,14 +5,14 @@ import (
 	"image/color"
 	"path/filepath"
 
-	"github.com/GrayCodeAI/hawk/internal/intelligence/skillcurator"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	"github.com/GrayCodeAI/rho/internal/intelligence/skillcurator"
+	"github.com/GrayCodeAI/rho/internal/storage"
 	"github.com/spf13/cobra"
 )
 
 // skillsCuratorCmd exposes the background skill curator (adopted from Hermes
 // Agent) as a CLI surface: review/archive/pin/unpin over agent-created skills
-// in ~/.hawk/skills.
+// in ~/.rho/skills.
 var skillsCuratorCmd = &cobra.Command{
 	Use:   "curator [command]",
 	Short: "Skill lifecycle curation (status, run, pin, unpin, archive)",

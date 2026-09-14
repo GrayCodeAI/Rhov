@@ -19,7 +19,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: graycodeai/hawk
+  IMAGE_NAME: graycodeai/rho
 
 jobs:
   # Build each platform natively on its own runner (arm64 natively via the
@@ -57,8 +57,8 @@ jobs:
           push: false
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan
-          cache-from: type=gha,scope=hawk-amd64
-          cache-to: type=gha,mode=max,scope=hawk-amd64
+          cache-from: type=gha,scope=rho-amd64
+          cache-to: type=gha,mode=max,scope=rho-amd64
           build-args: |
             VERSION=${{ github.ref_name }}
             COMMIT=${{ github.sha }}
@@ -96,8 +96,8 @@ jobs:
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64-${{ github.sha }}
-          cache-from: type=gha,scope=hawk-amd64
-          cache-to: type=gha,mode=max,scope=hawk-amd64
+          cache-from: type=gha,scope=rho-amd64
+          cache-to: type=gha,mode=max,scope=rho-amd64
           build-args: |
             VERSION=${{ github.ref_name }}
             COMMIT=${{ github.sha }}
@@ -140,8 +140,8 @@ jobs:
           push: false
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan
-          cache-from: type=gha,scope=hawk-arm64
-          cache-to: type=gha,mode=max,scope=hawk-arm64
+          cache-from: type=gha,scope=rho-arm64
+          cache-to: type=gha,mode=max,scope=rho-arm64
           build-args: |
             VERSION=${{ github.ref_name }}
             COMMIT=${{ github.sha }}
@@ -179,8 +179,8 @@ jobs:
           platforms: linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64-${{ github.sha }}
-          cache-from: type=gha,scope=hawk-arm64
-          cache-to: type=gha,mode=max,scope=hawk-arm64
+          cache-from: type=gha,scope=rho-arm64
+          cache-to: type=gha,mode=max,scope=rho-arm64
           build-args: |
             VERSION=${{ github.ref_name }}
             COMMIT=${{ github.sha }}

@@ -7,15 +7,15 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Hawk: .agents/rules/*.md
+// Rho: .agents/rules/*.md
 // ---------------------------------------------------------------------------
 
-func readHawk(dir string) ([]Rule, error) {
+func readRho(dir string) ([]Rule, error) {
 	rulesDir := filepath.Join(dir, ".agents", "rules")
-	return readMDDir(rulesDir, ".md", FormatHawk)
+	return readMDDir(rulesDir, ".md", FormatRho)
 }
 
-func writeHawk(dir string, rules []Rule) error {
+func writeRho(dir string, rules []Rule) error {
 	rulesDir := filepath.Join(dir, ".agents", "rules")
 	if err := os.MkdirAll(rulesDir, 0o750); err != nil {
 		return err

@@ -226,17 +226,22 @@ func TestRepoMapCacheDir(t *testing.T) {
 // --- ConfigDir/StateDir/CacheDir fallback tests ---
 
 func TestConfigDir_Default(t *testing.T) {
-	// Clear env var to test default behavior
+	// Isolate from the host: an existing ~/.hawk or ~/.config/hawk on the
+	// machine must not influence the default-path resolution.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv(envConfigDir, "")
 	t.Setenv(envEyrieConfigDir, "")
+	t.Setenv("HAWK_CONFIG_DIR", "")
 
 	got := ConfigDir()
 	if got == "" {
 		t.Error("ConfigDir() should return non-empty string")
 	}
-	// Should end with "hawk"
-	if !strings.HasSuffix(got, "hawk") {
-		t.Errorf("ConfigDir() = %q, want suffix 'hawk'", got)
+	// Should end with "rho"
+	if !strings.HasSuffix(got, "rho") {
+		t.Errorf("ConfigDir() = %q, want suffix 'rho'", got)
 	}
 }
 

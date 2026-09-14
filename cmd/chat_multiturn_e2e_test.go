@@ -6,35 +6,35 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
 func configureReadyChatState(t *testing.T) {
 	t.Helper()
 	isolateChatCommandSweepEnv(t)
 
-	hawkconfig.InvalidateConfigUICache()
+	rhoconfig.InvalidateConfigUICache()
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() {
 		gateway.SetDefaultStore(nil)
-		hawkconfig.InvalidateConfigUICache()
+		rhoconfig.InvalidateConfigUICache()
 	})
 
 	ctx := context.Background()
 	if err := store.Set(ctx, gateway.AccountForEnv("OPENROUTER_API_KEY"), "sk-or-test-key-1234567890"); err != nil {
 		t.Fatal(err)
 	}
-	if err := hawkconfig.SetActiveProvider(ctx, "openrouter"); err != nil {
+	if err := rhoconfig.SetActiveProvider(ctx, "openrouter"); err != nil {
 		t.Fatal(err)
 	}
-	if err := hawkconfig.SetActiveModel(ctx, "gpt-4o"); err != nil {
+	if err := rhoconfig.SetActiveModel(ctx, "gpt-4o"); err != nil {
 		t.Fatal(err)
 	}
-	hawkconfig.InvalidateConfigUICache()
-	hawkconfig.RefreshConfigCredSnapshot(ctx)
+	rhoconfig.InvalidateConfigUICache()
+	rhoconfig.RefreshConfigCredSnapshot(ctx)
 }
 
 func countMessagesByRole(msgs []displayMsg, role string) int {

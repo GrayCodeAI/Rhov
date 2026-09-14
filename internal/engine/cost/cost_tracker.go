@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	analytics "github.com/GrayCodeAI/hawk/internal/observability"
-	"github.com/GrayCodeAI/hawk/internal/storage"
+	analytics "github.com/GrayCodeAI/rho/internal/observability"
+	"github.com/GrayCodeAI/rho/internal/storage"
 )
 
 type CostTracker struct {

@@ -1,9 +1,9 @@
 // Package feature provides a minimal feature-flag system for runtime
-// configuration of experimental or gated hawk capabilities.
+// configuration of experimental or gated rho capabilities.
 //
 // Flags are registered at startup (by packages that own the feature) and read
 // from the environment at init time, so no config file is required. The
-// canonical environment variable form is HAWK_FEATURE_<NAME> (uppercased,
+// canonical environment variable form is RHO_FEATURE_<NAME> (uppercased,
 // hyphens replaced with underscores). A value of "1" or "true" enables the
 // flag; any other value leaves it at its default.
 //
@@ -70,8 +70,8 @@ func Register(name string, defaultVal bool, desc string) *Flag {
 	global.flagInfo[key] = &flagInfo{flag: f, value: defaultVal}
 	global.values[key] = defaultVal
 
-	// Override from environment: HAWK_FEATURE_<NAME>=1 enables.
-	envVar := "HAWK_FEATURE_" + strings.ReplaceAll(strings.ToUpper(key), "-", "_")
+	// Override from environment: RHO_FEATURE_<NAME>=1 enables.
+	envVar := "RHO_FEATURE_" + strings.ReplaceAll(strings.ToUpper(key), "-", "_")
 	if raw := os.Getenv(envVar); raw != "" {
 		switch strings.ToLower(raw) {
 		case "1", "true", "yes", "on":

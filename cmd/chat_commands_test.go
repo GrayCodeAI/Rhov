@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/tool"
+	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 func TestAdditionalDirContextLoadsInstructions(t *testing.T) {
@@ -69,7 +69,7 @@ func TestLocalSlashCommands(t *testing.T) {
 	m := &chatModel{
 		session:   sess,
 		registry:  tool.NewRegistry(tool.LSTool{}),
-		settings:  hawkconfig.Settings{MCPServers: []hawkconfig.MCPServerConfig{{Name: "demo", Command: "demo-mcp"}}},
+		settings:  rhoconfig.Settings{MCPServers: []rhoconfig.MCPServerConfig{{Name: "demo", Command: "demo-mcp"}}},
 		sessionID: "test",
 		width:     80,
 		height:    24,
@@ -94,16 +94,16 @@ func TestLocalSlashCommands(t *testing.T) {
 func TestDiagnosticSummaries(t *testing.T) {
 	preserveCLICompilerVersionState(t)
 	version = "test-version"
-	settings := hawkconfig.Settings{
+	settings := rhoconfig.Settings{
 		Provider: "openai",
 		Model:    "gpt-4o",
-		MCPServers: []hawkconfig.MCPServerConfig{
+		MCPServers: []rhoconfig.MCPServerConfig{
 			{Name: "demo", Command: "demo-mcp", Args: []string{"--stdio"}},
 		},
 	}
 
 	report := doctorReport(settings)
-	if !strings.Contains(report, "Hawk doctor") || !strings.Contains(report, "Built-in tools") {
+	if !strings.Contains(report, "Rho doctor") || !strings.Contains(report, "Built-in tools") {
 		t.Fatalf("unexpected doctor report: %s", report)
 	}
 	if summary := mcpConfigSummary(settings); !strings.Contains(summary, "demo") {

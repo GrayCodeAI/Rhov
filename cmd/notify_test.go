@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/ui/icons"
+	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
 
 func TestNewNotifier(t *testing.T) {
@@ -253,7 +253,7 @@ func TestSetTerminalTitle(t *testing.T) {
 	n.Desktop = false
 
 	// Just verify it doesn't panic
-	n.SetTerminalTitle("hawk: running")
+	n.SetTerminalTitle("rho: running")
 	n.ClearTitle()
 }
 

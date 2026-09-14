@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
 // URLScraper detects URLs in conversation text and fetches/extracts their content.
@@ -41,7 +43,7 @@ func NewURLScraper() *URLScraper {
 		Enabled:   true,
 		MaxSize:   1 << 20, // 1MB
 		Timeout:   15 * time.Second,
-		UserAgent: "hawk/1.0",
+		UserAgent: "rho/1.0",
 		Cache:     make(map[string]*ScrapeResult),
 	}
 }
@@ -108,14 +110,25 @@ func (s *URLScraper) Fetch(ctx context.Context, rawURL string) (*ScrapeResult, e
 	ctx, cancel := context.WithTimeout(ctx, s.Timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	// SSRF guard: reject private/link-local targets and pin the resolved IP
+	// to prevent DNS rebinding. Without this, a scraped URL could reach cloud
+	// metadata endpoints or internal services.
+	pinnedURL, origHost, err := tool.ValidateURLPublic(ctx, rawURL)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pinnedURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	if origHost != "" {
+		req.Host = origHost
 	}
 	req.Header.Set("User-Agent", s.UserAgent)
 	req.Header.Set("Accept", "text/html, application/json, text/plain, */*")
 
-	client := &http.Client{Timeout: s.Timeout}
+	client := tool.SSRFSafeClient(ctx, s.Timeout)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching URL: %w", err)

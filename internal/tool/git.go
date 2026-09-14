@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/GrayCodeAI/rho/internal/gitcmd"
 )
 
 // allowedGitSubcommands is the set of git subcommands the agent may run.
@@ -78,7 +80,7 @@ func (t GitTool) Execute(ctx context.Context, input json.RawMessage) (string, er
 	}
 
 	args := append([]string{in.Subcommand}, in.Args...)
-	cmd := exec.CommandContext(ctx, "git", args...) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
+	cmd := gitcmd.Command(ctx, args...) // #nosec G204 -- git subcommand invocation with fixed subcommand and internally-derived args
 	if t.WorkDir != "" {
 		cmd.Dir = t.WorkDir
 	}
