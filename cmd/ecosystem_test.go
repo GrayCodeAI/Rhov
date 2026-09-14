@@ -14,7 +14,7 @@ func TestEcosystemCmdRuns(t *testing.T) {
 		provider = "auto"
 	}
 	out := hawkconfig.FormatEcosystemPanel(t.Context(), provider, model)
-	if !strings.Contains(out, "Ecosystem (eyrie · harrier · shrike)") {
+	if !strings.Contains(out, "Ecosystem (eyrie · token engine)") {
 		t.Fatalf("unexpected panel: %q", out)
 	}
 	if err := ecosystemCmd.RunE(ecosystemCmd, nil); err != nil {

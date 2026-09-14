@@ -15,7 +15,7 @@ import (
 )
 
 // Tool-catalog shrink, adopted from caveman's toolschema compressor (via
-// shrike): large tool catalogs are paid on every request, so when enabled the
+// token engine): large tool catalogs are paid on every request, so when enabled the
 // outgoing catalog is compressed with a strict over-keep contract — names,
 // types, enums, required, defaults survive byte-for-byte; only annotation
 // metadata is dropped and long descriptions reduced to lead+constraint
@@ -34,7 +34,7 @@ func originalsDir() string {
 	return filepath.Join(storage.StateDir(), "tool-catalog-originals")
 }
 
-// shrinkEyrieTools compresses the hawk tool list via shrike's toolschema
+// shrinkEyrieTools compresses the hawk tool list via the token engine's toolschema
 // compressor. The list is converted to the OpenAI function-catalog wire shape,
 // shrunk, and converted back; any name-set mismatch fails open to input.
 // When compression changed something, the original catalog is persisted under

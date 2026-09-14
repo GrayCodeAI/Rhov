@@ -16,10 +16,10 @@ var (
 
 var pathCmd = &cobra.Command{
 	Use:   "path",
-	Short: "Developer path readiness (setup, security, sandbox, ecosystem)",
+	Short: "Developer path readiness (setup, security, ecosystem)",
 	Long: `Check whether hawk is configured on the developer path:
 API keys in OS secret store, model selected, no secrets on disk,
-mandatory Docker isolation, and eyrie/harrier/shrike integration.
+and eyrie integration.
 
 Built for individual developers first — teams and enterprise later.
 
@@ -36,13 +36,6 @@ See docs/DEVELOPER-PATH.md and docs/SECURITY-DEVELOPER.md.`,
 
 		cmd.Println(hawkconfig.FormatDeveloperPathReport(ctx))
 
-		if pathStrict {
-			for _, c := range report.Checks {
-				if c.Section == "Sandbox" && c.Name == "docker" && c.Status == hawkconfig.PathWarn {
-					return fmt.Errorf("strict mode: start Docker for isolated Bash")
-				}
-			}
-		}
 		if !report.Ready {
 			return fmt.Errorf("developer path not ready — %s", report.NextStep)
 		}
@@ -51,7 +44,7 @@ See docs/DEVELOPER-PATH.md and docs/SECURITY-DEVELOPER.md.`,
 }
 
 func init() {
-	pathCmd.Flags().BoolVar(&pathStrict, "strict", false, "compatibility flag; Docker isolation is always required")
+	pathCmd.Flags().BoolVar(&pathStrict, "strict", false, "compatibility flag; retained for scripts")
 	pathCmd.Flags().BoolVar(&pathJSON, "json", false, "output readiness report as JSON")
 	rootCmd.AddCommand(pathCmd)
 }

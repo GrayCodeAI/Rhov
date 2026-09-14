@@ -325,8 +325,6 @@ func refreshThemeStyles() {
 	slashSelCmdStyle = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
 	slashSelDescStyle = lipgloss.NewStyle().Foreground(hawkColor)
 	inputBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
-	containerErrStyle = lipgloss.NewStyle().Foreground(errorCoral)
-	containerLabelStyle = lipgloss.NewStyle().Foreground(containerBlue)
 	dimColor = textDisabled
 
 	// agent_grid.go

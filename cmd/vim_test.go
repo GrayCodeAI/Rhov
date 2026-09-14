@@ -300,3 +300,47 @@ func TestVimState_ModeString(t *testing.T) {
 		t.Errorf("expected empty when disabled, got %s", v.ModeString())
 	}
 }
+
+func TestVimState_UndoRestoresText(t *testing.T) {
+	v := NewVimState()
+	v.Mode = VimNormal
+	text := "hello"
+	cursor := 1
+
+	// x deletes a char; u restores it.
+	text, cursor, _ = v.HandleKey(key("x"), text, cursor)
+	if text != "hllo" {
+		t.Fatalf("after x: text=%q", text)
+	}
+	text, cursor, _ = v.HandleKey(key("u"), text, cursor)
+	if text != "hello" {
+		t.Fatalf("after u: text=%q, want hello", text)
+	}
+	if cursor > len(text) {
+		t.Fatalf("cursor %d out of range for %q", cursor, text)
+	}
+}
+
+func TestVimState_UndoWithNoHistoryIsNoop(t *testing.T) {
+	v := NewVimState()
+	v.Mode = VimNormal
+	text, cursor, _ := v.HandleKey(key("u"), "unchanged", 3)
+	if text != "unchanged" {
+		t.Fatalf("undo with no history changed text: %q", text)
+	}
+	if cursor != 3 {
+		t.Fatalf("cursor moved to %d", cursor)
+	}
+}
+
+func TestVimState_UndoStackIsBounded(t *testing.T) {
+	v := NewVimState()
+	v.Mode = VimNormal
+	text := "abcdefghij"
+	for i := 0; i < maxUndoDepth+50; i++ {
+		text, _, _ = v.HandleKey(key("x"), text, 0)
+	}
+	if len(v.undoStack) > maxUndoDepth {
+		t.Fatalf("undo stack grew to %d, want <= %d", len(v.undoStack), maxUndoDepth)
+	}
+}

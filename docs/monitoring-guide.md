@@ -79,7 +79,7 @@ The daemon will automatically:
 
 - Initialize the OTel SDK with a batch span processor (5s batch interval).
 - Export traces to the OTLP endpoint (`OTEL_EXPORTER_OTLP_ENDPOINT`).
-- Send swift headers from `OTEL_EXPORTER_OTLP_HEADERS`.
+- Send trace headers from `OTEL_EXPORTER_OTLP_HEADERS`.
 - Set the service name (default: `hawk`) and version.
 
 ### Configuration
@@ -241,7 +241,6 @@ export HAWK_FEATURE_<FLAG_NAME>=1
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `sandbox-v2` | `0` | Enable Landlock v2 sandboxing profile |
 | `telemetry-otel` | `1` | Enable OpenTelemetry SDK |
 | `metrics-endpoint` | `1` | Expose GET /v1/metrics |
 | `security-headers` | `1` | Apply security headers middleware |

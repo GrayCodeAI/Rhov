@@ -21,9 +21,9 @@ harrier / kestrel / merlin ──> falcon ──> mark3labs/mcp-go
 engines ──> eagle when a shared contract is required
 ```
 
-The canonical list of all 15 repositories is in
-[`hawk/ecosystem.yaml`](../../ecosystem.yaml). `owl/ecosystem.json` is a
-generated projection of that list.
+The canonical list of repositories is in
+[`hawk/ecosystem.yaml`](../../ecosystem.yaml). It is the single source of
+truth; other documents must not maintain a second repository list.
 
 ## Contract edges
 

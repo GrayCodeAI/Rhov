@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"image/color"
-	"strings"
 
 	lipgloss "charm.land/lipgloss/v2"
 	"github.com/GrayCodeAI/hawk/internal/engine"
@@ -131,23 +130,6 @@ func formatAutonomyTierMessage(level engine.AutonomyLevel) string {
 	return fmt.Sprintf("Autonomy %s — %s", renderAutonomyTierLabel(level), autonomyTierDescription(level))
 }
 
-func autonomyLevelForTierName(name string) engine.AutonomyLevel {
-	switch strings.TrimSpace(name) {
-	case "Scout":
-		return engine.AutonomyBasic
-	case "Builder":
-		return engine.AutonomySemi
-	case "Operator":
-		return engine.AutonomyFull
-	case "Autonomous":
-		return engine.AutonomyYOLO
-	default:
-		return DefaultContainerAutonomy
-	}
-}
-
-// autonomyFromSettings maps settings.json autonomy (1–4) to a tier level.
-// 0 or unset leaves session default until the container is ready.
 func autonomyFromSettings(n int) engine.AutonomyLevel {
 	switch n {
 	case 1:

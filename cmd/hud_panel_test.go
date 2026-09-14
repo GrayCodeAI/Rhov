@@ -13,8 +13,8 @@ func TestRenderAgentStatusPanel_Idle(t *testing.T) {
 	if !strings.Contains(out, "no active mission") {
 		t.Error("expected idle mission indicator")
 	}
-	if !strings.Contains(out, "harrier not connected") {
-		t.Error("expected memory-not-connected indicator")
+	if !strings.Contains(out, "memory not initialized") {
+		t.Error("expected memory-not-initialized indicator")
 	}
 }
 
@@ -32,8 +32,8 @@ func TestRenderAgentStatusPanel_WithData(t *testing.T) {
 			{From: "w1", Topic: "progress", Content: "50% done"},
 		},
 		MemoryReady:    true,
-		MemoryNodes:    42,
-		MemoryEdges:    100,
+		MemoryRecalls:  42,
+		MemoryHitRate:  0.5,
 		MemorySessions: 3,
 	}
 	out := renderAgentStatusPanel(data, 80)

@@ -8,9 +8,7 @@ import (
 	"strings"
 
 	"github.com/GrayCodeAI/hawk/internal/home"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
 	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/theme"
 	"github.com/GrayCodeAI/hawk/internal/token"
 	"github.com/GrayCodeAI/hawk/internal/tool"
@@ -154,28 +152,6 @@ func EvaluateDeveloperPath(ctx context.Context) DeveloperPathReport {
 		})
 	}
 
-	if sandbox.DockerAvailable() {
-		checks = append(checks, PathCheck{
-			Section: "Sandbox", Name: "docker", Status: PathPass,
-			Detail: "Docker daemon running — Bash runs in container by default", Blocking: true,
-		})
-	} else {
-		checks = append(checks, PathCheck{
-			Section: "Sandbox", Name: "docker", Status: PathFail,
-			Detail:   "Docker not available — agent tools are locked",
-			FixHint:  "Start Docker Desktop or another compatible Docker daemon",
-			Blocking: true,
-		})
-	}
-	// Ordered onboarding checklist (Gap-01): daemon -> image -> registry -> build.
-	for _, item := range EvaluateSandboxChecklist(ctx) {
-		checks = append(checks, PathCheck{
-			Section: "Sandbox", Name: "docker-" + item.Step,
-			Status: item.Status, Detail: item.Detail, FixHint: item.FixCmd,
-			Blocking: item.Status == PathFail,
-		})
-	}
-
 	pre := EnginePreflightReport(ctx)
 	if pre.Ready {
 		checks = append(checks, PathCheck{
@@ -199,24 +175,9 @@ func EvaluateDeveloperPath(ctx context.Context) DeveloperPathReport {
 		})
 	}
 
-	bridge := memory.NewHarrierBridge()
-	if bridge.Ready() {
-		first := strings.Split(memory.HarrierStatus(), "\n")[0]
-		checks = append(checks, PathCheck{
-			Section: "Ecosystem", Name: "harrier", Status: PathPass,
-			Detail: first + " (optional persistent memory)",
-		})
-	} else {
-		checks = append(checks, PathCheck{
-			Section: "Ecosystem", Name: "harrier", Status: PathWarn,
-			Detail:  "Not initialized — memory ops skipped",
-			FixHint: "Ensure ~/.harrier/data/ is writable for cross-session memory",
-		})
-	}
-
 	sample := token.CountTokensFast("hawk developer path readiness")
 	checks = append(checks, PathCheck{
-		Section: "Ecosystem", Name: "shrike", Status: PathPass,
+		Section: "Ecosystem", Name: "token", Status: PathPass,
 		Detail: fmt.Sprintf("Embedded token/compress pipeline OK (sample=%d tokens)", sample),
 	})
 
@@ -271,7 +232,7 @@ func pathStatusColor(s PathCheckStatus) color.Color {
 func FormatDeveloperPathReport(ctx context.Context) string {
 	r := EvaluateDeveloperPath(ctx)
 	var b strings.Builder
-	b.WriteString(theme.Tint("Developer path (hawk · eyrie · shrike · harrier)", theme.ReportInfo) + "\n\n")
+	b.WriteString(theme.Tint("Developer path (hawk · eyrie · token engine)", theme.ReportInfo) + "\n\n")
 
 	status := "NEEDS SETUP"
 	statusColor := theme.ReportWarn
@@ -288,7 +249,7 @@ func FormatDeveloperPathReport(ctx context.Context) string {
 	}
 	b.WriteString(theme.Tint("Status:", theme.ReportMuted) + " " + theme.Tint(status, statusColor) + "\n\n")
 
-	sections := []string{"Setup", "Security", "Sandbox", "Ecosystem"}
+	sections := []string{"Setup", "Security", "Ecosystem"}
 	for _, sec := range sections {
 		b.WriteString(theme.Tint(sec, theme.ReportInfo) + "\n")
 		for _, c := range r.Checks {

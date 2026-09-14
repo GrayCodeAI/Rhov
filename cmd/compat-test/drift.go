@@ -9,12 +9,12 @@ import (
 )
 
 // trackedPins are the shared leaf dependencies most likely to drift silently:
-// a consumer (merlin, kestrel, ...) can pin an older version than what hawk's
-// own go.mod requires, and Go's minimal version selection will silently pull
-// in hawk's newer version at build time without the consumer's own CI ever
-// having tested it. See docs/compatibility.md.
+// a sibling repo can pin an older version than what hawk's own go.mod requires,
+// and Go's minimal version selection will silently pull in hawk's newer version
+// at build time without the consumer's own CI ever having tested it. Hawk's
+// only external GrayCodeAI dependency is eyrie. See docs/compatibility.md.
 var trackedPins = []string{
-	"github.com/GrayCodeAI/falcon",
+	"github.com/GrayCodeAI/eyrie",
 }
 
 // checkDrift compares hawk's own go.mod requirements for trackedPins against

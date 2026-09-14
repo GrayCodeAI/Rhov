@@ -27,20 +27,18 @@ func friendlyError(err error) string {
 // Catches panics, saves the current session state, logs the stack trace to
 // Hawk's user state crash log, and exits with a user-friendly message.
 
-// panicSaveFn is set by runChat to a closure that persists the active session
-// and stops the container sandbox. panicRecovery invokes it on an unexpected
-// panic so a crash saves as much work as possible and never leaves a zombie
-// Docker container running. It is nil outside the chat/TUI path (print mode
-// persists via its own defer).
+// panicSaveFn is set by runChat to a closure that persists the active session.
+// panicRecovery invokes it on an unexpected panic so a crash saves as much work
+// as possible. It is nil outside the chat/TUI path (print mode persists via its
+// own defer).
 var panicSaveFn func()
 
 // RunWithPanicRecovery executes fn with the process-level panic recovery
 // installed. An unexpected panic in the main execution path is caught, the
-// panicSaveFn (when set by runChat) is invoked to persist session state and
-// stop the container, the stack is written to the crash log, and the process
-// exits with a user-friendly message instead of a raw stack trace. Outside the
-// TUI, sessions are persisted incrementally, so no saveFn loses at most the
-// in-flight message.
+// panicSaveFn (when set by runChat) is invoked to persist session state, the
+// stack is written to the crash log, and the process exits with a user-friendly
+// message instead of a raw stack trace. Outside the TUI, sessions are persisted
+// incrementally, so no saveFn loses at most the in-flight message.
 func RunWithPanicRecovery(fn func() error) (err error) {
 	defer panicRecovery(panicSaveFn)
 	return fn()

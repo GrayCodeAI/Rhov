@@ -10,16 +10,15 @@
 * @GrayCodeAI/maintainers
 
 # Engine and core agent loop
-/engine/         @GrayCodeAI/core-team
-/cmd/            @GrayCodeAI/core-team
-/tool/           @GrayCodeAI/core-team
-/session/        @GrayCodeAI/core-team
+/internal/engine/ @GrayCodeAI/core-team
+/cmd/             @GrayCodeAI/core-team
+/internal/tool/   @GrayCodeAI/core-team
+/internal/session/ @GrayCodeAI/core-team
 
-# Sandbox / container / permissions (security-sensitive)
-/sandbox/        @GrayCodeAI/security-team
-/permissions/    @GrayCodeAI/security-team
-/container/      @GrayCodeAI/security-team
-/auth/           @GrayCodeAI/security-team
+# Permissions and credential handling (security-sensitive)
+/internal/permissions/ @GrayCodeAI/security-team
+/internal/credentials/ @GrayCodeAI/security-team
+/internal/governance/  @GrayCodeAI/security-team
 
 # CI / release / build tooling
 /.github/        @GrayCodeAI/devops-team

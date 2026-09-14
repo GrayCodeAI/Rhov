@@ -87,12 +87,8 @@ hawk/
 
 | Service | Role | Connection |
 |---------|------|------------|
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> **eyrie** | LLM provider runtime | `:8080` — all LLM calls routed here |
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/brain.svg" width="16" height="16" alt="brain" /> **harrier** | Persistent memory | `:3456` — session context, recall |
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/eye.svg" width="16" height="16" alt="eye" /> **kestrel** | Code review | Library — diff-based review |
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/search.svg" width="16" height="16" alt="search" /> **merlin** | Security audit | Library — website scanning |
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/scissors.svg" width="16" height="16" alt="scissors" /> **shrike** | Token optimization | Library — compression, secrets |
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/camera.svg" width="16" height="16" alt="camera" /> **swift** | Session capture | CLI hook — git-native capture |
+| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> **eyrie** | LLM provider runtime | Library — all LLM calls routed through its engine facade |
+| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/scissors.svg" width="16" height="16" alt="scissors" /> **token** | Token optimization | Embedded — counting, compression, secrets, usage tracking |
 
 ### Client SDKs
 

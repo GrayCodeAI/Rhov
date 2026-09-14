@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"image/color"
 	"strings"
 	"testing"
@@ -176,32 +175,6 @@ func TestChatConnectionStatus_NoGatewayNoModel(t *testing.T) {
 	}
 }
 
-func TestWelcomeDockerRunning_States(t *testing.T) {
-	m := chatModel{containerEnabled: false}
-	if m.welcomeDockerRunning() != nil {
-		t.Fatal("expected nil when container mode disabled")
-	}
-
-	m.containerEnabled = true
-	m.containerStatus = "checking docker…"
-	if m.welcomeDockerRunning() != nil {
-		t.Fatal("expected nil while container status is still checking")
-	}
-
-	m.containerReady = true
-	running := m.welcomeDockerRunning()
-	if running == nil || !*running {
-		t.Fatalf("expected running=true when container ready, got %v", running)
-	}
-
-	m.containerReady = false
-	m.containerErr = errors.New("docker not running")
-	stopped := m.welcomeDockerRunning()
-	if stopped == nil || *stopped {
-		t.Fatalf("expected running=false when container errored, got %v", stopped)
-	}
-}
-
 func TestStartupWarmMsg_RefreshesFooterCache(t *testing.T) {
 	m := chatModel{}
 	nextModel, _ := m.Update(startupWarmMsg{
@@ -228,32 +201,6 @@ func TestStartupWarmMsg_RefreshesFooterCache(t *testing.T) {
 	}
 	if !next.welcomeAgentsOK {
 		t.Fatal("welcome agents snapshot should refresh from startup warm msg")
-	}
-}
-
-func TestBuildWelcomeMessage_IncludesDockerWhenEnabled(t *testing.T) {
-	running := true
-	msg := buildWelcomeMessage(nil, "", nil, nil, hawkconfig.Settings{}, 0, false, 80, 24, &running)
-	if !strings.Contains(msg, "Container") {
-		t.Fatalf("expected container execution badge in welcome, got:\n%s", msg)
-	}
-}
-
-func TestBuildWelcomeMessage_OmitsDockerWhenDisabled(t *testing.T) {
-	msg := buildWelcomeMessage(nil, "", nil, nil, hawkconfig.Settings{}, 0, false, 80, 24, nil)
-	if !strings.Contains(msg, "Container Starting") || strings.Contains(msg, "HOST") {
-		t.Fatalf("expected mandatory container startup badge, got:\n%s", msg)
-	}
-}
-
-func TestContainerFooterLeft_HostModeCopy(t *testing.T) {
-	sess := &engine.Session{}
-	bold, dim := containerFooterLeft(chatModel{session: sess, containerEnabled: false})
-	if !strings.Contains(bold, "Docker:") {
-		t.Fatalf("bold = %q, want Docker label", bold)
-	}
-	if !strings.Contains(dim, "required") || !strings.Contains(dim, "locked") {
-		t.Fatalf("dim = %q, want fail-closed Docker hint", dim)
 	}
 }
 
@@ -300,7 +247,7 @@ func TestShowWelcomeBanner_WithMessages(t *testing.T) {
 
 func TestBuildWelcomeMessage_UsesDisplayVersion(t *testing.T) {
 	SetVersion("dev")
-	msg := buildWelcomeMessage(nil, "", nil, nil, hawkconfig.Settings{}, 0, false, 80, 24, nil)
+	msg := buildWelcomeMessage(nil, "", nil, nil, hawkconfig.Settings{}, 0, false, 80, 24)
 	if strings.Contains(msg, "vdev") {
 		t.Fatal("welcome should not show vdev; DisplayVersion should read VERSION file or dev")
 	}

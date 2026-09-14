@@ -28,19 +28,16 @@ var (
 	statusCostColor   = costViolet
 	statusPRColor     = lipgloss.Color("#56D4DD") // cyan — unique hue in the footer row
 
-	statusCwdStyle          = lipgloss.NewStyle().Foreground(statusCWDColor).Inline(true)
-	statusPRStyle           = lipgloss.NewStyle().Foreground(statusPRColor).Inline(true)
-	statusBranchStyle       = lipgloss.NewStyle().Foreground(statusBranchColor).Inline(true)
-	statusSpecStyle         = lipgloss.NewStyle().Foreground(statusSpecColor).Inline(true)
-	statusTokenStyle        = lipgloss.NewStyle().Foreground(statusTokenColor).Inline(true)
-	statusCostStyle         = lipgloss.NewStyle().Foreground(statusCostColor).Inline(true)
-	statusClockStyle        = lipgloss.NewStyle().Foreground(hudLabelPink).Inline(true)
-	statusFocusStyle        = lipgloss.NewStyle().Foreground(infoSky).Inline(true)
-	statusDimStyle          = lipgloss.NewStyle().Foreground(dimColor).Inline(true)
-	dryRunStyle             = lipgloss.NewStyle().Foreground(warnAmber).Bold(true).Inline(true)
-	containerModeStyle      = lipgloss.NewStyle().Foreground(successTeal).Bold(true).Inline(true)
-	containerModeErrStyle   = lipgloss.NewStyle().Foreground(errorCoral).Bold(true).Inline(true)
-	containerModeMutedStyle = lipgloss.NewStyle().Foreground(dimColor).Bold(true).Inline(true)
+	statusCwdStyle    = lipgloss.NewStyle().Foreground(statusCWDColor).Inline(true)
+	statusPRStyle     = lipgloss.NewStyle().Foreground(statusPRColor).Inline(true)
+	statusBranchStyle = lipgloss.NewStyle().Foreground(statusBranchColor).Inline(true)
+	statusSpecStyle   = lipgloss.NewStyle().Foreground(statusSpecColor).Inline(true)
+	statusTokenStyle  = lipgloss.NewStyle().Foreground(statusTokenColor).Inline(true)
+	statusCostStyle   = lipgloss.NewStyle().Foreground(statusCostColor).Inline(true)
+	statusClockStyle  = lipgloss.NewStyle().Foreground(hudLabelPink).Inline(true)
+	statusFocusStyle  = lipgloss.NewStyle().Foreground(infoSky).Inline(true)
+	statusDimStyle    = lipgloss.NewStyle().Foreground(dimColor).Inline(true)
+	dryRunStyle       = lipgloss.NewStyle().Foreground(warnAmber).Bold(true).Inline(true)
 )
 
 // renderStatusBar renders the session stats footer below the input area.
@@ -179,11 +176,6 @@ func renderStatusBarSecondaryRight(m *chatModel) string {
 	}
 	if m.waiting && !m.streamFollow {
 		parts = append(parts, statusDimStyle.Render(icons.Pause()))
-	}
-	// Container mode is already shown in the top footer row (containerFooterLeft),
-	// so we only surface it here when there's an error to report.
-	if m.containerEnabled && m.containerErr != nil {
-		parts = append(parts, containerModeErrStyle.Render("▣ container error"))
 	}
 	if m.session != nil && m.session.PermSvc() != nil && m.session.PermSvc().DryRun() {
 		parts = append(parts, dryRunStyle.Render(icons.Pause()+" DRY-RUN"))
@@ -417,15 +409,6 @@ func renderStatusBarRight(m *chatModel) string {
 		parts = append(parts, autonomyTierStyle(level).Render("◈ "+autonomyTierName(level)))
 	}
 
-	// Persistent Docker isolation indicator — safety-critical awareness.
-	if m.containerReady {
-		parts = append(parts, containerModeStyle.Render(icons.Shield()+" isolated"))
-	} else if m.containerErr != nil || !m.containerEnabled {
-		parts = append(parts, containerModeErrStyle.Render(icons.Alert()+" Docker required"))
-	} else {
-		parts = append(parts, containerModeMutedStyle.Render(icons.Container()+" starting"))
-	}
-
 	return strings.Join(parts, statusDimStyle.Render(" · "))
 }
 
@@ -486,65 +469,23 @@ func formatTokenCountWithCommas(tokens int) string {
 }
 
 func renderContainerFooterLeft(m chatModel) string {
-	bold, dim := containerFooterLeft(m)
-
-	if m.containerErr != nil || !m.containerEnabled {
-		return containerErrStyle.Bold(true).Render(bold) + containerErrStyle.Render(dim)
+	cwd, ok := cachedStatusLeftCwd(&m)
+	if !ok {
+		// Cache not warmed yet (first frame): fall back to the live cwd so the
+		// footer is never blank.
+		if live, err := os.Getwd(); err == nil && live != "" {
+			cwd, ok = shortenHomePath(live), true
+		}
 	}
-	return containerLabelStyle.Render(bold) + renderContainerFooterDetail(dim, m.session)
-}
-
-func renderContainerFooterDetail(detail string, sess *engine.Session) string {
-	if detail == "" {
+	if !ok {
 		return ""
 	}
-	statusStyle := lipgloss.NewStyle().Foreground(textPlaceholder).Inline(true)
-	sep := " · "
-	status, tierPart, found := strings.Cut(detail, sep)
-	if !found {
-		return statusStyle.Render(detail)
+	branch := cachedStatusBranch(&m)
+	label := cwd
+	if branch != "" {
+		label += " · " + branch
 	}
-	var level engine.AutonomyLevel
-	if sess != nil && sess.PermSvc().Autonomy() != 0 {
-		level = sess.PermSvc().Autonomy()
-	} else {
-		level = autonomyLevelForTierName(tierPart)
-	}
-	return statusStyle.Render(status) + configMutedStyle().Inline(true).Render(sep) + autonomyTierStyle(level).Render(strings.TrimSpace(tierPart))
-}
-
-// containerFooterLeft is the bold + dim text on the top footer row (left side).
-func containerFooterLeft(m chatModel) (bold, dim string) {
-	bold = icons.Container() + " Docker:"
-	if !m.containerEnabled {
-		return bold, " required · agent tools locked"
-	}
-	if m.containerErr != nil {
-		return bold, " unavailable · press r to retry"
-	}
-	if m.containerReady && strings.TrimSpace(m.containerStatus) != "" {
-		tier := "Builder"
-		if m.session != nil && m.session.PermSvc().Autonomy() != 0 {
-			tier = autonomyTierName(m.session.PermSvc().Autonomy())
-		}
-		status := shortenFooterContainerStatus(strings.TrimSpace(m.containerStatus))
-		if stage := currentSpecStage(m.session); stage != engine.SpecStageNone && stage != engine.SpecStageImplementing {
-			return bold, fmt.Sprintf(" %s · %s · spec:%s", status, tier, specStageDisplayName(stage))
-		}
-		return bold, fmt.Sprintf(" %s · %s", status, tier)
-	}
-	if strings.TrimSpace(m.containerStatus) != "" {
-		status := strings.TrimSpace(m.containerStatus)
-		if !m.containerReady && m.containerErr == nil {
-			// Show activity indicator during active boot so the user sees progress.
-			return bold, fmt.Sprintf(" ◐ %s", status)
-		}
-		return bold, " " + status
-	}
-	if !m.containerReady && m.containerErr == nil {
-		return bold, " ◐ starting…"
-	}
-	return bold, " starting…"
+	return statusDimStyle.Render(label)
 }
 
 func statusLineSummary(m *chatModel) string {

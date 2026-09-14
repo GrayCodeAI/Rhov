@@ -136,10 +136,6 @@ func (g *CompletionGenerator) GenerateBash() string {
 	b.WriteString(fmt.Sprintf("            COMPREPLY=($(compgen -W \"%s\" -- \"$cur\"))\n", strings.Join(g.Models, " ")))
 	b.WriteString("            return 0\n")
 	b.WriteString("            ;;\n")
-	b.WriteString("        --sandbox)\n")
-	b.WriteString("            COMPREPLY=($(compgen -W \"strict workspace off\" -- \"$cur\"))\n")
-	b.WriteString("            return 0\n")
-	b.WriteString("            ;;\n")
 	b.WriteString("        --output-format|-o)\n")
 	b.WriteString("            COMPREPLY=($(compgen -W \"text json stream-json\" -- \"$cur\"))\n")
 	b.WriteString("            return 0\n")
@@ -509,8 +505,6 @@ func flagChoices(name string) []string {
 		return []string{"text", "json", "stream-json"}
 	case "input-format":
 		return []string{"text", "stream-json"}
-	case "sandbox":
-		return []string{"strict", "workspace", "off"}
 	case "direction":
 		return []string{"lower", "higher"}
 	case "auto":

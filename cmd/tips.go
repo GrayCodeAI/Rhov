@@ -44,13 +44,12 @@ func allTips() []Tip {
 		{ID: "slash-review", Text: "Use /review to get a code review of current changes.", Category: "workflow"},
 		{ID: "slash-init", Text: "Use /init to analyze a new project automatically.", Category: "project"},
 		{ID: "add-dir", Text: "Use /add-dir <path> to add extra directories to context.", Category: "context"},
-		{ID: "slash-memory", Text: "Use /memory for AGENTS.md; /harrier for graph memory; /ecosystem for eyrie/harrier/shrike status.", Category: "context"},
+		{ID: "slash-memory", Text: "Use /memory for AGENTS.md; /learn for lessons; /ecosystem for eyrie and token-engine status.", Category: "context"},
 		{ID: "slash-rewind", Text: "Use /rewind to undo the last exchange.", Category: "session"},
 		{ID: "slash-fork", Text: "Use /fork to branch off the current conversation.", Category: "session"},
 		{ID: "slash-context", Text: "Use /context to see what the agent knows about your project.", Category: "context"},
 		{ID: "slash-start", Text: "Use /start for guided setup: trust, mode, branch, first tasks.", Category: "basics"},
 		{ID: "slash-mode-plan", Text: "Use /mode plan to research read-only, then /mode act to implement.", Category: "workflow"},
-		{ID: "slash-isolation", Text: "Use /isolation workspace so shell runs under OS sandbox wrap.", Category: "safety"},
 		{ID: "slash-trust", Text: "Use /trust add so project hooks and MCP can load (folder trust).", Category: "safety"},
 		{ID: "slash-branch-agent", Text: "Use /branch-agent before big edits on main — creates hawk/agent-* branch.", Category: "git"},
 		{ID: "tool-search-select", Text: "Use ToolSearch select:Impact (etc.) to unlock optional tools on the lazy surface.", Category: "tools"},
@@ -98,18 +97,16 @@ func recordTipShown(id string) {
 // records it as shown, and returns the display text. If all tips have been
 // shown recently, one is picked at random.
 //
-// The containerMode and lastCommand arguments drive context-aware filtering:
-// tips relevant to the current mode or the user's most recent slash command
-// are prioritized over generic ones. Pass false / "" for callers that don't
-// have model state (e.g. tests).
-func nextTip(containerMode bool, lastCommand string) string {
-	return contextualTip(containerMode, lastCommand)
+// The lastCommand argument drives context-aware filtering: tips relevant to
+// the user's most recent slash command are prioritized over generic ones.
+// Pass "" for callers that don't have model state (e.g. tests).
+func nextTip(lastCommand string) string {
+	return contextualTip(lastCommand)
 }
 
 // contextualTip returns a tip relevant to the current context.
-// containerMode tips are prioritized when in container mode; lastCommand
-// matches tips whose Category aligns with the command's purpose.
-func contextualTip(containerMode bool, lastCommand string) string {
+// lastCommand matches tips whose Category aligns with the command's purpose.
+func contextualTip(lastCommand string) string {
 	tips := allTips()
 	if len(tips) == 0 {
 		return ""
@@ -121,9 +118,6 @@ func contextualTip(containerMode bool, lastCommand string) string {
 	// Determine relevant categories based on context.
 	relevantCategories := map[string]bool{}
 	switch {
-	case containerMode:
-		relevantCategories["safety"] = true
-		relevantCategories["shortcuts"] = true
 	case strings.HasPrefix(lastCommand, "/commit"), strings.HasPrefix(lastCommand, "/diff"):
 		relevantCategories["git"] = true
 		relevantCategories["workflow"] = true

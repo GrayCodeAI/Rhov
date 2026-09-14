@@ -231,7 +231,7 @@ Any provider can be set as default in your settings:
 |----------|-------------------|
 | [Keyboard Shortcuts](03-keyboard-shortcuts.md) | Key bindings for the TUI |
 | [Slash Commands](04-slash-commands.md) | Available `/` commands |
-| [Configuration](05-configuration.md) | Settings and sandbox profiles |
+| [Configuration](05-configuration.md) | Settings |
 
 ---
 

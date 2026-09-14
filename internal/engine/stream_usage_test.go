@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/token"
 	"github.com/GrayCodeAI/hawk/internal/types"
 )
 
@@ -50,9 +49,6 @@ func TestUpdateResolvedRoutePreservesMissingFields(t *testing.T) {
 }
 
 func TestRecordStreamUsageAttributesResolvedRoute(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	const (
 		resolvedProvider = "openai"
 		resolvedModel    = "openai/fallback-test-model"
@@ -73,7 +69,7 @@ func TestRecordStreamUsageAttributesResolvedRoute(t *testing.T) {
 	if event.Usage == nil || event.Usage.Provider != resolvedProvider || event.Usage.Model != resolvedModel {
 		t.Fatalf("usage event lost resolved route: %+v", event.Usage)
 	}
-	tracker := sess.currentShrikeUsageTracker()
+	tracker := sess.currentUsageTracker()
 	if tracker == nil || tracker.GetUsage().SessionTokens != 2_000_000 {
 		t.Fatalf("Shrike tracker did not receive deduplicated stream usage")
 	}

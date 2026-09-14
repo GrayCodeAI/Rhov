@@ -25,7 +25,7 @@ When the model requests a tool:
 | `scout` | Classify and approve safe tools |
 | `builder` | Broader tool access |
 | `operator` | Full tool access (trusted) |
-| `autonomous` | No normal prompts; hooks, explicit rules, spec gates, sandbox, and high-risk approval still apply |
+| `autonomous` | No normal prompts; hooks, explicit rules, spec gates, and high-risk approval still apply |
 
 Set with:
 
@@ -63,26 +63,21 @@ MCPTool(linear__*) — matches all tools from linear server
 
 ---
 
-## Sandbox Integration
+## Enforcement Layers
 
-Permissions control what the model can request. The sandbox controls what actually happens:
+Permissions control what the model can request; tool-level guards enforce the
+hard limits:
 
 | Layer | Controls |
 |-------|----------|
 | Rules | Tool access |
 | Hooks | Pre-execution blocking |
-| Sandbox | OS-level enforcement |
+| Tool guards | Destructive-command blocking, path guard, sensitive-path protection |
 
 Recommended combination:
 - restrictive rules
 - PreToolUse hooks
-- `--sandbox strict`
-
-Sandbox modes are enforced independently of autonomy:
-
-- `strict` is read-only for tool execution.
-- `workspace` permits work inside the workspace and configured `--add-dir` paths.
-- `off` disables the tool path guard.
+- explicit `--add-dir` scoping
 
 ---
 
@@ -108,7 +103,7 @@ See [Hooks](10-hooks.md) for hook authoring.
 ## Best Practices
 
 1. **Use narrow patterns** — More specific rules are safer
-2. **Combine layers** — Rules + hooks + sandbox
+2. **Combine layers** — Rules + hooks + tool guards
 3. **Review project config** — Unknown repos may have allow rules
 4. **Test policies** — Verify with `dontAsk` mode
 5. **Trust model** — Require trust for project automation

@@ -73,6 +73,36 @@ type VimState struct {
 	Command    CommandState
 	Persistent PersistentState
 	enabled    bool
+	// undoStack holds bounded text snapshots for `u` (most recent last).
+	undoStack []string
+}
+
+// maxUndoDepth bounds the undo history so a long session cannot grow it
+// without limit.
+const maxUndoDepth = 100
+
+// snapshot records the current text before a mutating command so `u` can
+// restore it. Consecutive identical snapshots are coalesced.
+func (v *VimState) snapshot(text string) {
+	if n := len(v.undoStack); n > 0 && v.undoStack[n-1] == text {
+		return
+	}
+	v.undoStack = append(v.undoStack, text)
+	if len(v.undoStack) > maxUndoDepth {
+		v.undoStack = v.undoStack[len(v.undoStack)-maxUndoDepth:]
+	}
+}
+
+// undo restores the most recent snapshot, returning the restored text and
+// whether an undo was available.
+func (v *VimState) undo() (string, bool) {
+	n := len(v.undoStack)
+	if n == 0 {
+		return "", false
+	}
+	text := v.undoStack[n-1]
+	v.undoStack = v.undoStack[:n-1]
+	return text, true
 }
 
 // NewVimState creates a new vim state starting in insert mode.
@@ -275,6 +305,7 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 	// Single-char operations
 	case "x":
 		if cursor < len(text) {
+			v.snapshot(text)
 			text = text[:cursor] + text[cursor+1:]
 			if cursor >= len(text) && cursor > 0 {
 				cursor--
@@ -288,6 +319,7 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 		return text, cursor, true
 	case "X":
 		if cursor > 0 {
+			v.snapshot(text)
 			text = text[:cursor-1] + text[cursor:]
 			cursor--
 		}
@@ -298,6 +330,7 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 		return text, cursor, true
 	case "~":
 		if cursor < len(text) {
+			v.snapshot(text)
 			r := rune(text[cursor])
 			if unicode.IsLower(r) {
 				r = unicode.ToUpper(r)
@@ -325,6 +358,7 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 	// Paste
 	case "p":
 		if v.Persistent.Register != "" {
+			v.snapshot(text)
 			text = text[:cursor+1] + v.Persistent.Register + text[cursor+1:]
 			cursor += len(v.Persistent.Register)
 		}
@@ -332,6 +366,7 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 		return text, cursor, true
 	case "P":
 		if v.Persistent.Register != "" {
+			v.snapshot(text)
 			text = text[:cursor] + v.Persistent.Register + text[cursor:]
 			cursor += len(v.Persistent.Register) - 1
 		}
@@ -380,6 +415,13 @@ func (v *VimState) handleNormalMode(msg tea.KeyMsg, text string, cursor int) (st
 
 	// Undo placeholder (u)
 	case "u":
+		if restored, ok := v.undo(); ok {
+			if cursor > len(restored) {
+				cursor = len(restored)
+			}
+			v.resetCommand()
+			return restored, cursor, true
+		}
 		v.resetCommand()
 		return text, cursor, true
 
@@ -440,6 +482,7 @@ func (v *VimState) handleFindChar(msg tea.KeyMsg, text string, cursor int) (stri
 func (v *VimState) handleReplace(msg tea.KeyMsg, text string, cursor int) (string, int, bool) {
 	key := msg.String()
 	if len(key) == 1 && cursor < len(text) {
+		v.snapshot(text)
 		text = text[:cursor] + key + text[cursor+1:]
 	}
 	v.resetCommand()
@@ -456,6 +499,7 @@ func (v *VimState) applyOperator(text string, start, end, cursor int) (string, i
 
 	switch v.Command.Op {
 	case OpDelete:
+		v.snapshot(text)
 		v.Persistent.Register = text[start:end]
 		text = text[:start] + text[end:]
 		cursor = start
@@ -463,6 +507,7 @@ func (v *VimState) applyOperator(text string, start, end, cursor int) (string, i
 			cursor = len(text) - 1
 		}
 	case OpChange:
+		v.snapshot(text)
 		v.Persistent.Register = text[start:end]
 		text = text[:start] + text[end:]
 		cursor = start

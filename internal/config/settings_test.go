@@ -98,16 +98,6 @@ func TestMergeSettings_RepoMapOverride(t *testing.T) {
 	}
 }
 
-func TestMergeSettings_SandboxOverride(t *testing.T) {
-	t.Parallel()
-	base := Settings{Sandbox: "off"}
-	override := Settings{Sandbox: "strict"}
-	merged := MergeSettings(base, override)
-	if merged.Sandbox != "strict" {
-		t.Errorf("expected sandbox 'strict', got %q", merged.Sandbox)
-	}
-}
-
 func TestMergeSettings_PersistsExplicitSupervised(t *testing.T) {
 	base := Settings{Autonomy: 2, AutonomyExplicit: true}
 	merged := MergeSettings(base, Settings{AutonomyExplicit: true, Autonomy: 0})

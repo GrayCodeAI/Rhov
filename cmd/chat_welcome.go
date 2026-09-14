@@ -21,35 +21,6 @@ type welcomeStatusSnapshot struct {
 	agentsOK bool
 }
 
-func welcomeDockerSegment(dockerRunning *bool, greenC, redC, rst string) (segment string, visLen int) {
-	if dockerRunning == nil {
-		return "", 0
-	}
-	mark := redC + "×" + rst
-	if *dockerRunning {
-		mark = greenC + icons.CheckBold() + " " + rst
-	}
-	segment = "  Docker " + mark
-	return segment, len("  Docker x")
-}
-
-func (m chatModel) welcomeDockerRunning() *bool {
-	if !m.containerEnabled {
-		return nil
-	}
-	if m.containerReady {
-		ok := true
-		return &ok
-	}
-	if m.containerErr != nil {
-		ok := false
-		return &ok
-	}
-	// Avoid probing Docker before first paint. The async container bootstrap
-	// path updates the welcome panel once it knows the real state.
-	return nil
-}
-
 func loadWelcomeStatusSnapshot() welcomeStatusSnapshot {
 	ctx := context.Background()
 	return welcomeStatusSnapshot{
@@ -97,19 +68,19 @@ func (m *chatModel) rebuildWelcomeCache(opts ...any) {
 	if m.pluginRuntime != nil {
 		skillsCount = len(m.pluginRuntime.SmartSkills)
 	}
-	m.welcomeCache = buildWelcomeMessageWithSnapshot(m.session, m.sessionID, m.registry, nil, m.settings, skillsCount, connectedMCPCount(m.registry), frame, width, height, m.welcomeDockerRunning(), m.welcomeStatusSnapshot(), m.containerEnabled, m.lastCommand)
+	m.welcomeCache = buildWelcomeMessageWithSnapshot(m.session, m.sessionID, m.registry, nil, m.settings, skillsCount, connectedMCPCount(m.registry), frame, width, height, m.welcomeStatusSnapshot(), m.lastCommand)
 }
 
 // buildWelcomeMessage renders the branded inline HAWK welcome block.
-func buildWelcomeMessage(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount int, blinkClosed bool, width, height int, dockerRunning *bool) string {
+func buildWelcomeMessage(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount int, blinkClosed bool, width, height int) string {
 	frame := 0
 	if blinkClosed {
 		frame = 2
 	}
-	return buildWelcomeMessageWithSnapshot(sess, sessionID, registry, saved, settings, skillsCount, connectedMCPCount(registry), frame, width, height, dockerRunning, loadWelcomeStatusSnapshot(), false, "")
+	return buildWelcomeMessageWithSnapshot(sess, sessionID, registry, saved, settings, skillsCount, connectedMCPCount(registry), frame, width, height, loadWelcomeStatusSnapshot(), "")
 }
 
-func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount, mcpCount int, eyeFrame int, width, height int, dockerRunning *bool, snapshot welcomeStatusSnapshot, containerMode bool, lastCommand string) string {
+func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, registry *tool.Registry, saved *session.Session, settings hawkconfig.Settings, skillsCount, mcpCount int, eyeFrame int, width, height int, snapshot welcomeStatusSnapshot, lastCommand string) string {
 	// Talon Gold is used for the HAWK wordmark. All escapes come from the
 	// theme palette (theme.go) so a rebrand stays a one-file change.
 	logoC := ansiOrange
@@ -200,10 +171,10 @@ func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, reg
 		}
 	}
 
-	modeBadge := welcomeModeBadge(dockerRunning)
+	modeBadge := ""
 	cpLine := ""
 	if sess != nil {
-		cpLine = welcomeControlPlaneLine(sess, dimC, rst, modeBadge != "")
+		cpLine = welcomeControlPlaneLine(sess, dimC, rst)
 	}
 	modeLine := modeBadge
 	if cpLine != "" {
@@ -228,10 +199,9 @@ func buildWelcomeMessageWithSnapshot(sess *engine.Session, sessionID string, reg
 	return b.String()
 }
 
-// welcomeControlPlaneLine renders the work-mode · isolation · folder-trust
-// indicator on the welcome screen (moved out of the footer bar). When the
-// CONTAINER badge is shown, the redundant iso segment is dropped.
-func welcomeControlPlaneLine(sess *engine.Session, dimC, rst string, badgeShown bool) string {
+// welcomeControlPlaneLine renders the work-mode · folder-trust indicator on
+// the welcome screen (moved out of the footer bar).
+func welcomeControlPlaneLine(sess *engine.Session, dimC, rst string) string {
 	boldIcon := func(color, glyph string) string {
 		return color + ansiBold + glyph + ansiReset + color
 	}
@@ -250,15 +220,6 @@ func welcomeControlPlaneLine(sess *engine.Session, dimC, rst string, badgeShown 
 		modeIcon = icons.Magnify()
 		modeLabel = "Review Mode"
 		modeColor = ansiAmber
-	}
-
-	isoIcon := icons.Container()
-	isoColor := ansiAmber
-	iso := sess.Isolation().ShortLabel()
-
-	isoSeg := "  ·  " + boldIcon(isoColor, isoIcon) + " " + iso + rst
-	if badgeShown {
-		isoSeg = ""
 	}
 
 	tr := engine.ProjectTrust("")
@@ -292,7 +253,6 @@ func welcomeControlPlaneLine(sess *engine.Session, dimC, rst string, badgeShown 
 	}
 
 	return boldIcon(modeColor, modeIcon) + " " + modeLabel + rst +
-		isoSeg +
 		"  ·  " + boldIcon(trustColor, trustIcon) + " " + trustLabel + rst
 }
 
@@ -343,24 +303,7 @@ func welcomeIndicatorRow(skillsCount int, agentsOK bool, mcpCount int, activeC, 
 	)
 }
 
-// welcomeModeBadge returns a prominent, colored badge indicating the
-// current execution mode. No background fill — bright foreground colors
-// (gold for starting, container blue for ready, coral for required) keep it readable
-// on any theme.
-func welcomeModeBadge(dockerRunning *bool) string {
-	rst := ansiReset
-	switch {
-	case dockerRunning == nil:
-		// Startup — Talon Gold, bold, timer = waiting for the sandbox.
-		return "\033[1m" + ansiOrange + icons.Timer() + " Container Starting" + rst
-	case *dockerRunning:
-		// Ready — container blue communicates healthy isolation.
-		return "\033[1m" + ansiContBlue + icons.Shield() + " Container" + rst
-	default:
-		// Failure — no host fallback exists.
-		return "\033[1m" + ansiCoral + icons.Alert() + " Container Required" + rst
-	}
-}
+// welcomeModeBadge was removed with container execution.
 
 func actLine(saved *session.Session, sessionID string) string {
 	if saved != nil && len(sessionID) >= 8 {

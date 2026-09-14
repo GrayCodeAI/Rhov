@@ -173,7 +173,7 @@ func (r *SelectiveRAG) Stats() map[string]interface{} {
 // Helper functions for query classification
 
 func estimateTokens(text string) int {
-	// BPE-based estimate via the shrike tokenizer instead of the len/4 char
+	// BPE-based estimate via the token engine instead of the len/4 char
 	// heuristic, which systematically undercounts code-heavy text.
 	return token.CountTokensFast(text)
 }

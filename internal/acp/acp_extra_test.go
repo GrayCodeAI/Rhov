@@ -116,26 +116,6 @@ func TestHandleSetMode_UnknownSession(t *testing.T) {
 	}
 }
 
-func TestHandleSetIsolation_Workspace(t *testing.T) {
-	srv, buf := newSrvWithSession(t, "s1")
-	msg := rpcMessage{
-		ID: []byte(`1`), Method: "session/setIsolation",
-		Params: []byte(`{"sessionId":"s1","profile":"workspace"}`),
-	}
-	srv.handleSetIsolation(msg)
-	var resp struct {
-		Result struct {
-			Isolation string `json:"isolation"`
-		} `json:"result"`
-	}
-	if err := json.Unmarshal(buf.Bytes(), &resp); err != nil {
-		t.Fatalf("parse: %v (%s)", err, buf.String())
-	}
-	if resp.Result.Isolation != "workspace" {
-		t.Fatalf("isolation = %q, want workspace", resp.Result.Isolation)
-	}
-}
-
 func TestHandleStatus_Snapshot(t *testing.T) {
 	srv, buf := newSrvWithSession(t, "s1")
 	msg := rpcMessage{

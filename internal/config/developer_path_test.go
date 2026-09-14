@@ -40,7 +40,6 @@ func TestFormatDeveloperPathReport_ContainsSections(t *testing.T) {
 		"Developer path",
 		"Setup",
 		"Security",
-		"Sandbox",
 		"Ecosystem",
 		"Next:",
 	} {

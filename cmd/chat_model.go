@@ -20,7 +20,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/feature/shellmode"
 	"github.com/GrayCodeAI/hawk/internal/feature/taste"
 	"github.com/GrayCodeAI/hawk/internal/plugin"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/session"
 	"github.com/GrayCodeAI/hawk/internal/system/staleness"
 	"github.com/GrayCodeAI/hawk/internal/tool"
@@ -72,14 +71,12 @@ var (
 	toolStyle    = lipgloss.NewStyle().Foreground(toolGold).Bold(true)
 	toolDimStyle = lipgloss.NewStyle().Foreground(textDisabled)
 
-	slashCmdStyle       = lipgloss.NewStyle().Foreground(textDisabled)
-	slashDescStyle      = lipgloss.NewStyle().Foreground(textDisabled)
-	slashSelCmdStyle    = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
-	slashSelDescStyle   = lipgloss.NewStyle().Foreground(hawkColor)
-	inputBorderStyle    = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
-	ghostHintStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Italic(true)
-	containerErrStyle   = lipgloss.NewStyle().Foreground(errorCoral)
-	containerLabelStyle = lipgloss.NewStyle().Foreground(containerBlue)
+	slashCmdStyle     = lipgloss.NewStyle().Foreground(textDisabled)
+	slashDescStyle    = lipgloss.NewStyle().Foreground(textDisabled)
+	slashSelCmdStyle  = lipgloss.NewStyle().Foreground(hawkColor).Bold(true)
+	slashSelDescStyle = lipgloss.NewStyle().Foreground(hawkColor)
+	inputBorderStyle  = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), true, false, true, false).BorderForeground(borderDim)
+	ghostHintStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Italic(true)
 
 	// Backwards-compatible alias for callers that still use the old name.
 	// New code should use the purpose-named constants in theme.go.
@@ -350,20 +347,6 @@ type chatModel struct {
 	streamMDWidth     int
 
 	activeSkills map[string]plugin.SmartSkill // per-session activated skills
-
-	// Container mode (hermetic execution in Docker container)
-	containerEnabled bool
-	containerStatus  string // "checking docker…", "pulling image…", "starting…", "<id>", "docker not running"
-	containerReady   bool
-	containerErr     error
-	containerSandbox *sandbox.ContainerSandbox
-	// pendingSubmit holds user input entered while the container is still
-	// booting. It is auto-submitted when the container becomes ready so the
-	// user's message is never silently discarded.
-	pendingSubmit string
-	// containerRetryable is true after a container boot failure. It enables
-	// the [r]etry keybinding so the user can recover without restarting the TUI.
-	containerRetryable bool
 
 	// Taste & staleness tracking
 	tasteHooks        *taste.Hooks

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Milestone verification: API key → model → sandbox
+# Milestone verification: API key → model → ready-to-chat
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -22,7 +22,6 @@ go test ./internal/config/ -run 'Verify_|HasConfigured|EvaluateSetup|PersistAPIK
 go test ./internal/config/ -run 'RemoveStored|FormatCredential' -count=1
 go test ./cmd/ -run 'ConfigHub|RemoveCredential' -count=1
 go test ./internal/tool/ -run 'IsSensitivePath|DetectCredentials' -count=1
-go test ./internal/sandbox/ -run 'Verify_Container' -count=1 -timeout 3m || true
 go test ./internal/resilience/health/ -run 'CheckAPIKeySet' -count=1
 
 echo "== done =="

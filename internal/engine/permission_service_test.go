@@ -5,8 +5,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
 
 func TestPermissionService_CheckTool(t *testing.T) {
@@ -85,14 +83,12 @@ func TestPermissionService_ResetSpecIncrementsRevision(t *testing.T) {
 func TestPermissionService_ConcurrentPolicyUpdates(t *testing.T) {
 	s := NewPermissionService(nil)
 	ctx := context.Background()
-	modes := []sandbox.Mode{sandbox.ModeStrict, sandbox.ModeWorkspace, sandbox.ModeOff}
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(2)
 		go func(i int) {
 			defer wg.Done()
 			s.SetAutonomy(AutonomyLevel(i % int(AutonomyYOLO+1)))
-			s.SetSandboxMode(modes[i%len(modes)])
 			s.SetAllowedDirs([]string{"/workspace", "/tmp"})
 		}(i)
 		go func() {
@@ -103,14 +99,6 @@ func TestPermissionService_ConcurrentPolicyUpdates(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-}
-
-func TestPermissionService_SandboxModeRoundTrip(t *testing.T) {
-	s := NewPermissionService(nil)
-	s.SetSandboxMode(sandbox.ModeStrict)
-	if got := s.SandboxMode(); got != sandbox.ModeStrict {
-		t.Fatalf("SandboxMode = %q, want strict", got)
-	}
 }
 
 func TestPermissionService_ApplyPolicySnapshotCopiesRulesAndScopes(t *testing.T) {

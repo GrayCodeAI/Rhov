@@ -6,17 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 
 	"github.com/GrayCodeAI/hawk/internal/engine/diff"
 	"github.com/GrayCodeAI/hawk/internal/hooks"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
 	"github.com/GrayCodeAI/hawk/internal/intelligence/repomap"
 	"github.com/GrayCodeAI/hawk/internal/observability/metrics"
 	"github.com/GrayCodeAI/hawk/internal/observability/oteltrace"
 	"github.com/GrayCodeAI/hawk/internal/prompts"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/securitylog"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 	"github.com/GrayCodeAI/hawk/internal/types"
@@ -28,8 +27,6 @@ import (
 // god-object decomposition (see docs/session-decomposition.md).
 type ToolService struct {
 	registry          *tool.Registry
-	containerExecutor tool.ContainerExecutor
-	containerRequired bool
 	tracer            *oteltrace.Tracer
 	agentSpawn        tool.AgentSpawnFn
 	snapshots         SnapshotTracker
@@ -44,6 +41,46 @@ type ToolService struct {
 	metrics           *metrics.Registry
 	auditLog          *securitylog.Log
 	pipeline          *tool.Pipeline
+
+	// semanticMu guards semanticIdx, the lazily-built local code-search index.
+	semanticMu  sync.Mutex
+	semanticIdx *repomap.SemanticIndex
+}
+
+// semanticIndex returns the cached TF-IDF code-search index, building it from
+// the working directory on first use. It is safe for concurrent callers.
+func (s *ToolService) semanticIndex() (*repomap.SemanticIndex, error) {
+	s.semanticMu.Lock()
+	defer s.semanticMu.Unlock()
+	if s.semanticIdx != nil {
+		return s.semanticIdx, nil
+	}
+	dir := s.WorkingDir()
+	if dir == "" {
+		dir, _ = os.Getwd()
+	}
+	if dir == "" {
+		return nil, fmt.Errorf("code search unavailable: no working directory")
+	}
+	idx, err := repomap.BuildSemanticIndex(dir, nil, 0)
+	if err != nil {
+		return nil, fmt.Errorf("code search index: %w", err)
+	}
+	s.semanticIdx = idx
+	return idx, nil
+}
+
+// RefreshCodeIndex drops the cached semantic index so the next search rebuilds
+// it from disk.
+func (s *ToolService) RefreshCodeIndex() error {
+	if s == nil {
+		return nil
+	}
+	s.semanticMu.Lock()
+	s.semanticIdx = nil
+	s.semanticMu.Unlock()
+	_, err := s.semanticIndex()
+	return err
 }
 
 func (s *ToolService) SetAgentSpawnFn(fn tool.AgentSpawnFn) {
@@ -183,41 +220,6 @@ func (s *ToolService) AutoCommit() bool {
 func (s *ToolService) WithMetrics(registry *metrics.Registry) *ToolService {
 	s.metrics = registry
 	return s
-}
-
-// WithContainerExecutor configures container isolation.
-func (s *ToolService) WithContainerExecutor(ce tool.ContainerExecutor, required bool) *ToolService {
-	if s == nil {
-		return s
-	}
-	s.executionConfigMu.Lock()
-	defer s.executionConfigMu.Unlock()
-	s.containerExecutor = ce
-	s.containerRequired = required
-	return s
-}
-
-// SetContainerRequired updates container-first mode without replacing the
-// currently configured executor.
-func (s *ToolService) SetContainerRequired(required bool) {
-	if s == nil {
-		return
-	}
-	s.executionConfigMu.Lock()
-	defer s.executionConfigMu.Unlock()
-	s.containerRequired = required
-}
-
-// SetContainerExecutor updates the executor without changing container-first
-// mode. Keeping the mutation on ToolService makes the pair safe to update
-// while asynchronous container startup/retry is in progress.
-func (s *ToolService) SetContainerExecutor(ce tool.ContainerExecutor) {
-	if s == nil {
-		return
-	}
-	s.executionConfigMu.Lock()
-	defer s.executionConfigMu.Unlock()
-	s.containerExecutor = ce
 }
 
 // WithTracer configures the OTel tracer.
@@ -367,13 +369,6 @@ func bool2tag(isErr bool) string {
 func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, override tool.Tool, ch chan<- StreamEvent, turn int, intent string) toolExecResult {
 	result := toolExecResult{tc: tc, state: ToolStateValidating}
 	ch <- StreamEvent{Type: "tool_use", ToolName: tc.Name, ToolID: tc.ID, ToolState: ToolStateValidating}
-	containerExecutor, containerRequired := s.containerState()
-	if containerRequired && (containerExecutor == nil || !containerExecutor.Running()) {
-		msg := "Container not ready — tools are disabled until the sandbox is running."
-		ch <- StreamEvent{Type: "tool_result", ToolName: tc.Name, Content: msg, ToolState: ToolStateFailed, ToolReason: ToolReasonExecutionError}
-		result.output, result.isErr, result.err = msg, true, fmt.Errorf("%s", msg)
-		return result
-	}
 	var span *oteltrace.Span
 	if s.tracer != nil {
 		_, span = oteltrace.StartToolSpan(ctx, s.tracer, tc.Name, tc.ID)
@@ -464,11 +459,6 @@ func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, overrid
 			return resp.Content, nil
 		}
 	}
-	var harrier *memory.HarrierBridge
-	if s.deps.memory != nil {
-		harrier = s.deps.memory.Harrier()
-	}
-	sbMode := s.deps.permissions.SandboxMode()
 	var available []tool.Tool
 	if s.registry != nil {
 		// Full primary set so ToolSearch can discover lazy/optional tools.
@@ -478,66 +468,44 @@ func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, overrid
 		AgentSpawnFn:        s.deps.agentSpawn,
 		AskUserFn:           s.deps.askUser,
 		CommitMessageChatFn: commitChat,
-		HarrierBridge:       harrier,
-		// Semantic code search backed by the harrier code-chunk index. Wiring the
-		// closures here makes CodeSearchTool functional in production (the
-		// interface was declared but never bound). Refresh rebuilds only
-		// added/changed files via content-hash staleness.
+		SpecSlugGet:         func() string { return s.deps.permissions.SpecSlug() },
+		SpecSlugSet:         func(slug string) { s.deps.permissions.SetSpecSlug(slug) },
+		AllowedDirectories:  s.deps.permissions.AllowedDirs(),
+		BackgroundManager:   s.EnsureBackgroundManager(),
+		ReadOnlyBash:        s.ReadOnlyBash(),
+		WorkingDir:          s.WorkingDir(),
+		AvailableTools:      available,
+		Registry:            s.registry,
+		AutoCommit:          s.AutoCommit(),
+		TaskExecutor:        s.deps.taskExec,
+		// Semantic code search backed by the local TF-IDF index. The index is
+		// built lazily from the working directory and cached on the service.
 		CodeSearchFn: func(cctx context.Context, query string, limit int) ([]tool.CodeSearchResult, error) {
-			if harrier == nil {
-				return nil, fmt.Errorf("code search unavailable: no memory bridge")
-			}
-			results, err := harrier.SearchCode(query, limit)
+			idx, err := s.semanticIndex()
 			if err != nil {
 				return nil, err
 			}
-			out := make([]tool.CodeSearchResult, 0, len(results))
-			for _, r := range results {
+			chunks := idx.Search(query, limit)
+			out := make([]tool.CodeSearchResult, 0, len(chunks))
+			for _, c := range chunks {
 				out = append(out, tool.CodeSearchResult{
-					Path: r.Path, StartLine: r.StartLine, EndLine: r.EndLine,
-					Content: r.Content, Symbol: r.Symbol, Language: tool.LanguageForFile(r.Path), Score: r.Score,
+					Path:      c.Path,
+					StartLine: c.StartLine,
+					EndLine:   c.EndLine,
+					Content:   c.Content,
+					Language:  tool.LanguageForFile(c.Path),
 				})
 			}
 			return out, nil
 		},
 		RefreshCodeIndexFn: func(cctx context.Context) error {
-			if harrier == nil {
-				return fmt.Errorf("code index refresh unavailable: no memory bridge")
-			}
-			dir := s.WorkingDir()
-			if dir == "" {
-				return fmt.Errorf("code index refresh unavailable: no working directory")
-			}
-			if err := harrier.InitCodeIndex(); err != nil {
-				return err
-			}
-			_, _, _, err := repomap.IncrementalReindex(dir, nil, &harrierCodeIndexer{harrier})
+			s.semanticMu.Lock()
+			s.semanticIdx = nil
+			s.semanticMu.Unlock()
+			_, err := s.semanticIndex()
 			return err
 		},
-		SpecSlugGet:        func() string { return s.deps.permissions.SpecSlug() },
-		SpecSlugSet:        func(slug string) { s.deps.permissions.SetSpecSlug(slug) },
-		AllowedDirectories: s.deps.permissions.AllowedDirs(),
-		SandboxMode:        sbMode,
-		BackgroundManager:  s.EnsureBackgroundManager(),
-		ReadOnlyBash:       s.ReadOnlyBash(),
-		WorkingDir:         s.WorkingDir(),
-		AvailableTools:     available,
-		Registry:           s.registry,
-		AutoCommit:         s.AutoCommit(),
-		TaskExecutor:       s.deps.taskExec,
 	})
-	// Bridge session sandbox policy onto the context so Bash/PowerShell
-	// WrapCommand actually applies. Path guards already read ToolContext.SandboxMode;
-	// process isolation previously only fired when callers set ModeFromContext
-	// explicitly (tests), so configured workspace/strict modes were a no-op for shell.
-	// Only attach for explicit workspace/strict — empty or "off" leave ModeOff so
-	// host shell works without a seatbelt/unshare backend.
-	if sbMode == sandbox.ModeWorkspace || sbMode == sandbox.ModeStrict {
-		toolCtx = sandbox.ContextWithMode(toolCtx, sbMode)
-	}
-	if containerExecutor != nil && containerExecutor.Running() {
-		toolCtx = tool.WithContainerExecutor(toolCtx, containerExecutor)
-	}
 	t := override
 	if t == nil && s.registry != nil {
 		var ok bool
@@ -922,29 +890,6 @@ func (s *ToolService) BackgroundManager() *tool.BackgroundAgentManager {
 	s.bgMu.Lock()
 	defer s.bgMu.Unlock()
 	return s.bgManager
-}
-
-// containerState returns one consistent view for a tool invocation. The
-// executor can be replaced asynchronously by the TUI's container retry path.
-func (s *ToolService) containerState() (tool.ContainerExecutor, bool) {
-	if s == nil {
-		return nil, false
-	}
-	s.executionConfigMu.RLock()
-	defer s.executionConfigMu.RUnlock()
-	return s.containerExecutor, s.containerRequired
-}
-
-// ContainerRequired reports whether container-first mode is on.
-func (s *ToolService) ContainerRequired() bool {
-	_, required := s.containerState()
-	return required
-}
-
-// ContainerExecutor returns the configured container executor, or nil.
-func (s *ToolService) ContainerExecutor() tool.ContainerExecutor {
-	executor, _ := s.containerState()
-	return executor
 }
 
 // Snapshots returns the configured automatic snapshot tracker.

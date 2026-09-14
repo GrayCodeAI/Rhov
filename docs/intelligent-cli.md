@@ -24,10 +24,10 @@ anything, grant approval, or bypass the permission engine.
 ## Useful tools
 
 ```text
-ToolHealth       merlin registered tools and git/go/node/python/docker/gh/Chrome availability
+ToolHealth       list registered tools and git/go/node/python/docker/gh/Chrome availability
 ProjectVerify    detect and run bounded build/test/lint/format checks without a shell
 DependencyAudit  check dependency integrity or outdated packages without installing anything
-GitHub           merlin repositories, PRs, issues, checks, and workflow runs through gh
+GitHub           list repositories, PRs, issues, checks, and workflow runs through gh
 ```
 
 All verification commands use fixed executable/argument lists, per-command

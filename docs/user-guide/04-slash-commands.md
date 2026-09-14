@@ -89,7 +89,7 @@ Only works when the active model supports reasoning effort.
 
 ### `/autonomy`
 
-Control the autonomy tier and sandbox profile. Opens an interactive picker.
+Control the autonomy tier. Opens an interactive picker.
 
 ```
 /autonomy
@@ -104,16 +104,6 @@ Set autonomy tier without opening the picker.
 /autonomy tier builder
 /autonomy tier operator
 /autonomy tier autonomous
-```
-
-### `/autonomy sandbox <profile>`
-
-Set sandbox profile.
-
-```
-/autonomy sandbox strict
-/autonomy sandbox workspace
-/autonomy sandbox off
 ```
 
 ### `/autonomy dry-run <on|off>`
@@ -135,22 +125,14 @@ Toggle multiline input mode. When enabled, `Enter` inserts a newline and `Shift+
 
 ---
 
-## Memory (via harrier)
+## Memory
 
-### `/harrier`
+### `/learn`
 
-Browse persistent memory stored in harrier.
-
-```
-/harrier
-```
-
-### `/harrier search <query>`
-
-Search harrier memories.
+Review lessons learned across sessions.
 
 ```
-/harrier search auth implementation
+/learn
 ```
 
 ### `/remember <note>`
@@ -280,31 +262,7 @@ With options (in-tool):
 
 ---
 
-## Sandbox and Permissions
-
-### `/sandbox strict`
-
-Apply strict sandbox profile (cwd only, no network).
-
-```
-/sandbox strict
-```
-
-### `/sandbox workspace`
-
-Apply workspace sandbox profile (project directory only).
-
-```
-/sandbox workspace
-```
-
-### `/sandbox off`
-
-Disable sandbox (full access).
-
-```
-/sandbox off
-```
+## Permissions
 
 ### `/trust`
 
@@ -343,7 +301,7 @@ Open the cron/scheduler management.
 
 ### `/path`
 
-Check developer path readiness (setup + security + sandbox).
+Check developer path readiness (setup + security).
 
 ```
 /path
@@ -359,7 +317,7 @@ Quick ready-to-chat check.
 
 ### `/ecosystem`
 
-Show ecosystem component status (Eyrie, harrier, shrike).
+Show ecosystem component status (Eyrie and the token pipeline).
 
 ```
 /ecosystem

@@ -62,7 +62,6 @@ func (c *startSubcommand) Handle(m *chatModel, args []string, text string) (tea.
 	if m.session != nil {
 		_ = m.session.SetWorkMode(engine.WorkModeAct)
 		b.WriteString(fmt.Sprintf("3. **Work mode** → %s (use `/mode plan` to research first)\n", m.session.WorkMode()))
-		b.WriteString(fmt.Sprintf("4. **Isolation** → %s (`/isolation workspace` for safer shell)\n", m.session.Isolation().String()))
 	}
 
 	// 5. Git branch
@@ -90,7 +89,7 @@ func (c *startSubcommand) Handle(m *chatModel, args []string, text string) (tea.
 	b.WriteString("- *Run the test suite and fix failures*\n")
 	b.WriteString("- *`/mode plan` then: plan a small safe refactor*\n")
 	b.WriteString("\n### Power shortcuts\n")
-	b.WriteString("`/mode plan|act|review` · `/isolation` · `/trust` · `/cost` · `/help`\n")
+	b.WriteString("`/mode plan|act|review` · `/trust` · `/cost` · `/help`\n")
 
 	m.messages = append(m.messages, displayMsg{role: "system", content: strings.TrimSpace(b.String())})
 	return m, nil

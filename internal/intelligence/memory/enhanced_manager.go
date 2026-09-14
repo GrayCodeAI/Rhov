@@ -8,50 +8,30 @@ import (
 	"time"
 )
 
-// EnhancedMemoryManager extends MemoryManager with all the new subsystems:
-// auto-capture, proactive context, confidence tracking, retrieval metrics,
-// code-memory links, session diff, continuity scoring, cross-project memory,
-// and shared memory for mission mode.
+// EnhancedMemoryManager extends MemoryManager with the local memory
+// subsystems: retrieval metrics, continuity scoring, and skill distillation.
+// It no longer carries graph-backed subsystems (auto-capture, proactive
+// context, confidence, code links, session diff, cross-project, graph budget,
+// shared mission memory) — those were built on the removed harrier bridge.
 type EnhancedMemoryManager struct {
 	*MemoryManager
 
-	AutoCapture  *AutoCapture
-	Proactive    *ProactiveContext
-	Confidence   *ConfidenceTracker
-	Retrieval    *RetrievalMetrics
-	CodeLinks    *CodeMemoryLinker
-	SessionDiff  *SessionDiffAnalyzer
-	Continuity   *ContinuityTracker
-	CrossProject *CrossProjectMemory
-	GraphBudget  *GraphAwareBudget
-	Shared       *SharedMemory // nil unless in mission mode
+	Retrieval  *RetrievalMetrics
+	Continuity *ContinuityTracker
 
 	sessionID string
 	mu        sync.Mutex
 }
 
-// NewEnhancedMemoryManager creates a fully-integrated memory system with all subsystems.
+// NewEnhancedMemoryManager creates a fully-integrated local memory system.
 func NewEnhancedMemoryManager(projectDir string) *EnhancedMemoryManager {
 	base := NewMemoryManager(projectDir)
 
-	em := &EnhancedMemoryManager{
+	return &EnhancedMemoryManager{
 		MemoryManager: base,
+		Retrieval:     NewRetrievalMetrics(projectDir),
+		Continuity:    NewContinuityTracker(projectDir),
 	}
-
-	// Initialize all subsystems once the harrier bridge is ready
-	if base.Harrier.Ready() {
-		em.AutoCapture = NewAutoCapture(base.Harrier)
-		em.Proactive = NewProactiveContext(base.Harrier)
-		em.Confidence = NewConfidenceTracker(base.Harrier)
-		em.Retrieval = NewRetrievalMetrics(projectDir)
-		em.CodeLinks = NewCodeMemoryLinker(base.Harrier)
-		em.SessionDiff = NewSessionDiffAnalyzer(base.Harrier, projectDir)
-		em.Continuity = NewContinuityTracker(projectDir)
-		em.CrossProject = NewCrossProjectMemory(base.Harrier)
-		em.GraphBudget = NewGraphAwareBudget(base.Harrier, em.Proactive)
-	}
-
-	return em
 }
 
 // StartSession initializes all session-level tracking.
@@ -61,91 +41,34 @@ func (em *EnhancedMemoryManager) StartSession(sessionID string) {
 
 	em.sessionID = sessionID
 
-	if em.Confidence != nil {
-		em.Confidence.Reset()
-	}
-	if em.Proactive != nil {
-		em.Proactive.Reset()
-	}
-	if em.SessionDiff != nil {
-		em.SessionDiff.SnapshotStart()
-	}
 	if em.Continuity != nil {
-		memoryInjected := em.Harrier.Ready()
-		em.Continuity.StartSession(sessionID, memoryInjected)
+		em.Continuity.StartSession(sessionID, false)
 	}
 }
 
-// EndSession performs end-of-session processing: diff analysis, confidence
-// updates, metric persistence, and continuity scoring.
+// EndSession performs end-of-session processing: metric persistence and
+// continuity scoring.
 func (em *EnhancedMemoryManager) EndSession(success bool) {
 	em.mu.Lock()
 	defer em.mu.Unlock()
 
-	// Confidence adjustments based on outcome
-	if em.Confidence != nil {
-		if success {
-			em.Confidence.OnSessionSuccess()
-		} else {
-			em.Confidence.OnSessionFailure()
-		}
-	}
-
-	// Session diff analysis → extract and store new memories
-	if em.SessionDiff != nil {
-		diff := em.SessionDiff.AnalyzeEnd()
-		if diff != nil {
-			em.SessionDiff.StoreMemoriesFromDiff(diff)
-		}
-	}
-
-	// Record continuity
 	if em.Continuity != nil {
 		em.Continuity.EndSession(success)
 	}
 
-	// Persist retrieval metrics
 	if em.Retrieval != nil {
 		em.Retrieval.Save()
 	}
 }
 
-// Recall performs an enhanced recall that tracks metrics and confidence.
-// Implements engine.MemoryRecaller interface.
+// Recall performs a recall that tracks metrics and continuity.
+// Implements engine.MemoryRecaller.
 func (em *EnhancedMemoryManager) Recall(query string, tokenBudget int) (string, error) {
-	// Use graph-aware budget if available
-	if em.GraphBudget != nil {
-		var activeFiles []string
-		if em.Proactive != nil {
-			em.Proactive.mu.Lock()
-			for f := range em.Proactive.activeFiles {
-				activeFiles = append(activeFiles, f)
-			}
-			em.Proactive.mu.Unlock()
-		}
-
-		injection := em.GraphBudget.BuildInjection(query, activeFiles, tokenBudget)
-		if injection != "" {
-			// Track metrics
-			if em.Retrieval != nil {
-				resultCount := strings.Count(injection, "\n")
-				tokensUsed := len(injection) / 4
-				em.Retrieval.RecordRecall(query, resultCount, tokensUsed, "graph_budget")
-			}
-			if em.Continuity != nil {
-				em.Continuity.RecordMemoryUse(1, len(injection)/4)
-			}
-			return injection, nil
-		}
-	}
-
-	// Fall back to base recall (MemoryManager.Recall)
 	result, err := em.MemoryManager.Recall(query, tokenBudget)
 	if err != nil {
 		return "", err
 	}
 
-	// Track metrics
 	if em.Retrieval != nil {
 		resultCount := 0
 		if result != "" {
@@ -160,113 +83,25 @@ func (em *EnhancedMemoryManager) Recall(query string, tokenBudget int) (string, 
 	return result, nil
 }
 
-// Remember stores memory and routes through auto-capture pipeline.
-// Implements engine.MemoryRecaller interface. The ctx bounds the harrier path.
+// Remember stores memory through the base manager.
+// Implements engine.MemoryRecaller.
 func (em *EnhancedMemoryManager) Remember(ctx context.Context, content, category string) error {
-	err := em.MemoryManager.Remember(ctx, content, category)
-	if err != nil {
-		return err
-	}
-
-	// Also check if this should be promoted to global scope
-	if em.CrossProject != nil {
-		promoted := em.CrossProject.DetectGlobalPatterns([]string{content})
-		if len(promoted) > 0 {
-			for _, p := range promoted {
-				_ = em.CrossProject.StoreGlobal(p, "preference")
-			}
-		}
-	}
-
-	return nil
+	return em.MemoryManager.Remember(ctx, content, category)
 }
 
-// OnToolResult processes a tool result for auto-capture.
-func (em *EnhancedMemoryManager) OnToolResult(toolName string, args map[string]interface{}, output string, isErr bool) {
-	if em.AutoCapture != nil {
-		em.AutoCapture.Ingest(toolName, args, output, isErr)
-	}
+// OnToolResult is retained as a no-op hook for the tool pipeline.
+func (em *EnhancedMemoryManager) OnToolResult(string, map[string]interface{}, string, bool) {}
 
-	// Track file interactions for proactive context
-	if em.Proactive != nil {
-		if path, ok := extractPath(args); ok && path != "" {
-			em.Proactive.TrackFile(path)
-		}
-	}
+// ProactiveContextForFile is retained for the tool pipeline; no graph backend
+// means there is nothing file-scoped to inject.
+func (em *EnhancedMemoryManager) ProactiveContextForFile(string) string { return "" }
 
-	// Link code index to memories on file writes
-	if em.CodeLinks != nil {
-		cn := canonicalName(toolName)
-		if cn == "Write" || cn == "Edit" {
-			if path, ok := extractPath(args); ok {
-				go func() { _ = em.CodeLinks.LinkFileToMemories(path) }()
-			}
-		}
-	}
-}
+// GlobalContext is retained for the prompt builder; no cross-project backend.
+func (em *EnhancedMemoryManager) GlobalContext(int) string { return "" }
 
-// ProactiveContextForFile returns memories relevant to a file being worked on.
-func (em *EnhancedMemoryManager) ProactiveContextForFile(path string) string {
-	if em.Proactive == nil {
-		return ""
-	}
-	return em.Proactive.ContextForFile(path)
-}
-
-// GlobalContext returns cross-project user preferences for injection.
-func (em *EnhancedMemoryManager) GlobalContext(budget int) string {
-	if em.CrossProject == nil {
-		return ""
-	}
-	return em.CrossProject.InjectGlobalContext(budget)
-}
-
-// EnableMissionMode activates shared memory for parallel agent coordination.
-func (em *EnhancedMemoryManager) EnableMissionMode(missionID, agentID string) {
-	em.mu.Lock()
-	defer em.mu.Unlock()
-	em.Shared = NewSharedMemory(em.Harrier, missionID, agentID)
-}
-
-// ShareWithMission stores a memory visible to all agents in the mission.
-func (em *EnhancedMemoryManager) ShareWithMission(content, nodeType string) error {
-	if em.Shared == nil {
-		return nil
-	}
-	return em.Shared.Share(content, nodeType)
-}
-
-// RecallFromMission retrieves shared memories from the mission namespace.
-func (em *EnhancedMemoryManager) RecallFromMission(query string, budget int) (string, error) {
-	if em.Shared == nil {
-		return "", nil
-	}
-	return em.Shared.Recall(query, budget)
-}
-
-// FormatForPrompt builds the full memory context for prompt injection,
-// combining all sources: graph budget, global, proactive, and mission.
+// FormatForPrompt builds the memory context for prompt injection.
 func (em *EnhancedMemoryManager) FormatForPrompt() string {
-	var sections []string
-
-	// Base format (auto, evolving, zen)
-	if s := em.MemoryManager.FormatForPrompt(); s != "" {
-		sections = append(sections, s)
-	}
-
-	// Global user preferences
-	if globalCtx := em.GlobalContext(300); globalCtx != "" {
-		sections = append(sections, globalCtx)
-	}
-
-	// Mission shared memory
-	if em.Shared != nil {
-		if missionCtx, err := em.RecallFromMission("", 500); err == nil && missionCtx != "" {
-			sections = append(sections, missionCtx)
-		}
-	}
-
-	return strings.Join(sections, "\n\n")
+	return em.MemoryManager.FormatForPrompt()
 }
 
 // StatusSummary returns a concise status line for the memory system.
@@ -283,12 +118,6 @@ func (em *EnhancedMemoryManager) StatusSummary() string {
 			parts = append(parts, s)
 		}
 	}
-	if em.AutoCapture != nil {
-		m := em.AutoCapture.Metrics()
-		if m.Captured > 0 {
-			parts = append(parts, fmt.Sprintf("Auto-captured: %d", m.Captured))
-		}
-	}
 
 	if len(parts) == 0 {
 		return ""
@@ -298,41 +127,29 @@ func (em *EnhancedMemoryManager) StatusSummary() string {
 
 // Close shuts down all subsystems gracefully.
 func (em *EnhancedMemoryManager) Close() {
-	if em.AutoCapture != nil {
-		em.AutoCapture.Stop()
-	}
 	if em.Retrieval != nil {
 		em.Retrieval.Save()
 	}
 	if em.Continuity != nil {
 		em.Continuity.Save()
 	}
-	em.Harrier.Close()
 }
 
 // HealthCheck verifies the memory system is working correctly.
 func (em *EnhancedMemoryManager) HealthCheck() map[string]interface{} {
 	health := map[string]interface{}{
-		"harrier_ready": em.Harrier.Ready(),
-		"timestamp":     time.Now().Format(time.RFC3339),
+		"timestamp": time.Now().Format(time.RFC3339),
 	}
 
 	if em.Retrieval != nil {
 		health["hit_rate"] = em.Retrieval.HitRate()
 		health["total_recalls"] = em.Retrieval.TotalRecalls()
 	}
-	if em.AutoCapture != nil {
-		m := em.AutoCapture.Metrics()
-		health["auto_captured"] = m.Captured
-		health["auto_skipped"] = m.Skipped
-	}
 	if em.Continuity != nil {
 		r := em.Continuity.Report()
 		health["continuity_score"] = r.AvgScore
+		health["total_sessions"] = r.TotalSessions
 		health["tokens_saved"] = r.TotalTokensSaved
-	}
-	if em.Confidence != nil {
-		health["memories_accessed"] = em.Confidence.AccessedCount()
 	}
 
 	return health
@@ -343,10 +160,6 @@ func (em *EnhancedMemoryManager) DiagnosticReport(_ context.Context) string {
 	var sb strings.Builder
 	sb.WriteString("=== Memory System Diagnostic ===\n\n")
 
-	// Core status
-	sb.WriteString(fmt.Sprintf("Harrier Bridge: %v\n", em.Harrier.Ready()))
-
-	// Retrieval metrics
 	if em.Retrieval != nil {
 		r := em.Retrieval.Report()
 		sb.WriteString("\nRetrieval:\n")
@@ -356,18 +169,6 @@ func (em *EnhancedMemoryManager) DiagnosticReport(_ context.Context) string {
 		sb.WriteString(fmt.Sprintf("  Tokens saved: %d\n", r.TotalTokensSaved))
 	}
 
-	// Auto-capture metrics
-	if em.AutoCapture != nil {
-		m := em.AutoCapture.Metrics()
-		sb.WriteString("\nAuto-Capture:\n")
-		sb.WriteString(fmt.Sprintf("  Captured: %d\n", m.Captured))
-		sb.WriteString(fmt.Sprintf("  Skipped: %d\n", m.Skipped))
-		sb.WriteString(fmt.Sprintf("  Conventions: %d\n", m.ConventionsOut))
-		sb.WriteString(fmt.Sprintf("  Decisions: %d\n", m.DecisionsOut))
-		sb.WriteString(fmt.Sprintf("  Bugs: %d\n", m.BugsOut))
-	}
-
-	// Continuity
 	if em.Continuity != nil {
 		r := em.Continuity.Report()
 		sb.WriteString("\nContinuity:\n")

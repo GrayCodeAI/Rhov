@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
 )
 
 // LoadAgentsMD reads AGENTS.md from the current directory or parents.
@@ -102,17 +100,6 @@ func gitCmd(args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// loadHarrierMemories queries harrier for project-relevant memories and injects them
-// into the system prompt. Uses the harrier bridge with project-specific search.
-func loadHarrierMemories(projectDir string) string {
-	if projectDir == "" {
-		return ""
-	}
-	// Use the harrier bridge to search for project context.
-	// The bridge handles graceful degradation if harrier is unavailable.
-	return memory.LoadHarrierContext(projectDir)
-}
-
 // BuildContext assembles the full context string for the system prompt.
 func BuildContext() string {
 	return BuildContextWithDirs(nil)
@@ -145,9 +132,6 @@ func BuildDeferredContextWithDirs(addDirs []string) string {
 		if md := LoadAgentsMDFrom(dir); md != "" {
 			parts = append(parts, "Additional directory instructions ("+dir+"):\n"+md)
 		}
-	}
-	if harrier := loadHarrierMemories(cwd); harrier != "" {
-		parts = append(parts, harrier)
 	}
 	return strings.Join(parts, "\n")
 }

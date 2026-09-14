@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,18 +15,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/graphjournal"
 	"github.com/GrayCodeAI/hawk/internal/session"
 )
-
-type stubSwiftCorrelationResolver struct {
-	correlation swiftCorrelation
-	err         error
-}
-
-func (s stubSwiftCorrelationResolver) Resolve(
-	context.Context,
-	string,
-) (swiftCorrelation, error) {
-	return s.correlation, s.err
-}
 
 func TestExecutionGraphCommandIsVisible(t *testing.T) {
 	t.Parallel()
@@ -147,11 +133,11 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 		t.Fatalf("graphjournal.AppendVerification() error = %v", err)
 	}
 	contextNode := graphcontracts.Node{
-		ID:        "harrier/memory/context-1",
+		ID:        "memory/context-1",
 		Kind:      graphcontracts.NodeKnowledge,
 		CreatedAt: saved.CreatedAt,
 		Provenance: graphcontracts.Provenance{
-			Producer: "harrier",
+			Producer: "memory",
 		},
 		Attributes: map[string]string{
 			"data_classification": "metadata_only",
@@ -160,7 +146,7 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 	}
 	if err := graphjournal.AppendContextGraph(
 		saved.ID,
-		"harrier",
+		"memory",
 		"",
 		[]graphcontracts.Node{contextNode},
 		nil,
@@ -170,19 +156,19 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 		t.Fatalf("graphjournal.AppendContextGraph() error = %v", err)
 	}
 	qualityNode := graphcontracts.Node{
-		ID:        "merlin/report/quality-1",
+		ID:        "review/report/quality-1",
 		Kind:      graphcontracts.NodeQuality,
 		CreatedAt: saved.CreatedAt,
 		Provenance: graphcontracts.Provenance{
-			Producer: "merlin",
+			Producer: "review",
 		},
 		Attributes: map[string]string{"entity": "report"},
 	}
 	if err := graphjournal.AppendQualityGraph(
 		saved.ID,
 		"",
-		"merlin",
-		"merlin",
+		"review",
+		"review",
 		[]graphcontracts.Node{qualityNode},
 		nil,
 		nil,
@@ -191,13 +177,13 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 		t.Fatalf("graphjournal.AppendQualityGraph() error = %v", err)
 	}
 	runtimeNode := graphcontracts.Node{
-		ID: "shrike/compression/runtime-1", Kind: graphcontracts.NodeOperations,
+		ID: "token/compression/runtime-1", Kind: graphcontracts.NodeOperations,
 		CreatedAt:  saved.CreatedAt,
-		Provenance: graphcontracts.Provenance{Producer: "shrike"},
+		Provenance: graphcontracts.Provenance{Producer: "token"},
 		Attributes: map[string]string{"entity": "compression"},
 	}
 	if err := graphjournal.AppendRuntimeGraph(
-		saved.ID, "", "context-compaction", "shrike",
+		saved.ID, "", "context-compaction", "token",
 		[]graphcontracts.Node{runtimeNode}, nil, nil,
 		saved.CreatedAt.Add(5*time.Second),
 	); err != nil {
@@ -211,8 +197,6 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 	command.SetArgs([]string{
 		"export",
 		saved.ID,
-		"--swift-checkpoint",
-		"abc123def456",
 	})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("graph export command error = %v", err)
@@ -246,113 +230,14 @@ func TestExecutionGraphExportCommand(t *testing.T) {
 	if !hasExportNodePrefix(export, "hawk/verification/") {
 		t.Fatal("graph export omitted automatic verification observation")
 	}
-	if !hasExportNodePrefix(export, "harrier/memory/") {
-		t.Fatal("graph export omitted retrieved Harrier context")
+	if !hasExportNodePrefix(export, "memory/") {
+		t.Fatal("graph export omitted retrieved memory context")
 	}
-	if !hasExportNodePrefix(export, "merlin/report/") {
-		t.Fatal("graph export omitted Merlin quality report")
+	if !hasExportNodePrefix(export, "review/report/") {
+		t.Fatal("graph export omitted review quality report")
 	}
-	if !hasExportNodePrefix(export, "shrike/compression/") {
-		t.Fatal("graph export omitted Shrike compression operation")
-	}
-}
-
-func TestBuildExecutionGraphExportComposesAuthoritativeSwiftCorrelation(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
-
-	now := time.Date(2026, time.July, 25, 6, 0, 0, 0, time.UTC)
-	saved := &session.Session{
-		ID:        "hawk-correlated-session",
-		CWD:       "/workspace/hawk",
-		CreatedAt: now.Add(-time.Hour),
-		UpdatedAt: now,
-	}
-	if err := session.Save(saved); err != nil {
-		t.Fatalf("session.Save() error = %v", err)
-	}
-	resolver := stubSwiftCorrelationResolver{correlation: swiftCorrelation{
-		SchemaVersion:            swiftCorrelationSchemaVersion,
-		HawkSessionID:            saved.ID,
-		CheckpointLookupComplete: true,
-		Matches: []swiftCorrelationMatch{
-			{
-				SwiftSessionID: "swift-beta",
-				CheckpointIDs:  []string{"bbbbbbbbbbbb"},
-				StartedAt:      now.Add(-30 * time.Minute),
-			},
-			{
-				SwiftSessionID: "swift-alpha",
-				CheckpointIDs:  []string{"aaaaaaaaaaaa", "abc123def456"},
-				StartedAt:      now.Add(-40 * time.Minute),
-			},
-		},
-	}}
-
-	export, err := buildExecutionGraphExportWithSwift(
-		[]string{saved.ID},
-		"",
-		[]string{"abc123def456"},
-		now,
-		resolver,
-	)
-	if err != nil {
-		t.Fatalf("buildExecutionGraphExportWithSwift() error = %v", err)
-	}
-	for _, nodeID := range []string{
-		"swift/session/swift-alpha",
-		"swift/session/swift-beta",
-		"swift/checkpoint/aaaaaaaaaaaa",
-		"swift/checkpoint/abc123def456",
-		"swift/checkpoint/bbbbbbbbbbbb",
-	} {
-		if findExportNode(export, nodeID) == nil {
-			t.Fatalf("authoritative Swift node %q was not exported", nodeID)
-		}
-	}
-	assertExportEdge(
-		t,
-		export,
-		"hawk/session/"+saved.ID,
-		"swift/session/swift-alpha",
-		graphcontracts.EdgeReferences,
-	)
-	assertExportEdge(
-		t,
-		export,
-		"swift/session/swift-alpha",
-		"swift/checkpoint/abc123def456",
-		graphcontracts.EdgeProduced,
-	)
-}
-
-func TestBuildExecutionGraphExportSwiftLookupFailureIsFailOpen(t *testing.T) {
-	t.Setenv("HAWK_STATE_DIR", t.TempDir())
-
-	now := time.Date(2026, time.July, 25, 6, 30, 0, 0, time.UTC)
-	saved := &session.Session{
-		ID:        "hawk-swift-fail-open",
-		CWD:       "/workspace/hawk",
-		CreatedAt: now.Add(-time.Hour),
-		UpdatedAt: now,
-	}
-	if err := session.Save(saved); err != nil {
-		t.Fatalf("session.Save() error = %v", err)
-	}
-	export, err := buildExecutionGraphExportWithSwift(
-		[]string{saved.ID},
-		"",
-		[]string{"abc123def456"},
-		now,
-		stubSwiftCorrelationResolver{err: errors.New("Swift is unavailable")},
-	)
-	if err != nil {
-		t.Fatalf("Swift lookup should not block graph export: %v", err)
-	}
-	if findExportNode(export, "swift/checkpoint/abc123def456") == nil {
-		t.Fatal("explicit checkpoint reference was lost when automatic lookup failed")
-	}
-	if findExportNode(export, "swift/session/swift-untrusted") != nil {
-		t.Fatal("failed lookup produced a speculative Swift session")
+	if !hasExportNodePrefix(export, "token/compression/") {
+		t.Fatal("graph export omitted token compression operation")
 	}
 }
 

@@ -20,22 +20,6 @@ import (
 
 // submitUserMessage handles Enter on a non-empty prompt (slash commands, shell, or agent turn).
 func (m chatModel) submitUserMessage() (chatModel, tea.Cmd) {
-	if m.containerEnabled && !m.containerReady {
-		text := strings.TrimSpace(m.input.Value())
-		if text != "" {
-			// Queue the input — it will be auto-submitted when the container
-			// is ready so the user's message is never silently discarded.
-			m.pendingSubmit = text
-			m.messages = append(m.messages, displayMsg{
-				role:    "system",
-				content: "Queued — will send when container is ready.",
-			})
-			m.input.Reset()
-			m.viewDirty = true
-			m.updateViewportContent()
-		}
-		return m, nil
-	}
 	text := strings.TrimSpace(m.input.Value())
 	if text == "" {
 		return m, nil

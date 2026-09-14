@@ -299,11 +299,11 @@ func TestBuildMergesRetrievedKnowledgeContext(t *testing.T) {
 		CreatedAt: generatedAt.Add(-time.Hour),
 	}
 	knowledge := graphcontracts.Node{
-		ID:        "harrier/memory/memory-1",
+		ID:        "memory/context/memory-1",
 		Kind:      graphcontracts.NodeKnowledge,
 		CreatedAt: generatedAt.Add(-time.Minute),
 		Provenance: graphcontracts.Provenance{
-			Producer: "harrier",
+			Producer: "memory",
 		},
 		Attributes: map[string]string{
 			"data_classification": "metadata_only",
@@ -338,31 +338,31 @@ func TestBuildMergesQualityGraph(t *testing.T) {
 		CreatedAt: generatedAt.Add(-time.Hour),
 	}
 	report := graphcontracts.Node{
-		ID:        "merlin/report/report-1",
+		ID:        "review/report/report-1",
 		Kind:      graphcontracts.NodeQuality,
 		CreatedAt: generatedAt.Add(-time.Minute),
 		Provenance: graphcontracts.Provenance{
-			Producer: "merlin",
+			Producer: "review",
 		},
 		Attributes: map[string]string{"entity": "report"},
 	}
 	finding := graphcontracts.Node{
-		ID:        "merlin/finding/finding-1",
+		ID:        "review/finding/finding-1",
 		Kind:      graphcontracts.NodeQuality,
 		CreatedAt: generatedAt.Add(-time.Minute),
 		Provenance: graphcontracts.Provenance{
-			Producer: "merlin",
+			Producer: "review",
 		},
 		Attributes: map[string]string{"entity": "finding"},
 	}
 	contains := graphcontracts.Edge{
-		ID:        "merlin/contains/edge-1",
+		ID:        "review/contains/edge-1",
 		Kind:      graphcontracts.EdgeContains,
 		From:      graphcontracts.Ref{Kind: report.Kind, ID: report.ID},
 		To:        graphcontracts.Ref{Kind: finding.Kind, ID: finding.ID},
 		CreatedAt: generatedAt.Add(-time.Minute),
 		Provenance: graphcontracts.Provenance{
-			Producer: "merlin",
+			Producer: "review",
 		},
 	}
 	export, err := Build(Input{
@@ -392,25 +392,25 @@ func TestBuildMergesMixedRuntimeGraph(t *testing.T) {
 	saved := &session.Session{ID: "runtime-session", CreatedAt: at.Add(-time.Hour)}
 	nodes := []graphcontracts.Node{
 		{
-			ID: "shrike/compression/one", Kind: graphcontracts.NodeOperations, CreatedAt: at,
-			Provenance: graphcontracts.Provenance{Producer: "shrike"},
+			ID: "token/compression/one", Kind: graphcontracts.NodeOperations, CreatedAt: at,
+			Provenance: graphcontracts.Provenance{Producer: "token"},
 			Attributes: map[string]string{"entity": "compression"},
 		},
 		{
-			ID: "shrike/budget/one", Kind: graphcontracts.NodePolicy, CreatedAt: at,
-			Provenance: graphcontracts.Provenance{Producer: "shrike"},
+			ID: "token/budget/one", Kind: graphcontracts.NodePolicy, CreatedAt: at,
+			Provenance: graphcontracts.Provenance{Producer: "token"},
 			Attributes: map[string]string{"entity": "budget_decision"},
 		},
 		{
-			ID: "shrike/redaction/one", Kind: graphcontracts.NodeQuality, CreatedAt: at,
-			Provenance: graphcontracts.Provenance{Producer: "shrike"},
+			ID: "token/redaction/one", Kind: graphcontracts.NodeQuality, CreatedAt: at,
+			Provenance: graphcontracts.Provenance{Producer: "token"},
 			Attributes: map[string]string{"entity": "redaction"},
 		},
 	}
 	export, err := Build(Input{
 		Session: saved,
 		RuntimeObservations: []RuntimeObservation{{
-			ID: "shrike-1", Subject: graphcontracts.Ref{Kind: graphcontracts.NodeExecution, ID: "hawk/session/" + saved.ID},
+			ID: "token-1", Subject: graphcontracts.Ref{Kind: graphcontracts.NodeExecution, ID: "hawk/session/" + saved.ID},
 			Nodes: nodes, OccurredAt: at,
 		}},
 		GeneratedAt: at, Scope: graphcontracts.Scope{RepositoryID: "hawk"},

@@ -3,19 +3,17 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	hawkKestrel "github.com/GrayCodeAI/hawk/internal/bridge/kestrel"
 	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
 	reviewcontracts "github.com/GrayCodeAI/hawk/internal/contracts/review"
 	contracts "github.com/GrayCodeAI/hawk/internal/contracts/types"
 	"github.com/GrayCodeAI/hawk/internal/engine"
+	"github.com/GrayCodeAI/hawk/internal/types"
 	"github.com/GrayCodeAI/hawk/internal/ui/icons"
-	kestrelLib "github.com/GrayCodeAI/kestrel"
 	"github.com/spf13/cobra"
 )
 
@@ -123,7 +121,7 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	// Build the Kestrel bridge through Hawk's Eyrie engine boundary.
+	// Resolve the provider through Hawk's Eyrie engine boundary.
 	ctx := context.Background()
 	selection := hawkconfig.EffectiveSelection(ctx, hawkconfig.SelectionOptions{
 		ProviderOverride: strings.TrimSpace(provider),
@@ -135,28 +133,10 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		if statusErr := store.SetStatus(id, ReviewStatusFailed); statusErr != nil {
 			return silentErr(statusErr, "mark review failed")
 		}
-		return silentErr(fmt.Errorf("resolve engine transport: %w", err), "init bridge")
+		return silentErr(fmt.Errorf("resolve engine transport: %w", err), "init provider")
 	}
-
-	var opts []kestrelLib.Option
-	if reviewRunModel != "" {
-		opts = append(opts, kestrelLib.WithModel(reviewRunModel))
-	}
-	if reviewRunConcerns != "" {
-		concerns := strings.Split(reviewRunConcerns, ",")
-		for i := range concerns {
-			concerns[i] = strings.TrimSpace(concerns[i])
-		}
-		opts = append(opts, kestrelLib.WithConcerns(concerns...))
-	}
-
-	bridge := hawkKestrel.NewBridge(chatProvider, providerID, opts...)
-	if !bridge.Ready() {
-		if statusErr := store.SetStatus(id, ReviewStatusFailed); statusErr != nil {
-			return silentErr(statusErr, "mark review failed")
-		}
-		return silentErr(fmt.Errorf("kestrel bridge not ready"), "init bridge")
-	}
+	done(0)
+	step(1)
 
 	if reviewRunTimeout > 0 {
 		var cancel context.CancelFunc
@@ -164,17 +144,46 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		defer cancel()
 	}
 
-	done(0)
-	step(1)
-
-	// Run review.
-	result, err := bridge.ReviewContracts(ctx, diff)
-	if err != nil {
-		if statusErr := store.SetStatus(id, ReviewStatusFailed); statusErr != nil {
-			return silentErr(statusErr, "mark review failed")
+	// Run Hawk's own multi-concern review pipeline through the provider.
+	concerns := DefaultConcerns()
+	if strings.TrimSpace(reviewRunConcerns) != "" {
+		wanted := map[string]bool{}
+		for _, c := range strings.Split(reviewRunConcerns, ",") {
+			if c = strings.TrimSpace(c); c != "" {
+				wanted[c] = true
+			}
 		}
-		return silentErr(err, "kestrel review")
+		var filtered []ReviewConcern
+		for _, c := range concerns {
+			if wanted[c.Name] {
+				filtered = append(filtered, c)
+			}
+		}
+		if len(filtered) > 0 {
+			concerns = filtered
+		}
 	}
+
+	model := selection.Model
+	if reviewRunModel != "" {
+		model = reviewRunModel
+	}
+	chatFn := func(chatCtx context.Context, prompt string) (string, error) {
+		resp, chatErr := chatProvider.Chat(chatCtx, []types.EyrieMessage{{Role: "user", Content: prompt}}, types.ChatOptions{
+			Provider: providerID,
+			Model:    model,
+		})
+		if chatErr != nil {
+			return "", chatErr
+		}
+		if resp == nil {
+			return "", fmt.Errorf("review model returned no response")
+		}
+		return resp.Content, nil
+	}
+
+	findings, report := RunReviewPipeline(ctx, []string{diff}, concerns, chatFn)
+	result := reviewResultFromFindings(findings, report, len(concerns))
 
 	// Determine status based on findings.
 	status := ReviewStatusPassed
@@ -197,6 +206,48 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 	return nil
 }
 
+// reviewResultFromFindings converts the pipeline's findings into the neutral
+// review contract, populating stats so downstream surfaces (status, show,
+// graph observations) see a complete result.
+func reviewResultFromFindings(findings []ReviewFinding, report string, concerns int) *reviewcontracts.Result {
+	bySeverity := map[contracts.Severity]int{}
+	byConcern := map[string]int{}
+	out := make([]reviewcontracts.Finding, 0, len(findings))
+	var confidenceSum float64
+	for _, f := range findings {
+		sev, err := contracts.ParseSeverityStrict(f.Severity)
+		if err != nil {
+			sev = contracts.SeverityInfo
+		}
+		bySeverity[sev]++
+		byConcern[f.Concern]++
+		confidenceSum += 0.8
+		out = append(out, reviewcontracts.Finding{
+			Concern:    f.Concern,
+			Severity:   sev,
+			File:       f.File,
+			Line:       f.Line,
+			Message:    f.Message,
+			Fix:        f.Fix,
+			Confidence: 0.8,
+		})
+	}
+	avg := 0.0
+	if len(out) > 0 {
+		avg = confidenceSum / float64(len(out))
+	}
+	return &reviewcontracts.Result{
+		Findings: out,
+		Report:   report,
+		Stats: reviewcontracts.Stats{
+			FindingsTotal:     len(out),
+			BySeverity:        bySeverity,
+			ByConcern:         byConcern,
+			AverageConfidence: avg,
+		},
+	}
+}
+
 func getCommitDiff(sha string) (string, error) {
 	// For the first commit, diff against empty tree.
 	out, err := exec.CommandContext(context.Background(), "git", "diff-tree", "-p", sha).Output() // #nosec G204 -- fixed git executable
@@ -210,25 +261,11 @@ func getCommitDiff(sha string) (string, error) {
 	return string(out), nil
 }
 
-// reviewSeverityColor maps a review finding's severity to its semantic theme
-// color, mirroring the audit report's severity palette.
-func reviewSeverityColor(sev contracts.Severity) color.Color {
-	switch sev {
-	case contracts.SeverityCritical, contracts.SeverityHigh:
-		return errorCoral
-	case contracts.SeverityMedium:
-		return warnAmber
-	default:
-		return infoSky
-	}
-}
-
 func printReviewSummary(sha string, result *reviewcontracts.Result) {
 	if len(result.Findings) == 0 {
-		fmt.Printf("%s %s — no issues found (%d files reviewed)\n",
+		fmt.Printf("%s %s — no issues found\n",
 			auditTint(icons.CheckBold(), doneGreen),
-			auditTint(sha[:8], textPrimary),
-			result.Stats.FilesReviewed)
+			auditTint(sha[:8], textPrimary))
 		return
 	}
 	maxSev := result.MaxSeverity()

@@ -128,7 +128,7 @@ hawk --rules "Always use TypeScript" -p "Implement feature"
 
 | Document | What You Will Learn |
 |----------|-------------------|
-| [Memory](13-memory.md) | Cross-session memory via harrier |
+| [Memory](13-memory.md) | Cross-session memory |
 | [Subagents](16-subagents.md) | Parallel agent sessions |
 
 ---

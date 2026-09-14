@@ -32,10 +32,14 @@ func TestView_LineCountMatchesHeight(t *testing.T) {
 		t.Fatalf("footerTopY %d must be below chat top %d", m.footerTopY(), m.chatPaneTopY())
 	}
 	// Footer must start on the same row View() renders the top footer line.
+	// The top footer row carries the input border; find it and assert the
+	// computed footerTopY agrees with the rendered position.
 	footerIdx := -1
 	for i, line := range lines {
-		if strings.Contains(line, "Docker:") {
-			footerIdx = i - 1
+		if strings.Contains(line, "─") {
+			// The top footer row (cwd/branch) sits directly above the input
+			// border; footerTopY is the blank separator row above it.
+			footerIdx = i - 2
 			break
 		}
 	}
@@ -76,7 +80,7 @@ func TestView_FooterVisibleWhenOutputAreaIsLargeOrMultiline(t *testing.T) {
 	// Verify footer is rendered within the visible terminal height
 	footerFound := false
 	for i, line := range lines {
-		if strings.Contains(line, "Docker:") || strings.Contains(line, "tokens") || strings.Contains(line, "cost") {
+		if strings.Contains(line, "─") || strings.Contains(line, "tokens") {
 			footerFound = true
 			if i >= m.height {
 				t.Fatalf("footer line at index %d is beyond terminal height %d", i, m.height)

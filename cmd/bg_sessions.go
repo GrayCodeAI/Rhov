@@ -344,9 +344,6 @@ func collectDaemonArgs() []string {
 	if provider != "" {
 		args = append(args, "--provider", provider)
 	}
-	if sandboxFlag != "" {
-		args = append(args, "--sandbox", sandboxFlag)
-	}
 	if dangerouslySkipPermissions {
 		args = append(args, "--dangerously-skip-permissions")
 	}

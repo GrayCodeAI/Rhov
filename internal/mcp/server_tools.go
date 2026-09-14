@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
+	"github.com/GrayCodeAI/hawk/internal/token"
 )
 
 // ToolExecutor is a function that executes a named tool with JSON input.
@@ -27,8 +31,6 @@ func RegisterDefaultTools(server *MCPServer, executor ToolExecutor) {
 	server.RegisterTool(hawkSearchTool(executor))
 	server.RegisterTool(hawkMemoryRecallTool(executor))
 	server.RegisterTool(hawkMemoryStoreTool(executor))
-	server.RegisterTool(hawkReviewTool(executor))
-	server.RegisterTool(hawkScanTool(executor))
 	server.RegisterTool(hawkCompressTool(executor))
 }
 
@@ -105,11 +107,11 @@ func hawkSearchTool(executor ToolExecutor) MCPToolHandler {
 	}
 }
 
-// hawkMemoryRecallTool recalls information from harrier memory.
+// hawkMemoryRecallTool recalls information from hawk's local memory store.
 func hawkMemoryRecallTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
 		Name:        "hawk_memory_recall",
-		Description: "Recall stored information from hawk's persistent memory (harrier).",
+		Description: "Recall stored information from hawk's local persistent memory.",
 		Annotations: readOnlyAnnotations("Recall from hawk memory"),
 		InputSchema: map[string]interface{}{
 			"type": "object",
@@ -136,16 +138,30 @@ func hawkMemoryRecallTool(executor ToolExecutor) MCPToolHandler {
 			if input.Query == "" {
 				return "", fmt.Errorf("query is required")
 			}
-			return delegateToExecutor(ctx, executor, "core_memory", params)
+			matches, err := memory.Search(input.Query)
+			if err != nil {
+				return "", fmt.Errorf("memory recall failed: %w", err)
+			}
+			if len(matches) == 0 {
+				return fmt.Sprintf("No memories matched %q.", input.Query), nil
+			}
+			var b strings.Builder
+			for i, m := range matches {
+				if i > 0 {
+					b.WriteString("\n")
+				}
+				fmt.Fprintf(&b, "- %s", m.Content)
+			}
+			return b.String(), nil
 		},
 	}
 }
 
-// hawkMemoryStoreTool stores information to harrier memory.
+// hawkMemoryStoreTool stores information to hawk's local memory store.
 func hawkMemoryStoreTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
 		Name:        "hawk_memory_store",
-		Description: "Store information in hawk's persistent memory (harrier) for future recall.",
+		Description: "Store information in hawk's local persistent memory for future recall.",
 		Annotations: &ToolAnnotations{
 			Title:           "Store in hawk memory",
 			ReadOnlyHint:    boolPtr(false),
@@ -181,90 +197,23 @@ func hawkMemoryStoreTool(executor ToolExecutor) MCPToolHandler {
 			if input.Key == "" || input.Content == "" {
 				return "", fmt.Errorf("key and content are required")
 			}
-			return delegateToExecutor(ctx, executor, "core_memory", params)
+			if err := memory.Save(&memory.Memory{
+				Content: input.Content,
+				Tags:    []string{input.Key},
+			}); err != nil {
+				return "", fmt.Errorf("memory store failed: %w", err)
+			}
+			return fmt.Sprintf("Stored memory under %q.", input.Key), nil
 		},
 	}
 }
 
-// hawkReviewTool triggers a code review via kestrel.
-func hawkReviewTool(executor ToolExecutor) MCPToolHandler {
-	return MCPToolHandler{
-		Name:        "hawk_review",
-		Description: "Trigger a code review using hawk's kestrel module. Analyzes code for quality, style, and potential issues.",
-		Annotations: readOnlyAnnotations("Review code (kestrel)"),
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"path": map[string]interface{}{
-					"type":        "string",
-					"description": "File or directory path to review.",
-				},
-				"diff": map[string]interface{}{
-					"type":        "string",
-					"description": "Optional diff content to review instead of a path.",
-				},
-			},
-			"required": []string{},
-		},
-		Handler: func(ctx context.Context, params json.RawMessage) (string, error) {
-			var input struct {
-				Path string `json:"path"`
-				Diff string `json:"diff"`
-			}
-			if err := json.Unmarshal(params, &input); err != nil {
-				return "", fmt.Errorf("invalid input: %w", err)
-			}
-			if input.Path == "" && input.Diff == "" {
-				return "", fmt.Errorf("either path or diff is required")
-			}
-			return delegateToExecutor(ctx, executor, "code_review", params)
-		},
-	}
-}
-
-// hawkScanTool triggers a security scan via merlin.
-func hawkScanTool(executor ToolExecutor) MCPToolHandler {
-	return MCPToolHandler{
-		Name:        "hawk_scan",
-		Description: "Trigger a security scan using hawk's merlin module. Identifies vulnerabilities and security issues.",
-		Annotations: readOnlyAnnotations("Security scan (merlin)"),
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"path": map[string]interface{}{
-					"type":        "string",
-					"description": "File or directory path to scan.",
-				},
-				"severity": map[string]interface{}{
-					"type":        "string",
-					"description": "Minimum severity level to report (low, medium, high, critical).",
-					"enum":        []string{"low", "medium", "high", "critical"},
-				},
-			},
-			"required": []string{"path"},
-		},
-		Handler: func(ctx context.Context, params json.RawMessage) (string, error) {
-			var input struct {
-				Path     string `json:"path"`
-				Severity string `json:"severity"`
-			}
-			if err := json.Unmarshal(params, &input); err != nil {
-				return "", fmt.Errorf("invalid input: %w", err)
-			}
-			if input.Path == "" {
-				return "", fmt.Errorf("path is required")
-			}
-			return delegateToExecutor(ctx, executor, "security_scan", params)
-		},
-	}
-}
-
-// hawkCompressTool compresses text via shrike.
+// hawkCompressTool compresses text via the embedded token engine.
 func hawkCompressTool(executor ToolExecutor) MCPToolHandler {
 	return MCPToolHandler{
 		Name:        "hawk_compress",
-		Description: "Compress text using hawk's shrike module to reduce token usage while preserving meaning.",
-		Annotations: readOnlyAnnotations("Compress text (shrike)"),
+		Description: "Compress text using hawk's embedded token engine to reduce token usage while preserving meaning.",
+		Annotations: readOnlyAnnotations("Compress text (token engine)"),
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -290,7 +239,25 @@ func hawkCompressTool(executor ToolExecutor) MCPToolHandler {
 			if input.Text == "" {
 				return "", fmt.Errorf("text is required")
 			}
-			return delegateToExecutor(ctx, executor, "compress", params)
+			budget := token.EstimateTokens(input.Text)
+			if input.Ratio > 0 && input.Ratio < 1 {
+				budget = int(float64(budget) * input.Ratio)
+			}
+			if budget < 1 {
+				budget = 1
+			}
+			compressed, stats := token.Compress(input.Text, budget)
+			result, err := json.Marshal(map[string]any{
+				"compressed":        compressed,
+				"original_tokens":   stats.OriginalTokens,
+				"final_tokens":      stats.FinalTokens,
+				"tokens_saved":      stats.TokensSaved,
+				"reduction_percent": stats.ReductionPercent,
+			})
+			if err != nil {
+				return "", err
+			}
+			return string(result), nil
 		},
 	}
 }

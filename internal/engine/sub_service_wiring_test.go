@@ -87,13 +87,6 @@ func TestSession_NewSessionWithClient_WiresAllSubServices(t *testing.T) {
 	if s.Tools().Registry() != registry {
 		t.Error("Tools().Registry() should be the same instance as the one passed to NewSession")
 	}
-	// Default container settings.
-	if s.Tools().ContainerRequired() {
-		t.Error("Tools().ContainerRequired() should be false by default")
-	}
-	if s.Tools().ContainerExecutor() != nil {
-		t.Error("Tools().ContainerExecutor() should be nil by default")
-	}
 }
 
 // TestSession_Stream_UsesChatService proves that the Stream() agent loop

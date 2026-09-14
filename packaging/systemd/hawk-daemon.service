@@ -19,7 +19,7 @@ Restart=always
 RestartSec=5
 TimeoutStopSec=10
 
-# Security hardening (mirror the sandbox ethos at the process level).
+# Security hardening (process-level confinement for the daemon).
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

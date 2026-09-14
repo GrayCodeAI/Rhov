@@ -255,7 +255,7 @@ func (cg *CodeGraph) AnalyzeCoupling(topN int) ([]CouplingMetric, error) {
 }
 
 // CrossRepoQuery queries across multiple codegraph databases.
-// Useful for finding relationships between hawk, eyrie, shrike, harrier, etc.
+// Useful for finding relationships between hawk, eyrie, and other packages.
 func CrossRepoQuery(repos []string, query string, limit int) (map[string][]Node, error) {
 	results := make(map[string][]Node)
 

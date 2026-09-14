@@ -11,7 +11,7 @@ For Hawk, the developer path is the minimum local setup required to chat, edit c
 - A local model catalog available through eyrie
 - No plaintext API keys left in Eyrie's configured `provider.json` or legacy env files
 - Safe defaults for Bash execution and filesystem access
-- Optional but healthy ecosystem integrations like harrier memory
+- Optional but healthy local memory and token-pipeline state
 
 Run the report at any time:
 
@@ -39,10 +39,11 @@ make setup
 go build -o hawk ./cmd/hawk
 ```
 
-`make setup` validates the canonical 15-repository manifest and regenerates the
-parent `../go.work` from the nine local Go repositories. Hawk can also be built
-as a standalone checkout with `GOWORK=off go build ./cmd/hawk`; the sibling
-workspace is only required for cross-repository development and boundary checks.
+`make setup` validates the canonical repository manifest and regenerates the
+parent `../go.work` from the local Go repositories marked `workspace: true`.
+Hawk can also be built as a standalone checkout with `GOWORK=off go build ./cmd/hawk`;
+the sibling workspace is only required for cross-repository development and
+boundary checks.
 
 ### 2. Configure credentials
 
@@ -86,27 +87,17 @@ If Hawk detects secret fields in `provider.json`, back up the file, remove those
 
 Read the full credential and isolation model in [SECURITY-DEVELOPER.md](./SECURITY-DEVELOPER.md).
 
-## Sandbox checks
+## Execution model
 
-Docker is mandatory for agent command execution. If Docker is unavailable,
-`hawk path` reports a blocking failure and agent tools remain locked. Hawk does
-not offer a host-execution fallback.
-
-The versioned `graycodeai/hawk-sandbox` image is pulled automatically when it
-is not already local. If the public registry is unavailable, Hawk builds its
-bundled sandbox Dockerfile locally through Docker.
-
-```bash
-hawk path --strict
-```
+Hawk executes agent commands directly on the host. No Docker daemon or
+container runtime is required, and there is no container fallback to configure.
 
 ## Ecosystem checks
 
-`hawk path` also verifies the core support layer behind Hawk:
+`hawk path` also verifies the provider layer behind Hawk:
 
 - `eyrie` for provider routing and local preflight readiness
-- `shrike` for token estimation and compression
-- `harrier` for optional persistent memory
+- the embedded token pipeline for estimation and compression
 
 If you want the broader status summary:
 

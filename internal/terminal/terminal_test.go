@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
 
 func TestTerminal_LifecycleAndRead(t *testing.T) {
@@ -16,7 +14,7 @@ func TestTerminal_LifecycleAndRead(t *testing.T) {
 	defer cancel()
 
 	// Spawn echo / interactive shell
-	term, err := store.Create(ctx, "session-1", "", "echo hello_hawk", 24, 80, sandbox.SandboxConfig{})
+	term, err := store.Create(ctx, "session-1", "", "echo hello_hawk", 24, 80)
 	if err != nil {
 		t.Fatalf("Create terminal failed: %v", err)
 	}
@@ -48,7 +46,7 @@ func TestTerminal_OwnershipEnforcement(t *testing.T) {
 	store := NewStore()
 	ctx := context.Background()
 
-	term, err := store.Create(ctx, "session-alpha", "", "echo isolation", 24, 80, sandbox.SandboxConfig{})
+	term, err := store.Create(ctx, "session-alpha", "", "echo isolation", 24, 80)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -83,19 +81,19 @@ func TestTerminal_ListAndCloseSession(t *testing.T) {
 	store := NewStore()
 	ctx := context.Background()
 
-	t1, err := store.Create(ctx, "sess-x", "", "cat", 24, 80, sandbox.SandboxConfig{})
+	t1, err := store.Create(ctx, "sess-x", "", "cat", 24, 80)
 	if err != nil {
 		t.Fatalf("Create t1 failed: %v", err)
 	}
 	defer func() { _ = t1.Kill() }()
 
-	t2, err := store.Create(ctx, "sess-x", "", "cat", 24, 80, sandbox.SandboxConfig{})
+	t2, err := store.Create(ctx, "sess-x", "", "cat", 24, 80)
 	if err != nil {
 		t.Fatalf("Create t2 failed: %v", err)
 	}
 	defer func() { _ = t2.Kill() }()
 
-	t3, err := store.Create(ctx, "sess-y", "", "cat", 24, 80, sandbox.SandboxConfig{})
+	t3, err := store.Create(ctx, "sess-y", "", "cat", 24, 80)
 	if err != nil {
 		t.Fatalf("Create t3 failed: %v", err)
 	}
@@ -128,7 +126,7 @@ func TestTerminal_ResizeAndSend(t *testing.T) {
 	store := NewStore()
 	ctx := context.Background()
 
-	term, err := store.Create(ctx, "session-cmd", "", "cat", 24, 80, sandbox.SandboxConfig{})
+	term, err := store.Create(ctx, "session-cmd", "", "cat", 24, 80)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}

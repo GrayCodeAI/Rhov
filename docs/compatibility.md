@@ -4,7 +4,7 @@ This eco uses **independent SemVer per repo** (see [VERSIONING.md](./versioning.
 That gives each component its own release cadence, but raises an obvious
 question: *which combinations of versions are actually tested together?*
 
-The answer lives in [`testdata/compatibility-matrix.json`](./testdata/compatibility-matrix.json).
+The answer lives in [`testdata/compatibility-matrix.json`](../testdata/compatibility-matrix.json).
 
 Platform/provider capability metadata is separate: [`platform-capabilities.json`](./platform-capabilities.json).
 
@@ -70,9 +70,8 @@ It runs on:
 
 ## Pin freshness (advisory)
 
-Separate from the matrix above: `hawk`'s own `go.mod` directly pins
-shared leaf dependencies (currently `falcon` is tracked), and several sibling-repository
-consumers (`merlin`/Merlin, `kestrel`/Kestrel, ...) pin the *same*
+Separate from the matrix above: `hawk`'s own `go.mod` directly pins shared
+leaf dependencies, and sibling-repository consumers can pin the *same*
 dependencies independently in their own `go.mod`. Go's minimal version
 selection means whatever `hawk` pins wins in `hawk`'s own build — but if a
 consumer's own pin is older, that consumer's CI has never actually tested the
@@ -94,7 +93,7 @@ present; a Hawk-only checkout simply reports no local consumers to compare.
 
 ## Validating the file
 
-The file is validated against [`testdata/compatibility-matrix.schema.json`](./testdata/compatibility-matrix.schema.json)
+The file is validated against [`testdata/compatibility-matrix.schema.json`](../testdata/compatibility-matrix.schema.json)
 in CI. To validate locally:
 
 ```bash

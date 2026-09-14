@@ -27,15 +27,14 @@
 
 ## Why hawk
 
-hawk is an AI-powered coding agent that lives in your terminal. It reads your codebase, writes and edits files, runs tests, and manages git — all through natural language. Unlike IDE-bound tools, hawk works over SSH, in containers, and on any machine with a shell.
+hawk is an AI-powered coding agent that lives in your terminal. It reads your codebase, writes and edits files, runs tests, and manages git — all through natural language. Unlike IDE-bound tools, hawk works over SSH and on any machine with a shell.
 
 **Developer path:** one machine, keychain credentials, local memory. Run `hawk path` to check readiness.
 
 - **Model-agnostic** — supports many first-class providers through [eyrie](https://github.com/GrayCodeAI/eyrie) (the exact count is dynamic — see `hawk --help`), including Anthropic, OpenAI, Gemini, Fireworks AI, Concentrate AI (pay-as-you-go), DeepSeek, and Ollama
 - **Zero CGO** — single static binary, cross-compiled for linux/darwin/windows on amd64/arm64
 - **Privacy-first** — your code never leaves your machine except to the LLM API you choose
-- **Docker-only execution** — agent commands run in an isolated container and
-  fail closed when Docker is unavailable
+- **Runs anywhere** — host execution on any machine with a shell, including over SSH
 - **Extensible** — 40+ built-in tools, MCP server support, community skill registry
 
 ## Status
@@ -81,16 +80,12 @@ go build -o hawk ./cmd/hawk
 ./hawk path
 ```
 
-**Docker is required before your first run.** Hawk executes agent commands inside a
-container — there is no host-execution fallback (fail-closed). Start the Docker daemon
-first, then run `hawk path` (or `hawk doctor`) to see an ordered onboarding
-checklist: daemon running → sandbox image cached → registry reachable → local build.
-Hawk automatically uses the versioned public `graycodeai/hawk-sandbox` image;
-when it is not local, Hawk pulls it anonymously, and if the registry is unavailable
-it builds the bundled sandbox image locally through Docker.
+**No Docker or container runtime is required.** Hawk executes agent commands
+directly on the host. Run `hawk path` (or `hawk doctor`) to see an onboarding
+checklist: credentials → model → catalog → ecosystem.
 
-See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md) for the credential model and
-the sandbox checklist. Do not put API keys in shell env or `.env` for hawk.
+See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md) for the credential model.
+Do not put API keys in shell env or `.env` for hawk.
 
 Optional for contributors:
 
@@ -124,7 +119,6 @@ and lifecycle events:
 ```bash
 hawk graph export
 hawk graph export <session-id>
-hawk graph export <session-id> --swift-checkpoint abc123def456
 hawk graph export --mission-dir /path/to/mission
 
 # Explicitly privacy-normalize and sync the graph for a connected cloud project
@@ -138,17 +132,11 @@ set `HAWK_CLOUD_URL` to your Hawk Cloud worker URL before running
 will reject a device token.
 
 The export contains metadata and hashes, not prompts, tool arguments/results,
-policy reasons, verification evidence, or runtime output. Swift remains
-available separately as `hawk swift graph export`. Persisted chat sessions
-automatically append privacy-safe permission, enabled approval-gate, and
-`VerifyPlanExecution` summaries for subsequent graph exports. Harrier memory
-subgraphs and Hawk code-index chunks actually selected for inference are also
-journaled as metadata-only knowledge nodes and linked to the session. Merlin's
-observed bridge path similarly journals bounded, metadata-only report/finding
-quality subgraphs. Kestrel exposes the same observed bridge boundary for
-metadata-only code-review quality subgraphs. Mission runs also persist a
-portable `mission-graph.json`; the mission form is validated and synchronized
-explicitly with the `--mission-dir` variants above.
+policy reasons, verification evidence, or runtime output. Persisted chat
+sessions automatically append privacy-safe permission, enabled approval-gate,
+and `VerifyPlanExecution` summaries for subsequent graph exports. Mission runs
+also persist a portable `mission-graph.json`; the mission form is validated and
+synchronized explicitly with the `--mission-dir` variants above.
 
 ### Multi-Agent Mission Mode (optional)
 
@@ -178,7 +166,6 @@ spec-driven workflow gate — rather than one merged permission mode:
 ```text
 /autonomy
 /autonomy tier <scout|builder|operator|autonomous>
-/autonomy sandbox <strict|workspace|off>
 /autonomy dry-run <on|off>
 /autonomy allow <rule>
 /autonomy deny <rule>
@@ -200,10 +187,6 @@ The model is:
   - `Builder`
   - `Operator`
   - `Autonomous`
-- `Sandbox` controls the execution boundary:
-  - `strict`
-  - `workspace`
-  - `off`
 - `Dry-run` is a kill switch: denies every tool call unconditionally,
   regardless of tier or spec stage.
 - `Rules` control explicit allow/deny exceptions.
@@ -326,7 +309,6 @@ hawk --provider openai --model gpt-4o  # Override provider
 # Inside the TUI
 /autonomy
 /autonomy tier builder
-/autonomy sandbox workspace
 /autonomy allow Bash(git:*)
 /autonomy deny Bash(rm -rf *)
 /autonomy save project
@@ -339,7 +321,6 @@ hawk --provider openai --model gpt-4o  # Override provider
 ```bash
 hawk -p "explain this repo"                    # Print response, exit
 hawk -p "fix tests" --allowed-tools "Bash(go test:*) Edit Read"
-hawk -p "review this repo" --permission-mode plan --sandbox workspace
 hawk exec "refactor auth module"               # Full engine, non-interactive
 hawk exec --auto full "add error handling"     # Full autonomy
 hawk exec --worktree "add rate limiting"       # Isolated branch
@@ -349,11 +330,9 @@ hawk exec --agent reviewer "review last commit" # Custom persona
 ### Diagnostics & ecosystem
 
 ```bash
-hawk path                   # Developer path readiness (setup + security + sandbox)
-hawk doctor                  # Full health report (eyrie + harrier + shrike panel)
+hawk path                   # Developer path readiness (setup + security)
+hawk doctor                  # Full health report (eyrie + token pipeline panel)
 hawk ecosystem               # Ecosystem panel only
-hawk harrier                    # Persistent memory graph
-hawk harrier search <query>     # Search harrier memories
 hawk preflight               # Quick ready-to-chat check
 make path                    # Developer path verification
 make smoke                   # Build + quick verification script
@@ -361,9 +340,9 @@ make smoke                   # Build + quick verification script
 
 See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md).
 
-See [docs/ecosystem-message-flow.md](docs/ecosystem-message-flow.md) for how eyrie, harrier, and shrike connect during a chat session, and [docs/ECOSYSTEM-WIRING.md](docs/ECOSYSTEM-WIRING.md) for the current-to-proposed architecture and repository boundaries.
+See [docs/ecosystem-message-flow.md](docs/ecosystem-message-flow.md) for how eyrie connects during a chat session, and [docs/ECOSYSTEM-WIRING.md](docs/ECOSYSTEM-WIRING.md) for the current-to-proposed architecture and repository boundaries.
 
-In the TUI: `/path`, `/ecosystem`, `/harrier`, `/harrier search <query>`, `/memory` (AGENTS.md).
+In the TUI: `/path`, `/ecosystem`, `/memory` (AGENTS.md).
 
 ### Daemon Mode
 
@@ -428,7 +407,7 @@ hawk/
 │   ├── session/            # Persistence (JSONL, WAL, checkpoints)
 │   ├── api/                # HTTP API server
 │   ├── daemon/             # Background HTTP/SSE server
-│   ├── sandbox/            # Command isolation (landlock, seccomp, docker)
+│   ├── token/              # Token counting, compression, usage, secrets
 │   ├── permissions/        # User approval system with auto-learning
 │   ├── hooks/              # Event-driven plugin system
 │   ├── mcp/                # Model Context Protocol client
@@ -437,7 +416,7 @@ hawk/
 │   ├── observability/      # Analytics, metrics, logging, tracing
 │   ├── resilience/         # Circuit breaker, rate limiting, retries
 │   ├── feature/            # eval, fingerprint, voice, IDE integration
-│   ├── bridge/             # External bridges (kestrel, merlin, sessioncapture)
+│   ├── bridge/             # External bridges (sessioncapture)
 │   ├── provider/           # Provider routing
 │   └── system/             # Bus, cron, retention, shutdown
 ├── docs/                   # Architecture, security, integration docs
@@ -454,20 +433,17 @@ hawk is the main CLI/product and integrates these GrayCodeAI repositories in
 three runtime layers plus optional tooling/platform services:
 
 - **Primary product:** **hawk** is the only end-user product surface in this ecosystem.
-- **Support engines mounted by Hawk:** **eyrie**, **harrier**, **shrike**, **swift**, **kestrel**, **merlin**. Hawk imports or shells into these engines behind its own command surface.
-- **Shared foundations:** **falcon**
-  provides shared MCP server scaffolding.
+- **Provider engine mounted by Hawk:** **eyrie** is the LLM provider runtime, consumed through its stable engine facade.
 - **API consumers/extensions:** **graycode-skills** provides Hawk skills
   installed on demand (`hawk skills install`).
-- **Tooling/platform:** **owl** visualizes the generated ecosystem graph;
-  **graycode-platform** contains the optional web/BFF/Hawk Cloud plane and is
-  outside the Hawk Go runtime graph.
+- **Tooling/platform:** **graycode-platform** contains the optional web/BFF/Hawk
+  Cloud plane and is outside the Hawk Go runtime graph.
 
 Local development uses:
 
-- **`go.mod` modules:** pinned requirements for the support engines
+- **`go.mod` modules:** pinned requirements for `eyrie`
 - **Workspace + `go.work`:** sibling support repos are cloned in the `graycode-eco` workspace (as `../<repo>`); `go.work` resolves the module paths to those local checkouts
-- **Module-mode builds:** standalone / Docker builds resolve the pinned `go.mod` versions from the module proxy (no workspace)
+- **Module-mode builds:** standalone builds resolve the pinned `go.mod` versions from the module proxy (no workspace)
 
 Cross-repo contracts now live in `internal/contracts` (vendored from the
 removed `github.com/GrayCodeAI/eagle` module) so support repos do not depend
@@ -496,13 +472,12 @@ You may keep a **personal** parent **`go.work`** that lists alternate clones on 
 
 `ecosystem.yaml` is the canonical inventory of repositories cloned as
 siblings in this local workspace; tooling reads it rather than carrying its
-own repo-name list. `harrier`, `shrike`, `swift`, `kestrel`, `merlin` and
-`falcon` above are consumed as pinned `go.mod` module dependencies rather
-than local workspace clones, so they are not listed there.
+own repo-name list. `eyrie` is the only Go module dependency outside this
+repo; it is consumed through its stable engine facade.
 
 For the consolidated repo map and the current-vs-proposed architecture diagrams, see [docs/architecture/hawk-current-vs-proposed.md](docs/architecture/hawk-current-vs-proposed.md).
-For execution-graph ownership, automatic capture seams, export/sync commands,
-and the Swift correlation contract, see
+For execution-graph ownership, automatic capture seams, and export/sync
+commands, see
 [docs/architecture/execution-graph.md](docs/architecture/execution-graph.md).
 
 ## Development

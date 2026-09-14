@@ -56,13 +56,12 @@ func TestAutonomyCenterSummary(t *testing.T) {
 	model := &chatModel{
 		session: sess,
 		settings: hawkconfig.Settings{
-			Sandbox:         "workspace",
 			AllowedTools:    []string{"Bash(git:*)"},
 			DisallowedTools: []string{"Bash(rm -rf *)"},
 		},
 	}
 	out := autonomyCenterSummary(model)
-	for _, fragment := range []string{"Autonomy Center", "Tier: Builder", "Permission sandbox: Workspace", "Spec stage: Specify", "Rules: 1 allow, 1 deny"} {
+	for _, fragment := range []string{"Autonomy Center", "Tier: Builder", "Spec stage: Specify", "Rules: 1 allow, 1 deny"} {
 		if !strings.Contains(out, fragment) {
 			t.Fatalf("summary %q missing %q", out, fragment)
 		}
@@ -140,7 +139,6 @@ func TestResetPermissionCenter(t *testing.T) {
 		session: sess,
 		settings: hawkconfig.Settings{
 			Autonomy:        permissionTierSettingValue(engine.AutonomyYOLO),
-			Sandbox:         "strict",
 			AutoAllow:       []string{"Read"},
 			AllowedTools:    []string{"Bash(git:*)"},
 			DisallowedTools: []string{"Bash(rm -rf *)"},
@@ -157,9 +155,6 @@ func TestResetPermissionCenter(t *testing.T) {
 	}
 	if sess.PermSvc().DryRun() {
 		t.Error("dry-run should be cleared")
-	}
-	if model.settings.Sandbox != defaultPermissionSandbox {
-		t.Errorf("sandbox = %q, want %q", model.settings.Sandbox, defaultPermissionSandbox)
 	}
 	if model.settings.AutoAllow != nil || model.settings.AllowedTools != nil || model.settings.DisallowedTools != nil {
 		t.Error("rule lists should be cleared")

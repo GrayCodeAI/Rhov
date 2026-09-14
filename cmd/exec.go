@@ -231,15 +231,9 @@ func runExec(_ *cobra.Command, args []string) error {
 	if cfgErr != nil {
 		return cfgErr
 	}
-	projectDir, err := os.Getwd()
-	if err != nil {
+	if _, err := os.Getwd(); err != nil {
 		return fmt.Errorf("resolve project directory: %w", err)
 	}
-	container, err := attachRequiredContainer(sess, projectDir)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = container.Stop() }()
 
 	// Apply autonomy level
 	if execAutoLevel != "" {
@@ -936,15 +930,9 @@ func execOnceInWorktree(prompt string, attemptIdx int) (*ExecResult, error) {
 	if cfgErr != nil {
 		return nil, cfgErr
 	}
-	projectDir, err := os.Getwd()
-	if err != nil {
+	if _, err := os.Getwd(); err != nil {
 		return nil, fmt.Errorf("resolve project directory: %w", err)
 	}
-	container, err := attachRequiredContainer(sess, projectDir)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = container.Stop() }()
 
 	if execAutoLevel != "" {
 		sess.PermSvc().SetAutonomy(engine.ParseAutonomyLevel(execAutoLevel))

@@ -86,7 +86,7 @@ type QualityGraph struct {
 }
 
 // RuntimeGraph is a mixed portable subgraph for operations, policy, and
-// quality facts emitted by runtime support engines such as Shrike.
+// quality facts emitted by the embedded token engine.
 type RuntimeGraph struct {
 	Source string                 `json:"source"`
 	Nodes  []graphcontracts.Node  `json:"nodes"`

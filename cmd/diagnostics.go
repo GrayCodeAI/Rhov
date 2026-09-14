@@ -13,7 +13,6 @@ import (
 	"time"
 
 	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
-	"github.com/GrayCodeAI/hawk/internal/intelligence/memory"
 	"github.com/GrayCodeAI/hawk/internal/resilience/health"
 	"github.com/GrayCodeAI/hawk/internal/session"
 	"github.com/GrayCodeAI/hawk/internal/storage"
@@ -56,11 +55,6 @@ func doctorReport(settings hawkconfig.Settings) string {
 	b.WriteString("\nEcosystem versions:\n")
 	for _, component := range []struct{ directory, product string }{
 		{directory: "eyrie", product: "Eyrie"},
-		{directory: "harrier", product: "Harrier"},
-		{directory: "shrike", product: "Shrike"},
-		{directory: "kestrel", product: "Kestrel"},
-		{directory: "merlin", product: "Merlin"},
-		{directory: "swift", product: "Swift"},
 	} {
 		versionFile := filepath.Join(filepath.Dir(cwd), component.directory, "VERSION")
 		// #nosec G304 -- versionFile is built from a fixed sibling-repo list
@@ -74,7 +68,6 @@ func doctorReport(settings hawkconfig.Settings) string {
 	b.WriteString("\n" + hawkconfig.FormatCatalogHealth(hawkconfig.CatalogHealthReport(context.Background())) + "\n")
 	preflight := hawkconfig.EnginePreflightReportWithSettings(context.Background(), settings, hawkconfig.EnginePreflightOptions{})
 	b.WriteString("\n" + hawkconfig.FormatEnginePreflight(preflight) + "\n")
-	b.WriteString("\n" + hawkconfig.FormatSandboxChecklist(hawkconfig.EvaluateSandboxChecklist(context.Background())) + "\n")
 	b.WriteString("\nBackends (Gap-05):\n")
 	b.WriteString(fmt.Sprintf("  media:      %s\n", backendStatus(tool.MediaEngineName(), tool.MediaEngineName() != "")))
 	b.WriteString(fmt.Sprintf("  stt:        %s\n", backendStatus("", stt.Enabled())))
@@ -147,22 +140,6 @@ func healthCheckReport(settings hawkconfig.Settings, provider string) string {
 		}
 		return health.Check{Name: "config", Status: health.Degraded, Message: result.Error()}
 	})
-
-	// Harrier memory bridge check
-	bridge := memory.NewHarrierBridge()
-	if bridge.Ready() {
-		registry.Register("harrier", func(ctx context.Context) health.Check {
-			_, _, err := bridge.SearchByType("convention", 1)
-			if err != nil {
-				return health.Check{Name: "harrier", Status: health.Unhealthy, Message: "Harrier bridge initialized but query failed"}
-			}
-			return health.Check{Name: "harrier", Status: health.Healthy, Message: "Harrier memory bridge operational"}
-		})
-	} else {
-		registry.Register("harrier", func(ctx context.Context) health.Check {
-			return health.Check{Name: "harrier", Status: health.Degraded, Message: "Harrier not initialized (~/.harrier/data/ not writable)"}
-		})
-	}
 
 	// Lefthook installation check
 	registry.Register("lefthook", func(ctx context.Context) health.Check {

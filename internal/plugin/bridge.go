@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
+	"github.com/GrayCodeAI/hawk/internal/env"
 )
 
 // PluginBridge wraps a shell-based bridge plugin, executing an external CLI
@@ -68,11 +68,11 @@ func (pb *PluginBridge) Run(ctx context.Context, args ...string) (string, error)
 	// filtering disallowed override keys (PATH, LD_*, PYTHONPATH, NODE_OPTIONS,
 	// etc.) to prevent command/library hijacking via plugin manifest env.
 	if len(bridge.Env) > 0 {
-		env := os.Environ()
+		childEnv := os.Environ()
 		for k, v := range bridge.Env {
-			env = append(env, k+"="+v)
+			childEnv = append(childEnv, k+"="+v)
 		}
-		sanitized := sandbox.SanitizeEnv(env)
+		sanitized := env.SanitizeEnv(childEnv)
 		cmd.Env = sanitized.Env
 		if len(sanitized.Removed) > 0 {
 			fmt.Fprintf(os.Stderr, "plugin bridge %q: filtered disallowed env overrides: %v\n", pb.bin, sanitized.Removed)

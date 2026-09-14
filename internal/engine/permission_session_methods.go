@@ -120,7 +120,7 @@ func (s *Session) SetMaxBudgetUSD(amount float64) error {
 	if s.LifecycleSvc() != nil {
 		s.LifecycleSvc().Limits().SetMaxBudgetUSD(amount)
 	}
-	if tracker := s.currentShrikeUsageTracker(); tracker != nil {
+	if tracker := s.currentUsageTracker(); tracker != nil {
 		limits := tracker.GetLimits()
 		limits.CostUSD = amount
 		tracker.SetLimits(limits)
@@ -128,17 +128,17 @@ func (s *Session) SetMaxBudgetUSD(amount float64) error {
 	return nil
 }
 
-// ApplyShrikeUsageSettings optionally enables shrike.UsageTracker token ceilings.
+// ApplyUsageSettings optionally enables token-engine usage ceilings.
 // Values: 0 or -1 leave/disable the ceiling (provider owns rate limits);
 // >0 opts into a local cap.
-func (s *Session) ApplyShrikeUsageSettings(hourly, daily, session int) {
+func (s *Session) ApplyUsageSettings(hourly, daily, session int) {
 	if s == nil {
 		return
 	}
 	if hourly == 0 && daily == 0 && session == 0 {
 		return
 	}
-	tracker := s.ensureShrikeUsageTracker()
+	tracker := s.ensureUsageTracker()
 	limits := tracker.GetLimits()
 	if hourly == -1 {
 		limits.HourlyTokens = 0

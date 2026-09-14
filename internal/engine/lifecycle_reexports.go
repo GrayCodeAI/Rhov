@@ -20,13 +20,12 @@ type (
 )
 
 var (
-	ParseAndApplyMemoryOps = lifecycle.ParseAndApplyMemoryOps
-	NewLimitTracker        = lifecycle.NewLimitTracker
-	DefaultLimits          = lifecycle.DefaultLimits
-	VibeLimits             = lifecycle.VibeLimits
-	ResearchLimits         = lifecycle.ResearchLimits
-	DefaultTimeoutConfig   = lifecycle.DefaultTimeoutConfig
-	WithTimeout            = lifecycle.WithTimeout
-	RemainingTime          = lifecycle.RemainingTime
-	TimeoutMessage         = lifecycle.TimeoutMessage
+	NewLimitTracker      = lifecycle.NewLimitTracker
+	DefaultLimits        = lifecycle.DefaultLimits
+	VibeLimits           = lifecycle.VibeLimits
+	ResearchLimits       = lifecycle.ResearchLimits
+	DefaultTimeoutConfig = lifecycle.DefaultTimeoutConfig
+	WithTimeout          = lifecycle.WithTimeout
+	RemainingTime        = lifecycle.RemainingTime
+	TimeoutMessage       = lifecycle.TimeoutMessage
 )

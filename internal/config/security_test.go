@@ -45,7 +45,7 @@ func TestProjectSafeSettingsStripsPrivateAuthority(t *testing.T) {
 		MCPServers:        []MCPServerConfig{{Name: "remote", Command: "run-server"}},
 		CustomProviders:   []CustomProviderConfig{{Name: "provider", BaseURL: "https://example.invalid"}},
 		DeploymentRouting: &on, ModelThinking: map[string]bool{"model": true},
-		Sandbox: "workspace", RepoMap: &on,
+		RepoMap: &on,
 	}
 	safe := projectSafeSettings(project)
 	if safe.Model != "" || safe.Provider != "" || len(safe.AutoAllow) != 0 ||
@@ -55,7 +55,7 @@ func TestProjectSafeSettingsStripsPrivateAuthority(t *testing.T) {
 		safe.ModelThinking != nil || safe.GLMThinkingEnabled != nil {
 		t.Fatalf("private project authority was not stripped: %+v", safe)
 	}
-	if safe.Sandbox != "workspace" || safe.RepoMap == nil {
+	if safe.RepoMap == nil {
 		t.Fatal("safe project defaults should be preserved")
 	}
 }

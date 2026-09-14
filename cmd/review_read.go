@@ -282,3 +282,16 @@ func severityStyle(sev string) string {
 	s, _ := contracts.ParseSeverityStrict(sev)
 	return auditTint("["+strings.ToUpper(sev)+"]", reviewSeverityColor(s))
 }
+
+// reviewSeverityColor maps a review finding's severity to its semantic theme
+// color, mirroring the audit report's severity palette.
+func reviewSeverityColor(sev contracts.Severity) color.Color {
+	switch sev {
+	case contracts.SeverityCritical, contracts.SeverityHigh:
+		return errorCoral
+	case contracts.SeverityMedium:
+		return warnAmber
+	default:
+		return infoSky
+	}
+}

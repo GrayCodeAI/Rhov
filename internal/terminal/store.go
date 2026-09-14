@@ -11,8 +11,6 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
 
 var (
@@ -196,7 +194,7 @@ func DefaultStore() *Store {
 }
 
 // Create spawns a new persistent PTY terminal under session ownership.
-func (s *Store) Create(ctx context.Context, sessionID, cwd, command string, rows, cols int, sbCfg sandbox.SandboxConfig) (*Terminal, error) {
+func (s *Store) Create(ctx context.Context, sessionID, cwd, command string, rows, cols int) (*Terminal, error) {
 	if sessionID == "" {
 		return nil, errors.New("terminal: sessionID cannot be empty")
 	}
@@ -219,19 +217,10 @@ func (s *Store) Create(ctx context.Context, sessionID, cwd, command string, rows
 	}
 
 	var cmd *exec.Cmd
-	if sbCfg.Security != "" && sbCfg.Security != sandbox.SecurityOff {
-		bin, args, err := sandbox.WrapCommand(command, sbCfg)
-		if err != nil {
-			return nil, fmt.Errorf("terminal sandbox wrap failed: %w", err)
-		}
-		cmd = exec.CommandContext(ctx, bin, args...) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, "powershell.exe", "-Command", command) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
 	} else {
-		// Normal shell command
-		if runtime.GOOS == "windows" {
-			cmd = exec.CommandContext(ctx, "powershell.exe", "-Command", command) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
-		} else {
-			cmd = exec.CommandContext(ctx, "/bin/sh", "-c", command) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
-		}
+		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", command) // #nosec G204 -- subprocess execution of shell or sandboxed command is the primary responsibility of terminal package
 	}
 	cmd.Dir = cwd
 

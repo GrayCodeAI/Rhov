@@ -119,7 +119,7 @@ Workflow:
   /diff              Show git diff
   /lint [cmd]        Run linter
   /check             Full pre-ship check (review + fix + verify)
-  /autonomy          Trust tier, sandbox, and rules
+  /autonomy          Trust tier and rules
   /spec              Spec-driven workflow (gates Write/Edit/Bash)
   /research <cmd>    Autonomous research loop
   /vibe              Enter vibe coding mode
@@ -183,7 +183,6 @@ Agents:
 
 Memory & Intelligence:
   /memory            Show AGENTS.md instructions
-  /harrier              Show harrier memory graph
   /remember          Store in memory
   /recall            Search memory
   /taste             Show learned preferences
@@ -204,7 +203,7 @@ Diagnostics:
 System:
   /version           Show version
   /env               Show environment
-  /autonomy          Trust tier, sandbox, and rules
+  /autonomy          Trust tier and rules
   /vim               Toggle vim mode
   /theme <t>         Set theme
   /voice             Toggle voice input

@@ -1,7 +1,11 @@
 # graycode-eco Unified Config-as-Code
 
-Status: Draft / shared spec
-Applies to: hawk, eyrie, harrier, shrike, swift
+Status: Draft / historical spec (aspirational; not implemented)
+Applies to: the wider graycode-eco ecosystem
+
+> Note: Hawk now depends only on eyrie and embeds its own token engine.
+> References below to harrier, shrike, and swift describe a proposed
+> ecosystem-wide schema, not Hawk's current runtime.
 
 This document specifies a **single, unified configuration schema** for the
 graycode-eco ecosystem: one declarative file (`graycode-eco.yaml`, with an equivalent

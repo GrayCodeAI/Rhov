@@ -70,7 +70,7 @@ Adoption bar:
 - [x] each support repo runs `check-ecosystem-boundaries.sh` in CI
 - [x] Go SDK runs consumer boundary guard in CI
 - [x] Python SDK and community skills run consumer boundary guards in CI
-- [x] architecture docs use the canonical 15-repository manifest and distinguish
+- [x] architecture docs use the canonical repository manifest and distinguish
       repository directories from product labels
 - [x] lefthook strips `Co-authored-by:` trailers so commits list only the human author
 

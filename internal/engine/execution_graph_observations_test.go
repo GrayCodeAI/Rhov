@@ -10,7 +10,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/token"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 	"github.com/GrayCodeAI/hawk/internal/types"
-	shrike "github.com/GrayCodeAI/shrike"
 )
 
 type graphVerifyTool struct{}
@@ -63,18 +62,15 @@ func TestToolExecutionAutomaticallyRecordsPolicyAndVerification(t *testing.T) {
 }
 
 func TestShrikeCompressionObservationIsPrivacySafe(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	t.Setenv("HAWK_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
-	sess.SetPersistID("shrike-runtime-session")
-	sess.recordShrikeCompressionObservation(
+	sess.SetPersistID("token-runtime-session")
+	sess.recordCompressionObservation(
 		"private conversation with sk-secret",
 		"context-compaction",
-		shrike.Stats{OriginalTokens: 100, FinalTokens: 40, TokensSaved: 60, Model: "private-model"},
+		token.Stats{OriginalTokens: 100, FinalTokens: 40, TokensSaved: 60, Model: "private-model"},
 	)
-	entries, err := graphjournal.Load("shrike-runtime-session")
+	entries, err := graphjournal.Load("token-runtime-session")
 	if err != nil {
 		t.Fatalf("graphjournal.Load() error = %v", err)
 	}
@@ -93,18 +89,15 @@ func TestShrikeCompressionObservationIsPrivacySafe(t *testing.T) {
 }
 
 func TestShrikeRedactionObservationIsPrivacySafe(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	t.Setenv("HAWK_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
-	sess.SetPersistID("shrike-redaction-session")
-	sess.recordShrikeRedactionObservation(
+	sess.SetPersistID("token-redaction-session")
+	sess.recordRedactionObservation(
 		"response containing sk-secret",
 		2,
 		map[string]int{"OpenAI API Key": 2},
 	)
-	entries, err := graphjournal.Load("shrike-redaction-session")
+	entries, err := graphjournal.Load("token-redaction-session")
 	if err != nil {
 		t.Fatalf("graphjournal.Load() error = %v", err)
 	}
@@ -123,9 +116,6 @@ func TestShrikeRedactionObservationIsPrivacySafe(t *testing.T) {
 }
 
 func TestShrikeUsageBudgetObservationTracksAndProjectsAuthoritativeUsage(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	t.Setenv("HAWK_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	sess.SetPersistID("shrike-usage-session")
@@ -133,14 +123,14 @@ func TestShrikeUsageBudgetObservationTracksAndProjectsAuthoritativeUsage(t *test
 		t.Fatal(err)
 	}
 
-	sess.recordShrikeUsageBudgetObservation(
+	sess.recordUsageBudgetObservation(
 		120,
 		0.25,
 		"private-provider",
 		"private/model",
 	)
 
-	tracker := sess.currentShrikeUsageTracker()
+	tracker := sess.currentUsageTracker()
 	if tracker == nil {
 		t.Fatal("Shrike usage tracker was not initialized")
 	}
@@ -173,35 +163,29 @@ func TestShrikeUsageBudgetObservationTracksAndProjectsAuthoritativeUsage(t *test
 }
 
 func TestShrikeUsageBudgetStopsAtConfiguredLimit(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
-	tracker := sess.ensureShrikeUsageTracker()
+	tracker := sess.ensureUsageTracker()
 	limits := tracker.GetLimits()
 	limits.SessionTokens = 100
 	tracker.SetLimits(limits)
 	tracker.Record(100, 0, "provider", "model")
 
-	allowed, reason := sess.shrikeUsageCanProceed()
+	allowed, reason := sess.usageCanProceed()
 	if allowed || !strings.Contains(reason, "session token limit") {
 		t.Fatalf("budget decision = %v/%q, want session token denial", allowed, reason)
 	}
 }
 
-func TestApplyShrikeUsageSettingsOverridesAndDisables(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
+func TestApplyUsageSettingsOverridesAndDisables(t *testing.T) {
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
 	// Defaults: token ceilings off (provider rate limits own throughput).
-	defaults := sess.ensureShrikeUsageTracker().GetLimits()
+	defaults := sess.ensureUsageTracker().GetLimits()
 	if defaults.HourlyTokens != 0 || defaults.DailyTokens != 0 || defaults.SessionTokens != 0 {
 		t.Fatalf("expected disabled token ceilings by default, got %#v", defaults)
 	}
 
-	sess.ApplyShrikeUsageSettings(250_000, -1, 0)
-	limits := sess.ensureShrikeUsageTracker().GetLimits()
+	sess.ApplyUsageSettings(250_000, -1, 0)
+	limits := sess.ensureUsageTracker().GetLimits()
 	if limits.HourlyTokens != 250_000 {
 		t.Fatalf("HourlyTokens = %d, want 250000", limits.HourlyTokens)
 	}
@@ -214,20 +198,17 @@ func TestApplyShrikeUsageSettingsOverridesAndDisables(t *testing.T) {
 }
 
 func TestDrainAlertsSurfacesHourlyWarning(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
-	tracker := shrike.NewUsageTracker()
-	tracker.SetLimits(shrike.UsageLimits{
+	tracker := token.NewUsageTracker()
+	tracker.SetLimits(token.UsageLimits{
 		HourlyTokens:  100,
 		DailyTokens:   10_000,
 		SessionTokens: 10_000,
 		CostUSD:       10,
 	})
-	tracker.Record(55, 0, "provider", "model")
+	tracker.Record(80, 0, "provider", "model")
 	alerts := tracker.DrainAlerts()
 	if len(alerts) == 0 {
-		t.Fatal("expected threshold alert after crossing 50%")
+		t.Fatal("expected threshold alert after crossing 75%")
 	}
 	if len(tracker.DrainAlerts()) != 0 {
 		t.Fatal("expected DrainAlerts to clear pending alerts")

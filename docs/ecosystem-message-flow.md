@@ -1,6 +1,6 @@
-# Ecosystem message flow (eyrie · harrier · shrike)
+# Message flow (eyrie + embedded token engine)
 
-How one user message travels through hawk and the GrayCodeAI ecosystem libraries.
+How one user message travels through hawk.
 
 ## Overview
 
@@ -14,13 +14,13 @@ User prompt (TUI or hawk exec)
           │
           ▼
 ┌───────────────────┐     ┌─────────────┐
-│  harrier recall       │◄────│ ~/.harrier/    │  conventions, decisions, skills
-│  (if bridge ready) │     │ harrier.db     │
+│  local memory      │◄────│ ~/.hawk/    │  conventions, decisions, lessons
+│  recall            │     │ memories    │
 └─────────┬─────────┘     └─────────────┘
           │
           ▼
 ┌───────────────────┐     ┌─────────────┐
-│  shrike token budget  │     │ embedded    │  CountTokens, CompressForContext
+│  token budget      │     │ embedded    │  CountTokens, CompressForContext
 │  (context sizing)  │     │ library     │
 └─────────┬─────────┘     └─────────────┘
           │
@@ -32,16 +32,14 @@ User prompt (TUI or hawk exec)
                           └─────────────┘
           │
           ▼
-    Tool calls (Read, Edit, Bash, CoreMemory*, …)
-          │
-          ├──► harrier Remember (CoreMemory tools, auto-remember)
+    Tool calls (Read, Edit, Bash, …)
           │
           ▼
     Response to user
           │
           ▼ (when context grows)
 ┌───────────────────┐
-│  shrike Compress      │  fast path before LLM summarization
+│  token Compress    │  fast path before LLM summarization
 │  + eyrie compact   │
 └───────────────────┘
 ```
@@ -54,41 +52,43 @@ User prompt (TUI or hawk exec)
   Eyrie-owned state paths, an injected secret store, and per-engine custom
   gateway metadata. The engine loads provider state and the model catalog, then
   builds transport behind Hawk's `ChatClient` port.
-- **harrier**: `configureSession` creates `HarrierBridge` → opens `~/.harrier/data/harrier.db`. If missing, hawk runs without persistent memory.
-- **shrike**: No startup step — linked at compile time.
+- **memory**: `configureSession` initializes the local memory manager
+  (core, auto, evolving, zen, retrieval metrics, continuity). If the state
+  directory is unavailable, hawk runs without persistent memory.
+- **token**: No startup step — embedded at compile time.
 
 ### 2. System prompt assembly
 
 - Hawk templates (`internal/prompts/templates/*.md`) define behavior, tools, and practices.
 - Project `AGENTS.md` is appended via `hawkconfig.BuildContextWithDirs`.
-- **harrier**: `Memory.Recall` injects relevant graph nodes into the system prompt.
+- **memory**: `Memory.Recall` injects relevant stored memories into the system prompt.
 
 ### 3. User message → agent loop (`internal/engine/stream.go`)
 
 Each turn:
 
-1. **harrier** — recall memories matching the latest user message (token budget ~2000).
+1. **memory** — recall memories matching the latest user message (token budget ~2000).
 2. **eyrie** — Hawk's adapter calls engine generate/stream with Hawk-owned tool
    definitions; Eyrie normalizes provider events and tool requests.
-3. Tools run with `HarrierBridge` in context for `CoreMemory*` tools.
-4. **harrier** — sleeptime consolidation, skill distillation, auto-remember after turns.
+3. Tools run with the session's memory service in context.
+4. **memory** — post-session bookkeeping records the session goal and outcome.
 
 ### 4. Context pressure
 
 When messages exceed limits (`internal/engine/compact.go`):
 
-1. **shrike** — `shrike.Compress()` tries a fast compression path for summaries.
-2. **eyrie** — if shrike reduction is insufficient, hawk calls the LLM to summarize, then keeps recent messages.
+1. **token** — `token.Compress()` tries a fast compression path for summaries.
+2. **eyrie** — if token reduction is insufficient, hawk calls the LLM to summarize, then keeps recent messages.
 
 ### 5. Token accounting
 
-- `internal/engine/token/tokenizer.go` wraps **shrike** for precise and fast estimates used in budget UI and compaction decisions.
+- `internal/engine/token/tokenizer.go` wraps the embedded token engine for
+  precise and fast estimates used in budget UI and compaction decisions.
 
 ## Verify locally
 
 ```bash
-hawk doctor              # ecosystem panel + eyrie preflight + harrier status
-hawk harrier                # merlin memory graph
+hawk doctor              # ecosystem panel + eyrie preflight
 ./scripts/smoke-hawk.sh  # build + quick tests
 ```
 
@@ -97,14 +97,12 @@ hawk harrier                # merlin memory graph
 | Module | Role in hawk | Required? |
 |--------|----------------|-----------|
 | **eyrie** | LLM APIs, catalog, credentials, routing | Yes |
-| **harrier** | SQLite memory graph at `~/.harrier/data/` | No (degrades gracefully) |
-| **shrike** | Token estimate + context compression | Yes (embedded, no config) |
+| **internal/token** | Token estimate + context compression + secrets + usage | Yes (embedded, no config) |
 
-The support repositories are independent sibling checkouts: `eyrie`,
-`harrier` (Harrier), and `shrike` (Shrike), with the parent `go.work` wiring the
+`eyrie` is an independent sibling checkout; the parent `go.work` wires the
 local Go workspace.
 
 Production Hawk code imports Eyrie only through `eyrie/engine`. Conversation
-history, WAL/resume, permissions, and tool execution remain in Hawk; provider
-credentials, discovery, selection, transport, resilience, and normalized
-streaming remain in Eyrie.
+history, WAL/resume, permissions, tool execution, and memory remain in Hawk;
+provider credentials, discovery, selection, transport, resilience, and
+normalized streaming remain in Eyrie.

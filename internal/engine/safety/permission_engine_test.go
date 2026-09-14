@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
 
 // TestCheckTool_SpecStageBlocksEvenYOLO verifies the core guarantee documented
@@ -252,17 +250,5 @@ func TestCheckTool_SpecWorkflowRequiresOrderButAllowsSupportTools(t *testing.T) 
 	}
 	if allowed, _ := pe.CheckTool(context.Background(), ToolCallInfo{Name: "ApproveImplementation"}); allowed {
 		t.Fatal("ApproveImplementation must not skip the Tasks stage")
-	}
-}
-
-func TestCheckTool_StrictSandboxIsIndependentOfAutonomy(t *testing.T) {
-	pe := NewPermissionEngine()
-	pe.Autonomy = AutonomyYOLO
-	pe.SandboxMode = sandbox.ModeStrict
-	if allowed, reason := pe.CheckTool(context.Background(), ToolCallInfo{Name: "Write"}); allowed || reason == "" {
-		t.Fatalf("strict sandbox allowed Write: reason=%q", reason)
-	}
-	if allowed, reason := pe.CheckTool(context.Background(), ToolCallInfo{Name: "AskUserQuestion"}); !allowed || reason != "" {
-		t.Fatalf("strict sandbox blocked user clarification: allowed=%v reason=%q", allowed, reason)
 	}
 }

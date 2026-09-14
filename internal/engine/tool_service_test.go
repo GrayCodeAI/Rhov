@@ -3,6 +3,9 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GrayCodeAI/hawk/internal/tool"
@@ -71,5 +74,40 @@ func TestDefaultToolPipelineIsEmptyPassThrough(t *testing.T) {
 	}
 	if res.Output != "unchanged" {
 		t.Fatalf("output = %q, want unchanged", res.Output)
+	}
+}
+
+func TestToolServiceSemanticIndexSearchesWorkingDir(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "auth.go"), []byte(
+		"package auth\n\nfunc ValidateToken(token string) bool { return token != \"\" }\n",
+	), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "unrelated.go"), []byte(
+		"package other\n\nfunc AddNumbers(a, b int) int { return a + b }\n",
+	), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	service := NewToolService(nil).WithExecutionDeps(toolExecutionDeps{workingDir: dir})
+	idx, err := service.semanticIndex()
+	if err != nil {
+		t.Fatalf("semanticIndex: %v", err)
+	}
+	if idx.Size() == 0 {
+		t.Fatal("semantic index is empty")
+	}
+	results := idx.Search("validate token", 5)
+	if len(results) == 0 {
+		t.Fatal("semantic search returned no results")
+	}
+	if !strings.Contains(results[0].Content, "ValidateToken") {
+		t.Errorf("top result = %q, want the token validator", results[0].Content)
+	}
+
+	// Refresh must rebuild cleanly.
+	if err := service.RefreshCodeIndex(); err != nil {
+		t.Fatalf("RefreshCodeIndex: %v", err)
 	}
 }

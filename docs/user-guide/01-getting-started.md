@@ -30,7 +30,7 @@ Run the developer path check to verify your setup:
 ./hawk path
 ```
 
-This checks setup, security, and sandbox readiness.
+This checks setup and security readiness.
 
 ---
 
@@ -83,14 +83,13 @@ The `@` operator opens a fuzzy file picker. By default it respects `.gitignore` 
 
 Hawk exposes two independent control surfaces:
 
-- **`/autonomy`** — Controls trust tier (Always Ask, Scout, Builder, Operator, Autonomous) and sandbox profile (strict, workspace, off)
+- **`/autonomy`** — Controls the trust tier (Always Ask, Scout, Builder, Operator, Autonomous)
 - **`/spec`** — A workflow gate that blocks Write/Edit/Bash until you approve implementation
 
 Example:
 
 ```
 /autonomy tier builder
-/autonomy sandbox workspace
 /autonomy allow Bash(git:*)
 /autonomy deny Bash(rm -rf *)
 /autonomy save project
@@ -224,7 +223,7 @@ Deeper files take precedence. Hawk also reads `CLAUDE.md` files for compatibilit
 | [Authentication](02-authentication.md) | Browser login, API keys, OIDC, external auth |
 | [Keyboard Shortcuts](03-keyboard-shortcuts.md) | Complete reference for all key bindings |
 | [Slash Commands](04-slash-commands.md) | All available `/` commands |
-| [Configuration](05-configuration.md) | Settings, sandbox profiles, environment variables |
+| [Configuration](05-configuration.md) | Settings and environment variables |
 
 ---
 

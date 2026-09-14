@@ -51,13 +51,11 @@ type Settings struct {
 	CustomProviders         []CustomProviderConfig `json:"custom_providers,omitempty"`
 	RepoMap                 *bool                  `json:"repo_map,omitempty"`
 	RepoMapMaxTokens        int                    `json:"repo_map_max_tokens,omitempty"`
-	Sandbox                 string                 `json:"sandbox,omitempty"`                    // sandbox mode: strict, workspace, off
 	AutoCommit              *bool                  `json:"auto_commit,omitempty"`                // auto-commit file changes
 	Autonomy                int                    `json:"autonomy,omitempty"`                   // autonomy level 0-4
 	AutonomyExplicit        bool                   `json:"autonomy_explicit,omitempty"`          // distinguishes persisted Supervised (0) from unset
 	AutonomyOverrides       map[string]bool        `json:"autonomy_overrides,omitempty"`         // per-flag overrides (e.g. "auto_execute_bash": false)
 	NeverAllow              []string               `json:"never_allow,omitempty"`                // personal hard ceiling: deny rules even YOLO can't override
-	ContainerNetwork        string                 `json:"container_network,omitempty"`          // container network mode: none, bridge, isolated
 	SpecAllowTests          bool                   `json:"spec_allow_tests,omitempty"`           // allow safe test commands during spec stage
 	ModelRoles              *routing.ModelRoles    `json:"model_roles,omitempty"`                // per-role model overrides
 	SmartRouting            *smartrouting.Config   `json:"smart_routing,omitempty"`              // cheap-simple / strong turn routing (opt-in)
@@ -370,9 +368,6 @@ func MergeSettings(base, override Settings) Settings {
 	}
 	if override.RepoMapMaxTokens > 0 {
 		base.RepoMapMaxTokens = override.RepoMapMaxTokens
-	}
-	if override.Sandbox != "" {
-		base.Sandbox = override.Sandbox
 	}
 	if override.AutoCommit != nil {
 		base.AutoCommit = override.AutoCommit

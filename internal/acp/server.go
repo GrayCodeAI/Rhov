@@ -204,8 +204,6 @@ func (s *Server) handle(ctx context.Context, msg rpcMessage) {
 		s.handleSessionList(msg)
 	case "session/setMode":
 		s.handleSetMode(msg)
-	case "session/setIsolation":
-		s.handleSetIsolation(msg)
 	case "session/status":
 		s.handleStatus(msg)
 	case "session/prompt":
@@ -246,35 +244,6 @@ func (s *Server) handleSetMode(msg rpcMessage) {
 	})
 }
 
-type setIsolationParams struct {
-	SessionID string `json:"sessionId"`
-	Profile   string `json:"profile"`
-}
-
-// handleSetIsolation applies an IsolationProfile (dev|workspace|strict|container or key=value).
-func (s *Server) handleSetIsolation(msg rpcMessage) {
-	var p setIsolationParams
-	if err := json.Unmarshal(msg.Params, &p); err != nil {
-		s.writeError(msg.ID, errCodeInvalidParams, "invalid params")
-		return
-	}
-	as := s.lookupSession(p.SessionID)
-	if as == nil {
-		s.writeError(msg.ID, errCodeInvalidParams, "unknown sessionId")
-		return
-	}
-	prof, err := engine.ParseIsolationProfile(p.Profile)
-	if err != nil {
-		s.writeError(msg.ID, errCodeInvalidParams, err.Error())
-		return
-	}
-	as.sess.ApplyIsolationProfile(prof)
-	s.reply(msg.ID, map[string]any{
-		"sessionId": p.SessionID,
-		"isolation": as.sess.Isolation().String(),
-	})
-}
-
 type statusParams struct {
 	SessionID string `json:"sessionId"`
 }
@@ -296,7 +265,6 @@ func (s *Server) handleStatus(msg rpcMessage) {
 	snapshot.Workspace = statussnapshot.Workspace()
 	snapshot.Provider = as.sess.Provider()
 	snapshot.Model = as.sess.Model()
-	snapshot.Permission.SandboxMode = as.sess.Isolation().String()
 	snapshot.Permission.SecretRedacted = true
 	snapshot.MCP.State = "client_supplied"
 	snapshot.Skills.State = "session_visible"
@@ -319,7 +287,6 @@ func (s *Server) handleStatus(msg rpcMessage) {
 	s.reply(msg.ID, map[string]any{
 		"sessionId":  p.SessionID,
 		"workMode":   string(as.sess.WorkMode()),
-		"isolation":  as.sess.Isolation().String(),
 		"autoCommit": as.sess.AutoCommit(),
 		"messages":   as.sess.MessageCount(),
 		"snapshot":   snapshot,
@@ -360,7 +327,6 @@ func (s *Server) handleSessionNew(msg rpcMessage) {
 		// Hawk extensions (ignored by clients that only read sessionId).
 		"hawk": map[string]any{
 			"workMode":   string(sess.WorkMode()),
-			"isolation":  sess.Isolation().String(),
 			"autoCommit": sess.AutoCommit(),
 		},
 	})

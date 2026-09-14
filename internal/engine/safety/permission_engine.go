@@ -16,7 +16,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/hooks"
 	"github.com/GrayCodeAI/hawk/internal/observability/metrics"
 	"github.com/GrayCodeAI/hawk/internal/permissions"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 )
 
@@ -50,12 +49,8 @@ type PermissionEngine struct {
 	// Revision increments when policy configuration is replaced. It is
 	// attached to decisions so audit consumers can correlate evaluations.
 	Revision uint64
-	// SandboxMode controls filesystem/process policy for tool execution. It is
-	// deliberately separate from Autonomy: autonomy decides whether a user
-	// prompt is needed, while the sandbox decides what the tool may actually do.
-	SandboxMode sandbox.Mode
-	Stage       SpecStage
-	specDone    specDone
+	Stage    SpecStage
+	specDone specDone
 	// DryRun is a global kill switch: when true, every tool call is denied
 	// unconditionally, regardless of tier or spec stage. Replaces the old
 	// PermissionModeDontAsk's hard-lockout role — that mode was otherwise
@@ -154,7 +149,6 @@ type Decision struct {
 type PolicySnapshot struct {
 	Autonomy         AutonomyLevel
 	AutonomyExplicit bool
-	SandboxMode      sandbox.Mode
 	Stage            SpecStage
 	DryRun           bool
 	SpecSlug         string
@@ -173,7 +167,7 @@ func (pe *PermissionEngine) Snapshot() PolicySnapshot {
 	}
 	return PolicySnapshot{
 		Autonomy: pe.Autonomy, AutonomyExplicit: pe.AutonomyExplicit,
-		SandboxMode: pe.SandboxMode, Stage: pe.Stage, DryRun: pe.DryRun,
+		Stage: pe.Stage, DryRun: pe.DryRun,
 		SpecSlug: pe.SpecSlug, Phase: pe.Phase, Phases: pe.Phases, Revision: pe.Revision,
 		Rules: rules,
 	}
@@ -190,7 +184,6 @@ func (pe *PermissionEngine) Copy() *PermissionEngine {
 	return &PermissionEngine{
 		Autonomy:         pe.Autonomy,
 		AutonomyExplicit: pe.AutonomyExplicit,
-		SandboxMode:      pe.SandboxMode,
 		Stage:            pe.Stage,
 		DryRun:           pe.DryRun,
 		SpecSlug:         pe.SpecSlug,
@@ -252,7 +245,6 @@ func (pe *PermissionEngine) CheckToolSnapshot(ctx context.Context, tc ToolCallIn
 	clone := &PermissionEngine{
 		Autonomy:         snapshot.Autonomy,
 		AutonomyExplicit: snapshot.AutonomyExplicit,
-		SandboxMode:      snapshot.SandboxMode,
 		Stage:            snapshot.Stage,
 		DryRun:           snapshot.DryRun,
 		SpecSlug:         snapshot.SpecSlug,
@@ -307,7 +299,7 @@ func (pe *PermissionEngine) EvaluateTool(ctx context.Context, tc ToolCallInfo) D
 	// the embedded sync.RWMutex.
 	clone := &PermissionEngine{
 		Autonomy: pe.Autonomy, AutonomyExplicit: pe.AutonomyExplicit,
-		SandboxMode: pe.SandboxMode, Stage: pe.Stage, DryRun: pe.DryRun,
+		Stage: pe.Stage, DryRun: pe.DryRun,
 		SpecSlug: pe.SpecSlug, Phase: pe.Phase, Phases: pe.Phases,
 		Revision: pe.Revision, Memory: pe.Memory,
 		UnifiedGrants: pe.UnifiedGrants, Profile: pe.Profile,
@@ -351,21 +343,6 @@ func (pe *PermissionEngine) evaluateToolDecision(ctx context.Context, tc ToolCal
 	// short-circuit when ActionDeny (or equivalent).
 	if denied, reason := pe.checkPreToolHooks(tc); denied {
 		return Decision{Outcome: DecisionDeny, Reason: ReasonHookDenied, Message: reason}
-	}
-	// Strict sandbox mode is read-only. This check is independent of autonomy
-	// and the spec workflow so neither can turn a read-only sandbox into a
-	// write or process-execution path.
-	if pe.SandboxMode == sandbox.ModeStrict && !pe.strictToolAllowed(tc) {
-		return Decision{Outcome: DecisionDeny, Reason: ReasonSandbox, Message: "Sandbox strict mode: tool execution is read-only."}
-	}
-
-	// Network-egress enforcement via sandbox. When the active sandbox mode
-	// denies network (strict, or HAWK_SANDBOX_NETWORK=0), outbound tools like
-	// WebFetch/WebSearch are denied at the sandbox layer regardless of autonomy
-	// or egress regex. This is the real enforcement; the egress inspector's
-	// regex is only a fast-path deny.
-	if isNetworkTool(tc.Name) && !sandbox.ModeAllowsNetwork(pe.SandboxMode) {
-		return Decision{Outcome: DecisionDeny, Reason: ReasonSandbox, Message: "network access denied by sandbox " + string(pe.SandboxMode) + " mode"}
 	}
 
 	// Spec-stage gate — independent of trust tier, so no autonomy level can
@@ -674,22 +651,6 @@ func (pe *PermissionEngine) specStageReason(toolName string) string {
 		return "Spec stage active: Tasks is available only after Plan completes."
 	default:
 		return "Spec stage active: tool is not available at the current stage."
-	}
-}
-
-func (pe *PermissionEngine) strictToolAllowed(tc ToolCallInfo) bool {
-	name := canonicalToolName(tc.Name)
-	if tool.IsReadOnly(tc.Name) || name == "ApproveImplementation" {
-		return true
-	}
-	switch name {
-	case "AskUserQuestion", "SpecStatus", "SpecList", "Clarify", "Analyze", "Checklist", "Constitution", "Converge":
-		return true
-	case "SpecConfig":
-		action, _ := tc.Args["action"].(string)
-		return strings.ToLower(strings.TrimSpace(action)) != "set"
-	default:
-		return false
 	}
 }
 

@@ -8,8 +8,8 @@ This document describes how hawk and eyrie handle API keys and agent isolation f
 - Hawk does not read API keys from `.env`, shell env, or plaintext files.
 - Eyrie's `provider.json` holds routing and deployment metadata only — never secrets on disk.
 - Hawk talks to eyrie without putting keys in JSON or chat messages.
-- Agent commands run inside mandatory Docker isolation; file tools cannot read
-  credential paths.
+- Agent commands run on the host under the permission engine; file tools cannot
+  read credential paths.
 
 ## Credential storage
 
@@ -51,28 +51,24 @@ Remove a stored key: `/config key remove` (interactive picker).
 - **Chat**: Hawk sends model intent, messages, and tool definitions; Eyrie
   resolves the gateway and reads secrets internally.
 
-## Agent isolation
+## Agent execution
 
 ```
-+------------------+     +------------------+
-|  Hawk TUI/host   |     |  Docker sandbox  |
-|  Keychain access |     |  Commands only   |
-|  /config paste   |     |  project mount   |
-+------------------+     +------------------+
-         |                          |
-         |  ContainerExecutor       |
-         +--------------------------+
++------------------+
+|  Hawk TUI/host   |
+|  Keychain access |
+|  /config paste   |
++------------------+
+         |
+         |  permission engine (tier + rules + approval gate)
+         v
+   Host command execution
 ```
 
-When the container is ready, `session.ContainerExecutor` runs agent commands in
-Docker. Hawk fails closed when Docker is unavailable; it never falls back to
-host command execution.
-
-The sandbox image has an independent compatibility version embedded in Hawk.
-Startup first checks the local Docker image cache, then anonymously pulls the
-public `graycodeai/hawk-sandbox` image. If the registry cannot be reached, Hawk
-builds the same bundled sandbox Dockerfile locally. Registry login is not
-required for users, and neither provisioning path enables host execution.
+Hawk executes agent commands directly on the host. Every tool call passes
+through the permission engine (autonomy tier, allow/deny rules, approval gate,
+and dry-run kill switch) before it runs. No Docker daemon or container runtime
+is required.
 
 ### Blocked for agents
 

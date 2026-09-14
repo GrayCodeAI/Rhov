@@ -69,21 +69,6 @@ func TestGenerateBashContainsProviderChoices(t *testing.T) {
 	}
 }
 
-func TestGenerateBashContainsSandbox(t *testing.T) {
-	g := NewCompletionGenerator()
-	bash := g.GenerateBash()
-
-	if !strings.Contains(bash, "--sandbox") {
-		t.Error("Bash completion should contain --sandbox")
-	}
-	modes := []string{"strict", "workspace", "off"}
-	for _, m := range modes {
-		if !strings.Contains(bash, m) {
-			t.Errorf("Bash completion should contain sandbox mode %q", m)
-		}
-	}
-}
-
 func TestGenerateBashContainsSlashCommands(t *testing.T) {
 	g := NewCompletionGenerator()
 	bash := g.GenerateBash()

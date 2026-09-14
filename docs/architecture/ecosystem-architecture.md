@@ -1,5 +1,10 @@
 # GrayCode Ecosystem Architecture
 
+> **Historical.** This document describes the pre-2026-09 multi-engine
+> ecosystem. Hawk now depends only on `eyrie` and embeds its own token engine;
+> the harrier, kestrel, merlin, shrike, and swift integrations have been
+> removed. Kept for record.
+
 This document describes how the independent repositories around the Hawk main
 CLI connect. `graycode-eco` is only the local parent folder; it is not a Git
 repository, product, or runtime module.

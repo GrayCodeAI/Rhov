@@ -2,62 +2,140 @@
   "version": "1.0.0",
   "generated": "2026-05-27",
   "platforms": {
-    "darwin_amd64": { "supported": true, "sandbox": "seatbelt" },
-    "darwin_arm64": { "supported": true, "sandbox": "seatbelt" },
-    "linux_amd64":  { "supported": true, "sandbox": "landlock+seccomp" },
-    "linux_arm64":  { "supported": true, "sandbox": "landlock+seccomp" },
-    "windows_amd64": { "supported": true, "sandbox": "none" }
+    "darwin_amd64": {
+      "supported": true
+    },
+    "darwin_arm64": {
+      "supported": true
+    },
+    "linux_amd64": {
+      "supported": true
+    },
+    "linux_arm64": {
+      "supported": true
+    },
+    "windows_amd64": {
+      "supported": true
+    }
   },
   "providers": {
     "anthropic": {
-      "models": ["claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5"],
-      "features": ["streaming", "tool_use", "prompt_caching", "batch_api", "vision"],
-      "auth": ["api_key", "aws_bedrock", "gcp_vertex"]
+      "models": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5"
+      ],
+      "features": [
+        "streaming",
+        "tool_use",
+        "prompt_caching",
+        "batch_api",
+        "vision"
+      ],
+      "auth": [
+        "api_key",
+        "aws_bedrock",
+        "gcp_vertex"
+      ]
     },
     "openai": {
-      "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1", "o3"],
-      "features": ["streaming", "tool_use", "vision", "json_mode"],
-      "auth": ["api_key"]
+      "models": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-4-turbo",
+        "o1",
+        "o3"
+      ],
+      "features": [
+        "streaming",
+        "tool_use",
+        "vision",
+        "json_mode"
+      ],
+      "auth": [
+        "api_key"
+      ]
     },
     "openrouter": {
-      "models": ["auto"],
-      "features": ["streaming", "tool_use"],
-      "auth": ["api_key"]
+      "models": [
+        "auto"
+      ],
+      "features": [
+        "streaming",
+        "tool_use"
+      ],
+      "auth": [
+        "api_key"
+      ]
     },
     "gemini": {
-      "models": ["gemini-2.5-pro", "gemini-2.5-flash"],
-      "features": ["streaming", "tool_use", "vision"],
-      "auth": ["api_key", "gcp_oauth"]
+      "models": [
+        "gemini-2.5-pro",
+        "gemini-2.5-flash"
+      ],
+      "features": [
+        "streaming",
+        "tool_use",
+        "vision"
+      ],
+      "auth": [
+        "api_key",
+        "gcp_oauth"
+      ]
     },
     "grok": {
-      "models": ["grok-3", "grok-3-mini"],
-      "features": ["streaming", "tool_use"],
-      "auth": ["api_key"]
+      "models": [
+        "grok-3",
+        "grok-3-mini"
+      ],
+      "features": [
+        "streaming",
+        "tool_use"
+      ],
+      "auth": [
+        "api_key"
+      ]
     },
     "ollama": {
-      "models": ["auto"],
-      "features": ["streaming", "tool_use"],
-      "auth": ["base_url"]
+      "models": [
+        "auto"
+      ],
+      "features": [
+        "streaming",
+        "tool_use"
+      ],
+      "auth": [
+        "base_url"
+      ]
     },
     "deepseek": {
-      "models": ["deepseek-v3", "deepseek-r1"],
-      "features": ["streaming", "tool_use"],
-      "auth": ["api_key"]
+      "models": [
+        "deepseek-v3",
+        "deepseek-r1"
+      ],
+      "features": [
+        "streaming",
+        "tool_use"
+      ],
+      "auth": [
+        "api_key"
+      ]
     }
   },
   "mcp": {
     "protocol_version": "2025-03-26",
-    "transport": ["stdio", "sse"],
-    "features": ["tools", "resources", "prompts", "sampling"]
+    "transport": [
+      "stdio",
+      "sse"
+    ],
+    "features": [
+      "tools",
+      "resources",
+      "prompts",
+      "sampling"
+    ]
   },
   "ecosystem_compatibility": {
-    "hawk+eyrie": "full",
-    "hawk+shrike": "full",
-    "hawk+kestrel": "full",
-    "hawk+merlin": "full",
-    "hawk+harrier": "full",
-    "hawk+swift": "full",
-    "eyrie+shrike": "token_compression",
-    "kestrel+merlin": "security_review"
+    "hawk+eyrie": "full"
   }
 }

@@ -110,7 +110,7 @@ func (r *Result) SetFailOn(sev contracts.Severity) {
 // Failed reports whether any finding meets or exceeds the configured fail threshold.
 // When the threshold was never set — a zero Result, or a Result whose FailOn
 // field was assigned directly — SeverityCritical is used as the effective
-// threshold, matching the kestrel and merlin engine defaults. Set the
+// threshold. Set the
 // threshold via SetFailOn to make an explicit choice (including Info) take
 // effect.
 func (r *Result) Failed() bool {

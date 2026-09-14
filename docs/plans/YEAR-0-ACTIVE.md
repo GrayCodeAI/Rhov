@@ -1,6 +1,10 @@
 # Year 0 Active Track (Grok → Hawk)
 
-**Status:** Active  
+> **Historical.** This track predates the removal of the harrier, kestrel,
+> merlin, shrike, and swift engines. Hawk now depends only on `eyrie` and
+> embeds its own token engine. Kept for record.
+
+**Status:** Superseded  
 **Date:** 2026-07-16  
 **ADR:** [ADR-0003](../architecture/adr/ADR-0003-grok-behavioral-port-go-multirepo.md)  
 **Full matrices:** [FULL-GROK-ECO-TO-HAWK-ECO-PORT-PLAN.md](./FULL-GROK-ECO-TO-HAWK-ECO-PORT-PLAN.md),

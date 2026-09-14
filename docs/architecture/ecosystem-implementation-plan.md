@@ -46,7 +46,7 @@ Starling extends Hawk through skills. Owl reads the canonical manifest.
 
 ## Phase 1: Repository and naming baseline — complete
 
-- Keep the 15 repositories independent, each with its own Git history.
+- Keep the repositories independent, each with its own Git history.
 - Keep `graycode-eco` file-free except for checked-out repository directories.
 - Use bird codenames consistently for directories, module paths, and repository
   names.
@@ -145,7 +145,7 @@ pnpm run format:check
 The architecture is complete when:
 
 - all local invariants and boundary checks pass;
-- all 15 repositories match the canonical manifest;
+- all repositories match the canonical manifest;
 - Hawk builds and tests with `GOWORK=off`;
 - SDK and platform contract checks pass; and
 - the published Eyrie revision no longer brings the retired compatibility

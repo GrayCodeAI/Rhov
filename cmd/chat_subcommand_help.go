@@ -21,11 +21,11 @@ func helpCategory(cmdName string) string {
 		return "Agent"
 	case "/memory", "/context", "/ctx", "/search", "/history", "/session", "/sessions", "/export", "/share", "/fork", "/branches", "/branch":
 		return "Memory"
-	case "/tools", "/mcp", "/plugin", "/plugins", "/skills", "/files", "/image", "/render", "/harrier", "/ecosystem", "/path":
+	case "/tools", "/mcp", "/plugin", "/plugins", "/skills", "/files", "/image", "/render", "/ecosystem", "/path":
 		return "Tools"
 	case "/doctor", "/cost", "/usage", "/metrics", "/stats", "/integrity", "/stale", "/tokens", "/provider-status":
 		return "Diagnostics"
-	case "/autonomy", "/spec", "/vim", "/theme", "/color", "/mouse", "/select", "/focus", "/follow", "/output-style", "/statusline", "/keybindings", "/voice", "/remote-env", "/refresh-model-catalog", "/mode", "/isolation", "/trust":
+	case "/autonomy", "/spec", "/vim", "/theme", "/color", "/mouse", "/select", "/focus", "/follow", "/output-style", "/statusline", "/keybindings", "/voice", "/remote-env", "/refresh-model-catalog", "/mode", "/trust":
 		return "Settings"
 	default:
 		return "Other"

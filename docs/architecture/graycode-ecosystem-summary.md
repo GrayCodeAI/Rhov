@@ -1,5 +1,10 @@
 # GrayCode Ecosystem Summary
 
+> **Historical.** This document describes the pre-2026-09 multi-engine
+> ecosystem. Hawk now depends only on `eyrie` and embeds its own token engine;
+> the harrier, kestrel, merlin, shrike, and swift integrations have been
+> removed. Kept for record.
+
 `graycode-eco` is only a local parent folder. `hawk` is the main CLI and the
 only primary Hawk product; the other repositories provide capabilities,
 contracts, integrations, tooling, or optional platform services.

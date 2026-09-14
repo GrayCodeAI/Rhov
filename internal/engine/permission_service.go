@@ -16,7 +16,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/permissions"
 	"github.com/GrayCodeAI/hawk/internal/permissions/stableid"
 	"github.com/GrayCodeAI/hawk/internal/permissions/turnrecovery"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/spec"
 )
 
@@ -219,7 +218,6 @@ func (s *PermissionService) ApplyPolicySnapshot(snapshot safety.PolicySnapshot) 
 	defer s.mu.Unlock()
 	s.perm.Autonomy = snapshot.Autonomy
 	s.perm.AutonomyExplicit = snapshot.AutonomyExplicit
-	s.perm.SandboxMode = snapshot.SandboxMode
 	s.perm.Stage = snapshot.Stage
 	s.perm.DryRun = snapshot.DryRun
 	s.perm.SpecSlug = snapshot.SpecSlug
@@ -601,40 +599,6 @@ func (s *PermissionService) SetDryRun(dryRun bool) {
 	if s != nil && s.perm != nil {
 		s.perm.DryRun = dryRun
 	}
-}
-
-// SetSandboxMode updates the sandbox policy used for subsequent tool calls.
-func (s *PermissionService) SetSandboxMode(mode sandbox.Mode) {
-	if s == nil || s.perm == nil {
-		return
-	}
-	s.mu.Lock()
-	s.perm.SandboxMode = mode
-	s.perm.Revision++
-	s.mu.Unlock()
-	// Emit sandbox.mode lifecycle event (DSH sandbox.mode seam).
-	if j := s.journal; j != nil {
-		j.AppendSandboxMode(string(mode))
-	}
-}
-
-// SandboxMode returns the active sandbox policy. If the session has folded
-// sandbox.mode events in its journal, the folded override takes precedence.
-func (s *PermissionService) SandboxMode() sandbox.Mode {
-	if s == nil || s.perm == nil {
-		return sandbox.Mode("")
-	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	if s.journal != nil {
-		if mode, ok := sandbox.OverrideOf(s.journal); ok && mode != "" {
-			return mode
-		}
-	}
-	if s.perm.SandboxMode != "" {
-		return s.perm.SandboxMode
-	}
-	return sandbox.ModeWorkspace
 }
 
 // DryRun reports whether the kill switch is active.

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	shrike "github.com/GrayCodeAI/shrike"
+	hawktoken "github.com/GrayCodeAI/hawk/internal/token"
 )
 
 var sensitiveKeySubstrings = []string{
@@ -38,7 +38,7 @@ func IsSensitiveEnvEntry(key, val string) bool {
 		return true
 	}
 	if len(val) > 0 {
-		matches := shrike.DefaultSecretDetector().DetectSecrets(val)
+		matches := hawktoken.DefaultSecretDetector().DetectSecrets(val)
 		if len(matches) > 0 {
 			return true
 		}

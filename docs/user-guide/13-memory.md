@@ -6,31 +6,24 @@ Memory lets Hawk recall facts, decisions, and patterns from earlier sessions. Ha
 
 ## What Is Memory?
 
-Without memory, each Hawk session starts fresh. When you enable memory, Hawk can:
+Without memory, each Hawk session starts fresh. When memory is enabled, Hawk can:
 
 - Recall project conventions you explained before
 - Reuse debugging steps that worked
 - Carry architectural decisions forward across sessions
 - Avoid re-asking questions it already has answers to
 
-Memory is powered by **harrier**, the graph-based persistent memory engine.
+Memory is a local subsystem built into Hawk. It stores memories as files under
+Hawk's state directory; no external service is required.
 
 ---
 
 ## Enabling Memory
 
-### Slash Command
-
-Toggle memory in the TUI:
+Memory is on by default. To inspect what has been stored:
 
 ```
-/harrier    # Opens memory management
-```
-
-### CLI Flag
-
-```bash
-hawk --memory
+/learn    # lessons learned across sessions
 ```
 
 ### Settings
@@ -48,15 +41,15 @@ hawk --memory
 
 ## How Memory Is Stored
 
-Memory is stored in harrier's graph database under `~/.hawk/harrier/`.
+Memory is stored under Hawk's state directory (`~/.hawk/` by default).
 
 | Location | Scope | Description |
 |----------|-------|-------------|
-| `~/.hawk/harrier/global/` | Global | Cross-project memory |
-| `~/.hawk/harrier/workspaces/<repo>/` | Workspace | Project-specific memory |
-| `~/.hawk/harrier/sessions/` | Sessions | Session logs and summaries |
+| `~/.hawk/memories/` | Global | Core memories and preferences |
+| `~/.hawk/` state files | Workspace | Project-specific memory and lessons |
 
-The graph structure enables semantic search and relationship mapping between memories.
+Hawk combines core memories, automatic captures, evolving guidelines, and
+retrieval metrics to rank what is relevant to the current turn.
 
 ---
 
@@ -64,7 +57,7 @@ The graph structure enables semantic search and relationship mapping between mem
 
 ### Remember
 
-Ask Hawk to remember something, or use the slash command:
+Ask Hawk to remember something:
 
 ```
 /remember always open PR links after pushing
@@ -80,7 +73,7 @@ Ask what Hawk should forget:
 /forget the snake_case convention
 ```
 
-Forget is best-effort. For guaranteed removal, use harrier's query tools directly.
+Forget is best-effort.
 
 ### Recall
 
@@ -96,24 +89,10 @@ Hawk searches across all memory sources and summarizes.
 
 ## Browsing Memory
 
-Open the harrier browser in the TUI:
+Lessons learned are surfaced through:
 
 ```
-/harrier
-```
-
-Or search directly:
-
-```
-/harrier search <query>
-```
-
-### CLI Commands
-
-```bash
-hawk harrier                    # Open harrier UI
-hawk harrier search <query>     # Search memory
-hawk harrier stats              # Show memory statistics
+/learn
 ```
 
 ---
@@ -131,20 +110,6 @@ Configure injection:
   }
 }
 ```
-
----
-
-## Memory Search
-
-Hawk searches memory automatically. Manual search:
-
-```
-Search harrier memory for "auth patterns"
-```
-
-The harrier engine provides hybrid search:
-- **Graph traversal** for semantic relationships
-- **Full-text search** for keyword matching
 
 ---
 

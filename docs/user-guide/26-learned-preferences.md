@@ -7,7 +7,7 @@ These preferences are advisory context, not policy.
 
 - Explicit user instructions override learned preferences.
 - Project rules and `AGENTS.md` remain authoritative.
-- Permission, sandbox, and security controls cannot be weakened by taste.
+- Permission and security controls cannot be weakened by taste.
 - Review severity and correctness findings cannot be hidden by preferences.
 - Skills provide reusable procedures; preferences describe tendencies.
 - Harrier stores durable facts, conventions, and decisions separately.
@@ -30,5 +30,5 @@ Objective: security, correctness, regression risk, missing tests
 Preference: naming, test organization, error-handling convention
 ```
 
-The objective layer always wins. Use `/taste` and `/learn` to merlin or teach
+The objective layer always wins. Use `/taste` and `/learn` to inspect or teach
 preferences explicitly rather than relying on opaque model behavior.

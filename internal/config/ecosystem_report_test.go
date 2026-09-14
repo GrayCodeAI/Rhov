@@ -10,10 +10,9 @@ func TestFormatEcosystemPanel(t *testing.T) {
 	t.Parallel()
 	out := FormatEcosystemPanel(context.Background(), "anthropic", "claude-sonnet-4-20250514")
 	for _, want := range []string{
-		"Ecosystem (eyrie · harrier · shrike):",
+		"Ecosystem (eyrie · token engine):",
 		"eyrie:",
-		"harrier:",
-		"shrike:",
+		"token:",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("panel missing %q:\n%s", want, out)

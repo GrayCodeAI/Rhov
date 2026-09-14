@@ -3,14 +3,9 @@ package engine
 import (
 	"strings"
 	"testing"
-
-	"github.com/GrayCodeAI/hawk/internal/token"
 )
 
 func TestPostResponseReportsTokOnlyRedactions(t *testing.T) {
-	if !token.ShrikeAvailable() {
-		t.Skip("shrike engine is the build-harness stub; skipping engine-dependent test")
-	}
 	t.Setenv("HAWK_STATE_DIR", t.TempDir())
 	pipeline := NewIntegrationPipeline()
 	secret := "github_pat_abcdefghijklmnopqrstuvwxyz1234567890"
@@ -23,6 +18,6 @@ func TestPostResponseReportsTokOnlyRedactions(t *testing.T) {
 		t.Fatalf("SecretTypes = %#v", result.SecretTypes)
 	}
 	if strings.Contains(result.FormattedResponse, secret) {
-		t.Fatal("formatted response retained Shrike-detected secret")
+		t.Fatal("formatted response retained a detected secret")
 	}
 }

@@ -10,7 +10,6 @@ import (
 
 	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
 	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 	"github.com/GrayCodeAI/hawk/internal/types"
 )
@@ -59,13 +58,6 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 			ModelOverride:    model,
 		})
 		sess := engine.NewHawkSession(ctx, selection, provider, model, systemPrompt, registry)
-
-		// DSH 2.4: Inherit delegated sandbox policy from parent if configured.
-		if cfg.ParentSession != nil {
-			sandbox.InheritDelegatedPolicy(cfg.ParentSession, sess)
-		}
-		// DSH 2.4: Model-facing delegation statement informing worker of fixed scope.
-		sess.AppendSystemContext(sandbox.FormatDelegationStatement())
 
 		// Configure for autonomous operation
 		level := engine.AutonomyLevel(cfg.AutonomyLevel)

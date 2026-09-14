@@ -22,7 +22,7 @@ type BenchmarkResult struct {
 	Details  string        `json:"details,omitempty"`
 }
 
-// BenchmarkSuite runs benchmarks across the graycode-eco ecosystem.
+// BenchmarkSuite runs Hawk's benchmark suite.
 type BenchmarkSuite struct {
 	Results []BenchmarkResult `json:"results"`
 }
@@ -31,17 +31,12 @@ type BenchmarkSuite struct {
 func RunAll(projectDir string) (*BenchmarkSuite, error) {
 	suite := &BenchmarkSuite{}
 
-	// Run harrier benchmarks
-	if harrierResults, err := runHarrierBench(projectDir); err == nil {
-		suite.Results = append(suite.Results, harrierResults...)
+	// Run the embedded token-engine benchmarks.
+	if tokenResults, err := runTokenBench(projectDir); err == nil {
+		suite.Results = append(suite.Results, tokenResults...)
 	}
 
-	// Run shrike benchmarks
-	if shrikeResults, err := runShrikeBench(projectDir); err == nil {
-		suite.Results = append(suite.Results, shrikeResults...)
-	}
-
-	// Run hawk build benchmark
+	// Run hawk build benchmark.
 	if hawkResult, err := runHawkBuildBench(projectDir); err == nil {
 		suite.Results = append(suite.Results, hawkResult)
 	}
@@ -49,48 +44,20 @@ func RunAll(projectDir string) (*BenchmarkSuite, error) {
 	return suite, nil
 }
 
-// runHarrierBench runs harrier's built-in benchmark suite.
-func runHarrierBench(projectDir string) ([]BenchmarkResult, error) {
-	harrierDir := filepath.Join(filepath.Dir(projectDir), "harrier")
-	if _, err := os.Stat(filepath.Join(harrierDir, "go.mod")); err != nil {
-		return nil, fmt.Errorf("harrier not found")
+// runTokenBench runs the embedded token engine's benchmark suite.
+func runTokenBench(projectDir string) ([]BenchmarkResult, error) {
+	if _, err := os.Stat(filepath.Join(projectDir, "go.mod")); err != nil {
+		return nil, fmt.Errorf("hawk not found")
 	}
 
 	start := time.Now()
-	cmd := exec.CommandContext(context.Background(), "go", "test", "-bench=.", "-benchmem", "-count=1", "-timeout=60s", "./engine/...")
-	cmd.Dir = harrierDir
+	cmd := exec.CommandContext(context.Background(), "go", "test", "-bench=.", "-benchmem", "-count=1", "-timeout=60s", "./internal/token/...")
+	cmd.Dir = projectDir
 	output, err := cmd.CombinedOutput()
 	duration := time.Since(start)
 
 	result := BenchmarkResult{
-		Name:     "harrier/engine",
-		Duration: duration,
-		Metric:   "time",
-		Passed:   err == nil,
-		Details:  string(output),
-	}
-	if err == nil {
-		result.Score = float64(duration.Milliseconds())
-	}
-
-	return []BenchmarkResult{result}, nil
-}
-
-// runShrikeBench runs shrike's benchmark suite.
-func runShrikeBench(projectDir string) ([]BenchmarkResult, error) {
-	shrikeDir := filepath.Join(filepath.Dir(projectDir), "shrike")
-	if _, err := os.Stat(filepath.Join(shrikeDir, "go.mod")); err != nil {
-		return nil, fmt.Errorf("shrike not found")
-	}
-
-	start := time.Now()
-	cmd := exec.CommandContext(context.Background(), "go", "test", "-bench=.", "-benchmem", "-count=1", "-timeout=60s", "./...")
-	cmd.Dir = shrikeDir
-	output, err := cmd.CombinedOutput()
-	duration := time.Since(start)
-
-	result := BenchmarkResult{
-		Name:     "shrike",
+		Name:     "token",
 		Duration: duration,
 		Metric:   "time",
 		Passed:   err == nil,

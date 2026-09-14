@@ -356,15 +356,6 @@ func TestStatusIcon(t *testing.T) {
 	}
 }
 
-func TestAnalysisPrompts_AllTypesExist(t *testing.T) {
-	expected := []string{"security", "duplication", "complexity", "dead-code", "refactor", "test-fixtures"}
-	for _, typ := range expected {
-		if _, ok := analysisPrompts[typ]; !ok {
-			t.Errorf("missing analysis prompt for type %q", typ)
-		}
-	}
-}
-
 func TestHookScript_ContainsHawkReview(t *testing.T) {
 	if !strings.Contains(hookScript, "hawk review") {
 		t.Error("hook script should contain 'hawk review'")

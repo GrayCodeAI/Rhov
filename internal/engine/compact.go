@@ -176,22 +176,24 @@ func (s *Session) generateSummary(ctx context.Context, raw []types.EyrieMessage)
 		summaryMsgs[0].Content += part
 	}
 
-	// Try shrike compression first as a fast, zero-cost alternative
+	// Try token-engine compression first as a fast, zero-cost alternative
 	conversationText := summaryMsgs[0].Content
 	targetBudget := 1000 // Keep summary under 1K tokens
 	compressed, stats := token.Compress(conversationText, targetBudget)
-	s.recordShrikeCompressionObservation(conversationText, "context-compaction", stats)
-	reductionRatio := float64(stats.FinalTokens) / float64(stats.OriginalTokens)
-	// Only accept the shrike path when the reduction is structural — a
+	s.recordCompressionObservation(conversationText, "context-compaction", stats)
+	// Only accept the token-engine path when the reduction is structural — a
 	// budget-enforcer hard truncation (HardTruncated) would return the head
 	// of the conversation cut mid-stream, which is not a summary.
-	if reductionRatio < 0.5 && stats.OriginalTokens > targetBudget*2 && !stats.HardTruncated() {
-		// shrike achieved >50% reduction, use compressed output directly
-		// Extract key facts from compressed text for summary format
-		return extractSummaryFromCompressed(compressed)
+	if stats.OriginalTokens > targetBudget*2 && !stats.HardTruncated() {
+		reductionRatio := float64(stats.FinalTokens) / float64(stats.OriginalTokens)
+		if reductionRatio < 0.5 {
+			// The token engine achieved >50% reduction; use compressed output
+			// directly and extract key facts for the summary format.
+			return extractSummaryFromCompressed(compressed)
+		}
 	}
 
-	// Fall back to LLM-based summarization if shrike compression insufficient
+	// Fall back to LLM-based summarization if token compression is insufficient
 	if s.ChatLLM() == nil {
 		return ""
 	}
@@ -210,7 +212,7 @@ func (s *Session) generateSummary(ctx context.Context, raw []types.EyrieMessage)
 	return FormatCompactSummary(resp.Content)
 }
 
-// extractSummaryFromCompressed pulls key information from shrike-compressed text
+// extractSummaryFromCompressed pulls key information from token-compressed text
 // to create a usable summary for the conversation context.
 func extractSummaryFromCompressed(compressed string) string {
 	// A meta-token digest ([META:...]) means the pipeline replaced content
@@ -220,7 +222,7 @@ func extractSummaryFromCompressed(compressed string) string {
 	if strings.HasPrefix(compressed, "[META:") {
 		return ""
 	}
-	// shrike compression preserves semantic meaning; extract actionable summary
+	// Token compression preserves semantic meaning; extract an actionable summary
 	lines := strings.Split(compressed, "\n")
 	var keyPoints []string
 	for _, line := range lines {
@@ -254,7 +256,7 @@ func truncateRunes(s string, max int) string {
 }
 
 // CompressMessageContent compresses a single message's content if it exceeds the limit.
-// Uses shrike for fast, zero-cost compression. Returns the original if already short enough.
+// Uses the embedded token engine for fast, zero-cost compression. Returns the original if already short enough.
 func CompressMessageContent(content string, maxTokens int) string {
 	if token.CountTokensFast(content) <= maxTokens {
 		return content

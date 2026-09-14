@@ -100,9 +100,8 @@ flowchart TB
 
 ## Repository identity
 
-Bird codenames are repository and Go module identities. Product names remain
-the user-facing labels. In particular, `harrier` is Harrier, `shrike` is Shrike,
-`swift` is Swift, `kestrel` is Kestrel, and `merlin` is Merlin. Scripts and CI
+Repository directories are repository and Go module identities. Product names
+remain the user-facing labels. In particular, `eyrie` is Eyrie. Scripts and CI
 must use `directory`/`github_repo`; UI copy may use `product_name`.
 
 ## Contract and event flow

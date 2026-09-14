@@ -17,7 +17,9 @@ const (
 	eyrieModule = "github.com/GrayCodeAI/eyrie"
 )
 
-var supportEngines = []string{"eyrie", "harrier", "shrike", "swift", "kestrel", "merlin"}
+// supportEngines lists the sibling repos checked for boundary violations.
+// Hawk now depends only on eyrie.
+var supportEngines = []string{"eyrie"}
 
 type packageImport struct {
 	file string

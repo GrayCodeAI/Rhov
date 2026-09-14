@@ -354,12 +354,6 @@ func (s *MCPServer) handleResourcesList(req *JSONRPCRequest) *JSONRPCResponse {
 			"description": "Current workspace directory listing",
 			"mimeType":    "text/plain",
 		},
-		{
-			"uri":         "hawk://session",
-			"name":        "session",
-			"description": "Current session messages",
-			"mimeType":    "application/json",
-		},
 	}
 	return &JSONRPCResponse{
 		JSONRPC: "2.0",
@@ -398,8 +392,6 @@ func (s *MCPServer) handleResourcesRead(req *JSONRPCRequest) *JSONRPCResponse {
 			}
 			content = "Workspace files:\n" + strings.Join(names, "\n")
 		}
-	case "hawk://session":
-		content = "{}" // placeholder
 	default:
 		return &JSONRPCResponse{
 			JSONRPC: "2.0",

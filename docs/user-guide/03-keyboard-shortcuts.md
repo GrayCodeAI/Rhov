@@ -149,7 +149,7 @@ Where to Go Next
 | Document | What You Will Learn |
 |----------|-------------------|
 | [Slash Commands](04-slash-commands.md) | All available `/` commands |
-| [Configuration](05-configuration.md) | Settings and sandbox profiles |
+| [Configuration](05-configuration.md) | Settings |
 
 ---
 

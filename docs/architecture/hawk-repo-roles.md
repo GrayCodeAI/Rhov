@@ -1,5 +1,10 @@
 # Hawk Repo Roles
 
+> **Historical.** This document describes the pre-2026-09 multi-engine
+> ecosystem. Hawk now depends only on `eyrie` and embeds its own token engine;
+> the harrier, kestrel, merlin, shrike, and swift integrations have been
+> removed. Kept for record.
+
 ## Product repo
 
 ### `hawk`

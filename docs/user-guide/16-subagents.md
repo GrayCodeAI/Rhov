@@ -36,7 +36,7 @@ Restrict a subagent's tools:
 
 | Mode | Read | Write | Execute | Description |
 |------|------|-------|---------|-------------|
-| `read-only` | Yes | No | No | Read, search, merlin only |
+| `read-only` | Yes | No | No | Read and search only |
 | `read-write` | Yes | Yes | No | Read/write files, no shell |
 | `execute` | Yes | No | Yes | Read + shell commands |
 | `all` | Yes | Yes | Yes | Full tool access |
@@ -129,7 +129,7 @@ Subagents cannot spawn their own subagents. Maximum nesting depth is one. This p
 | Document | What You Will Learn |
 |----------|-------------------|
 | [Sessions](17-sessions.md) | Session management |
-| [Sandbox](18-sandbox.md) | Security isolation |
+| [Execution & Permissions](18-execution-and-permissions.md) | Security isolation |
 
 ---
 

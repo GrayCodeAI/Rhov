@@ -55,19 +55,16 @@ type DimensionScore struct {
 
 // AssetsDetected lists the project harness assets detected during evaluation.
 type AssetsDetected struct {
-	AgentsMD      bool     `json:"agents_md"`
-	AgentsMDPath  string   `json:"agents_md_path,omitempty"`
-	ZeroMD        bool     `json:"zero_md"`
-	ZeroMDPath    string   `json:"zero_md_path,omitempty"`
-	Skills        []string `json:"skills"`
-	SpecsCount    int      `json:"specs_count"`
-	Linters       []string `json:"linters"`
-	TestRunners   []string `json:"test_runners"`
-	Hooks         []string `json:"hooks"`
-	SandboxPolicy string   `json:"sandbox_policy"`
-	AutonomyTier  string   `json:"autonomy_tier"`
-	MerlinBridge  bool     `json:"merlin_bridge"`
-	KestrelBridge bool     `json:"kestrel_bridge"`
+	AgentsMD     bool     `json:"agents_md"`
+	AgentsMDPath string   `json:"agents_md_path,omitempty"`
+	ZeroMD       bool     `json:"zero_md"`
+	ZeroMDPath   string   `json:"zero_md_path,omitempty"`
+	Skills       []string `json:"skills"`
+	SpecsCount   int      `json:"specs_count"`
+	Linters      []string `json:"linters"`
+	TestRunners  []string `json:"test_runners"`
+	Hooks        []string `json:"hooks"`
+	AutonomyTier string   `json:"autonomy_tier"`
 }
 
 // Report is the neutral cross-repo contract for Hawk Agent Harness evaluations.

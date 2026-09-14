@@ -39,15 +39,15 @@ The refactor branch now enforces these boundaries:
   Returned messages are deep copies, including nested tool arguments.
 - `LifecycleService` owns session-start/end bookkeeping, few-shot learning,
   adaptive feedback, model cascade access, and quality-loop handles.
-- `MemoryService` owns recall fallback, Harrier/enhanced-memory finalization, and
+- `MemoryService` owns recall fallback, enhanced-memory finalization, and
   session summaries.
 - `PermissionService` owns the approval gate and ask-user callback;
   `Session.CheckApproval` is a thin orchestration facade with no state sync.
 - `ToolService.ExecuteAll` owns batching, ordering, blast-radius reporting,
   and read-only concurrency limits. `ToolService.ExecuteOne` now owns raw
-  invocation boundaries: permission/approval, tracing, isolation, context
+  invocation boundaries: permission/approval, tracing, context
   injection, lookup, timeout, and retry. `PostProcess` now owns
-  mutation, validation, sandbox, lint, and pipeline hooks. `CompleteResult` owns
+  mutation, validation, lint, and pipeline hooks. `CompleteResult` owns
   spec transitions, counters, enhanced-memory notification, post-tool hooks,
   verification observation, span closure, and result emission.
 - The agent loop uses these service APIs for transport, persistence, memory,
@@ -92,9 +92,9 @@ backends without an explicit migration and recovery decision.
 
 **File:** `hawk/internal/engine/chat_service.go` (~150 LOC)
 
-### 2. `MemoryService` — owns harrier bridge + recall/remember
+### 2. `MemoryService` — owns memory recall/remember
 
-**Owns:** `Memory MemoryRecaller`, `HarrierBridge *memory.HarrierBridge`, `EnhancedMemory *memory.EnhancedMemoryManager`, `SkillDistiller *memory.SkillDistiller`, `Sleeptime *memory.SleeptimeAgent`, `Activity *memory.ActivityTracker`, `AgentsAccum *prompts.AgentsAccum`, `FewShotStore *FewShotStore`, `AdaptivePrompt *AdaptivePrompt`.
+**Owns:** `Memory MemoryRecaller`, `EnhancedMemory *memory.EnhancedMemoryManager`, `SkillDistiller *memory.SkillDistiller`, `Sleeptime *memory.SleeptimeAgent`, `Activity *memory.ActivityTracker`, `AgentsAccum *prompts.AgentsAccum`, `FewShotStore *FewShotStore`, `AdaptivePrompt *AdaptivePrompt`.
 
 **Methods:**
 - `RecallContext(ctx, lastUserMsg string, budget int) string` — unifies backend recall behind one nil-safe call
@@ -108,7 +108,7 @@ backends without an explicit migration and recovery decision.
 
 ### 3. `ToolService` — owns the registry + tool execution
 
-**Owns:** `registry *tool.Registry`, `ContainerExecutor tool.ContainerExecutor`, `ContainerRequired bool`, `Snapshots SnapshotTracker`, `BackgroundManager *tool.BackgroundAgentManager`, `AllowedDirs []string`, `Protected PathProtector`.
+**Owns:** `registry *tool.Registry`, `Snapshots SnapshotTracker`, `BackgroundManager *tool.BackgroundAgentManager`, `AllowedDirs []string`, `Protected PathProtector`.
 
 **Methods:**
 - `Classify(calls []types.ToolCall) (concurrent, sequential []types.ToolCall)` — uses `tool.IsReadOnly`
@@ -150,7 +150,7 @@ backends without an explicit migration and recovery decision.
 
 **File:** `hawk/internal/engine/lifecycle_service.go` (~250 LOC)
 
-### 6. `PersistenceService` — owns checkpoint, session, harrier snapshot
+### 6. `PersistenceService` — owns checkpoint and session state
 
 **Owns:** `persistID string`, `checkpointMgr *session.CheckpointManager`, `lastPromptTokens int`, `lastCompletionTokens int`, `ConvoDAG *storage.DAG`, `OnCompaction OnCompaction`, `PinnedMessages int`, `AutoCompactThresholdPct int`, `ContextWindowCached int`, `AutoCompactor *AutoCompactor`, `CompactSplit`, `CompactProviderNative`, `CompactStrategyEngine`, `Files *FileTracker`.
 
@@ -192,7 +192,6 @@ type Session struct {
     Metrics   *metrics.Registry
     Log       *logger.Logger
     // Loop control (still on Session because the agent loop reads them every turn)
-    Sandbox        *DiffSandbox
     Plan           *PlanState
     OutputSchema   string
     Teach          TeachConfig
@@ -246,7 +245,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 
 The loop body shrinks from 800 lines to ~250 because:
 - 15-stage tool pipeline moves to `ToolService.ExecuteAll`
-- 20+ post-call side effects (beliefs, memory, critic, shadow, sandbox, snapshot, agents-accum) move to sub-service methods
+- 20+ post-call side effects (beliefs, memory, critic, shadow, snapshot, agents-accum) move to sub-service methods
 - Stream retry with ctx-cancel moves to `ChatService.Stream`
 - Permission/approval flow moves to `PermissionService.CheckTool`
 
@@ -283,7 +282,7 @@ func TestToolExecutionRejectsWithoutPermission(t *testing.T) {
 }
 
 func TestMemoryRecallReturnsEmptyWhenNoBridge(t *testing.T) {
-    session := &Session{Memory: &MemoryService{}} // no HarrierBridge
+    session := &Session{Memory: &MemoryService{}} // no memory backend
     ctx, _ := session.Memory.RecallContext(ctx, "test", 100)
     assert.Equal(t, "", ctx)
 }
@@ -295,7 +294,7 @@ These tests don't need to construct a `Session` anymore; they can construct just
 
 1. Should `SubSession` (the sub-agent factory at `session.go:207-216`) become a method on `Session` or move to a dedicated `SubAgent` service? Currently it copies the parent's LLM transport — that's a `ChatService` concern, not a `Session` concern. Proposal: move to `SubAgentService`.
 2. Should the sub-service interfaces be exported (so external test packages can mock them) or kept internal? The `MockChatService` test above would require either exporting or building test-helper shims.
-3. Where do `OutputSchema`, `GLMThinkingEnabled`, `TeachConfig`, `Sandbox`, `Plan` belong? They're all chat/options concerns. Proposal: fold into `ChatService` or extract a `SessionOptions` struct that `ChatService.BuildOptions` reads.
+3. Where do `OutputSchema`, `GLMThinkingEnabled`, `TeachConfig`, `Plan` belong? They're all chat/options concerns. Proposal: fold into `ChatService` or extract a `SessionOptions` struct that `ChatService.BuildOptions` reads.
 
 ## Estimated Effort
 

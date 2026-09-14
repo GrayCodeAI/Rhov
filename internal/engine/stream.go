@@ -13,7 +13,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/types"
 
 	"github.com/GrayCodeAI/hawk/internal/engine/branching"
-	"github.com/GrayCodeAI/hawk/internal/engine/lifecycle"
 	"github.com/GrayCodeAI/hawk/internal/eventlog"
 	"github.com/GrayCodeAI/hawk/internal/hooks"
 	"github.com/GrayCodeAI/hawk/internal/observability/oteltrace"
@@ -243,7 +242,6 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		if !s.checkGuardConditions(ctx, ch, turnCount, snowball, loopDet) {
 			return
 		}
-		s.EnsureSandboxPolicyStatement()
 		s.EnsureSkillCatalogStatement()
 		turnCount++
 
@@ -424,20 +422,6 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			lastUserMsg: lastUserMsg,
 			taskType:    taskType,
 		})
-
-		// Inject memory metadata from harrier
-		if s.MemorySvc().Harrier() != nil && s.MemorySvc().Harrier().Ready() {
-			if _, contents, err := s.MemorySvc().Harrier().SearchByType("convention", 100); err == nil {
-				convCount := len(contents)
-				if _, dContents, err := s.MemorySvc().Harrier().SearchByType("decision", 100); err == nil {
-					decCount := len(dContents)
-					total := convCount + decCount
-					if total > 0 {
-						opts.System += fmt.Sprintf("\n\nMemory: %d nodes (%d conventions, %d decisions)", total, convCount, decCount)
-					}
-				}
-			}
-		}
 
 		// Count actual input tokens for precise budget tracking
 		inputTokens := 0
@@ -782,7 +766,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			if s.LifecycleSvc().Pipeline() != nil && textContent.Len() > 0 {
 				postResult := s.LifecycleSvc().Pipeline().PostResponse(textContent.String(), s.Persistence().RawMessages())
 				if postResult != nil {
-					s.recordShrikeRedactionObservation(textContent.String(), postResult.SecretMatches, postResult.SecretTypes)
+					s.recordRedactionObservation(textContent.String(), postResult.SecretMatches, postResult.SecretTypes)
 				}
 				if postResult != nil && postResult.FormattedResponse != "" {
 					textContent.Reset()
@@ -802,85 +786,6 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 						}
 					}(textContent.String())
 				}
-			}
-			// Sleeptime: background memory consolidation
-			if s.MemorySvc().Sleeptime() != nil && s.MemorySvc().Sleeptime().ShouldRun() && s.MemorySvc().Harrier() != nil && s.MemorySvc().Harrier().Ready() {
-				// Snapshot messages to avoid data race with main loop appending.
-				// RawMessages already returns a deep clone, so a single call
-				// yields a stable snapshot (the prior len()+copy double-call
-				// raced on reallocation between the two reads).
-				msgs := s.Persistence().RawMessages()
-				go func() {
-					var transcript []string
-					for _, m := range msgs {
-						transcript = append(transcript, m.Role+": "+m.Content)
-					}
-					memState := ""
-					if s.MemorySvc().Memory() != nil {
-						memState, _ = s.MemorySvc().Memory().Recall("", 2000)
-					}
-					prompt := s.MemorySvc().Sleeptime().BuildConsolidationPrompt(transcript, memState)
-					// Use timeout context to prevent goroutine leak if LLM hangs
-					sCtx, sCancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
-					defer sCancel()
-					resp, err := s.ChatLLM().Chat(sCtx, []types.EyrieMessage{
-						{Role: "user", Content: prompt},
-					}, types.ChatOptions{Provider: s.ChatLLM().Provider(), Model: s.ChatLLM().Model(), MaxTokens: 2048})
-					if err != nil || resp == nil {
-						return
-					}
-					if err := lifecycle.ParseAndApplyMemoryOps(s.MemorySvc().Harrier(), resp.Content); err != nil {
-						slog.Warn("memory ops", "error", err)
-					}
-				}()
-			}
-			// Skill distillation: extract reusable skill from multi-turn tasks
-			if s.MemorySvc().SkillDistiller() != nil && toolTurns >= 5 && s.MemorySvc().Harrier() != nil && s.MemorySvc().Harrier().Ready() {
-				// Snapshot messages to avoid data race with main loop appending.
-				// RawMessages already returns a deep clone, so a single call
-				// yields a stable snapshot (the prior len()+copy double-call
-				// raced on reallocation between the two reads).
-				msgs := s.Persistence().RawMessages()
-				// Snapshot the tool/file sets too, so the goroutine never
-				// reads the live maps while the main loop writes them on a
-				// later tool turn.
-				toolsSnapshot := make([]string, 0, len(toolsUsedSet))
-				for t := range toolsUsedSet {
-					toolsSnapshot = append(toolsSnapshot, t)
-				}
-				filesSnapshot := make([]string, 0, len(filesModifiedSet))
-				for f := range filesModifiedSet {
-					filesSnapshot = append(filesSnapshot, f)
-				}
-				go func() {
-					tools := toolsSnapshot
-					files := filesSnapshot
-					taskDesc := ""
-					if len(msgs) > 0 {
-						taskDesc = msgs[0].Content
-					}
-					sd := s.MemorySvc().SkillDistiller()
-					prompt := sd.BuildSkillPrompt(taskDesc, tools, files, textContent.String())
-					// Use timeout context to prevent goroutine leak if LLM hangs
-					dCtx, dCancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Minute)
-					defer dCancel()
-					resp, err := s.ChatLLM().Chat(dCtx, []types.EyrieMessage{
-						{Role: "user", Content: prompt},
-					}, types.ChatOptions{Provider: s.ChatLLM().Provider(), Model: s.ChatLLM().Model(), MaxTokens: 2048})
-					if err != nil || resp == nil {
-						return
-					}
-					skill, err := sd.ParseSkill(resp.Content)
-					if err != nil {
-						return
-					}
-					content, _ := json.Marshal(skill)
-					rCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-					defer cancel()
-					if err := s.MemorySvc().Harrier().Remember(rCtx, string(content), "skill"); err != nil {
-						slog.Warn("background skill remember failed", "error", err)
-					}
-				}()
 			}
 			emit(StreamEvent{Type: "done"})
 			// Integration pipeline: end-session (assess, learn, store experience)
@@ -1098,7 +1003,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			}
 		}
 
-		// Auto-remember: save conversation context and insights to harrier after each turn
+		// Auto-remember: save conversation context and insights to memory after each turn
 		if s.MemorySvc().Memory() != nil {
 			userMsg := ""
 			assistantMsg := ""

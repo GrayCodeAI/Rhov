@@ -1,6 +1,6 @@
 # Hawk Control Plane (proposed → implemented core)
 
-Status: **core wired** on branch work (isolation · spawn · lazy tools · plan/act/review).
+Status: **core wired** (spawn · lazy tools · plan/act/review).
 
 ## Goal
 
@@ -12,36 +12,19 @@ Faces (TUI / headless / ACP / daemon)
         ▼
 ┌───────────────────────────────────────┐
 │  Control plane                        │
-│  WorkMode  Isolation  SpawnController │
+│  WorkMode  SpawnController            │
 │  Lazy model surface                   │
 └───────────────────┬───────────────────┘
                     ▼
               Session kernel
            (agentLoop · tools)
                     │
-     eyrie · harrier · shrike · swift · kestrel · merlin
+     eyrie · embedded token engine
 ```
 
 ## Pieces
 
-### 1. IsolationProfile (`engine.IsolationProfile`)
-
-Single story for OS sandbox + container requirement:
-
-| Preset | OS mode | Container required |
-|--------|---------|-------------------|
-| `dev` | off | no |
-| `workspace` | workspace | no |
-| `strict` | strict | no |
-| `container` | workspace | yes |
-
-- API: `Session.ApplyIsolationProfile`, `Session.Isolation()`
-- CLI TUI: `/isolation [preset]`
-- Startup: `configureSessionStartup` applies profile from settings sandbox string
-
-OS wrap for Bash still uses `ContextWithMode` when mode is workspace/strict (see tool_service).
-
-### 2. SpawnController (`engine.SpawnController`)
+### 1. SpawnController (`engine.SpawnController`)
 
 Single entry for subagents + background tasks:
 
@@ -50,14 +33,14 @@ Single entry for subagents + background tasks:
 - `Tasks()` — unified registry
 - Agent tool continues through `WireAgentTool` → same `spawnSubAgentRequest`
 
-### 3. Lazy model surface (`tool.Registry`)
+### 2. Lazy model surface (`tool.Registry`)
 
 - Essential tools registered and **model-visible**
 - Optional tools registered for **execution + ToolSearch**, hidden from `EyrieTools`
 - `ToolSearch` `select:Name` **promotes** tool onto the model surface
 - APIs: `EnableLazyModelSurface`, `SetModelVisibility`, `PromoteModelTool`
 
-### 4. WorkMode plan / act / review
+### 3. WorkMode plan / act / review
 
 | Mode | Tools | Bash |
 |------|-------|------|
@@ -72,12 +55,9 @@ Single entry for subagents + background tasks:
 ## User commands
 
 ```text
-/mode                 # show work + shell + isolation
+/mode                 # show work + shell mode
 /mode plan|act|review
 /mode auto|shell|agent
-/isolation            # show profile
-/isolation workspace
-/isolation container
 ```
 
 ## Iteration 2 (additional surface)
@@ -89,7 +69,7 @@ Single entry for subagents + background tasks:
   - Status bar shows `trusted` / `untrusted` / `trust:off`
 
 ### Onboarding
-- `/start` — trust, work mode, isolation, git advice, first tasks
+- `/start` — trust, work mode, git advice, first tasks
 - `/start trust` — trust cwd
 - `/start branch` — create agent branch from main
 
@@ -99,8 +79,8 @@ Single entry for subagents + background tasks:
 - Status bar warns `main!` when on main
 
 ### HUD
-- Wide status secondary row: `mode:act · iso:workspace · trusted`
-- `/status` includes work mode, isolation, trust, visible tool counts, git advice
+- Wide status secondary row: `mode:act · trusted`
+- `/status` includes work mode, trust, visible tool counts, git advice
 
 ## Iteration 3
 
@@ -116,19 +96,15 @@ Single entry for subagents + background tasks:
 
 ## Iteration 4
 
-### Container ↔ IsolationProfile
-- `attachRequiredContainer` and TUI container-ready path call `ApplyIsolationProfile(IsolationContainer)`
-
 ### Onboarding / CI
 - CLI `Welcome` surfaces control-plane commands + `hawk exec`
 - Example workflow: `examples/github/hawk-ci-exec.yml`
 
 ### ACP
-- `initialize` advertises `hawkCapabilities` (work modes, isolation, lazy tools, …)
-- `session/new` returns `hawk` snapshot (`workMode`, `isolation`, `autoCommit`) and defaults act mode
+- `initialize` advertises `hawkCapabilities` (work modes, lazy tools, …)
+- `session/new` returns `hawk` snapshot (`workMode`, `autoCommit`) and defaults act mode
 - `session/setMode` — switch work mode (plan|act|review)
-- `session/setIsolation` — apply isolation profile
-- `session/status` — control-plane snapshot (mode, isolation, autoCommit, message count)
+- `session/status` — control-plane snapshot (mode, autoCommit, message count)
 
 ### Deprecations
 - `BackgroundAgentPool` / `NewBackgroundAgentPool*` / `FormatResults` marked Deprecated
@@ -147,4 +123,4 @@ Single entry for subagents + background tasks:
 
 - `internal/engine/control_plane_test.go`
 - `internal/engine/project_trust_test.go` / git safety tests
-- Existing sandbox bridge + permission display + diff tests
+- Permission display + diff tests

@@ -20,7 +20,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/prompt"
 	"github.com/GrayCodeAI/hawk/internal/prompts"
 	hawkmodel "github.com/GrayCodeAI/hawk/internal/provider/routing"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/snapshot"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 )
@@ -244,9 +243,6 @@ func newHawkSession(settings hawkconfig.Settings, effectiveProvider, effectiveMo
 		selection.Model = effectiveModel
 	}
 	sess := engine.NewHawkSessionForSettings(context.Background(), settings, selection, selection.Provider, selection.Model, systemPrompt, registry)
-	// Hawk requires Docker. Any entry point that has not attached a running
-	// container remains fail-closed at the engine tool boundary.
-	sess.SetContainerRequired(true)
 	return sess
 }
 
@@ -311,17 +307,6 @@ func configureSession(sess *engine.Session, settings hawkconfig.Settings, maxTur
 func configureSessionStartup(sess *engine.Session, settings hawkconfig.Settings, maxTurnsOverride ...int) error {
 	sess.WireAgentTool()
 	sess.SetAllowedDirs(addDirs)
-	// Unified isolation profile (OS sandbox + optional container-required).
-	// Prefer ApplyIsolationProfile over setting SandboxMode alone.
-	osMode := sandbox.ParseMode(effectivePermissionSandbox(settings))
-	iso := engine.IsolationProfile{OSMode: osMode, Label: string(osMode)}
-	if iso.Label == "" || iso.Label == string(sandbox.Mode("")) {
-		iso.Label = "dev"
-		iso.OSMode = sandbox.ModeOff
-	}
-	// When Docker container path is the product default, faces may set
-	// ContainerRequired after attachRequiredContainer; startup only applies OS mode.
-	sess.ApplyIsolationProfile(iso)
 	_ = sess.SetWorkMode(engine.WorkModeAct)
 	// Auto-commit: CLI flag wins, else settings.auto_commit, default off.
 	autoCommit := autoCommitFlag
@@ -364,7 +349,7 @@ func configureSessionStartup(sess *engine.Session, settings hawkconfig.Settings,
 	if err := sess.SetMaxBudgetUSD(budget); err != nil {
 		return err
 	}
-	sess.ApplyShrikeUsageSettings(settings.HourlyTokenLimit, settings.DailyTokenLimit, settings.SessionTokenLimit)
+	sess.ApplyUsageSettings(settings.HourlyTokenLimit, settings.DailyTokenLimit, settings.SessionTokenLimit)
 
 	// Teach mode: augment system prompt with explanation instructions
 	if teachMode {
@@ -434,42 +419,28 @@ func configureSessionHeavy(sess *engine.Session) {
 		sess.SetSnapshots(snap)
 	}
 
-	// Memory initialization touches persisted state and optional bridges.
+	// Memory initialization touches persisted local state.
 	enhancedMem := memory.NewEnhancedMemoryManager(cwd)
-	if enhancedMem.Harrier.Ready() {
-		// Periodic harrier snapshots only for long-lived sessions — short-lived
-		// diagnostic bridges skip scheduling entirely.
-		enhancedMem.Harrier.EnsureBackups()
-
-		sess.MemorySvc().SetMemory(enhancedMem)
-		sess.MemorySvc().SetHarrier(enhancedMem.Harrier)
-		sess.MemorySvc().SetEnhanced(enhancedMem)
-		sess.ConfigureContextGraphObservation(cwd)
-		// Use a real unique session ID (genID) rather than a fabricated
-		// "session_<nanos>" placeholder — the persist ID may not be assigned
-		// yet at this point in startup, but it must still be collision-safe
-		// for the memory manager (LOW finding: fabricated session IDs).
-		enhancedMem.StartSession(genID())
-	}
+	sess.MemorySvc().SetMemory(enhancedMem)
+	sess.MemorySvc().SetEnhanced(enhancedMem)
+	// Use a real unique session ID (genID) rather than a fabricated
+	// "session_<nanos>" placeholder — the persist ID may not be assigned
+	// yet at this point in startup, but it must still be collision-safe
+	// for the memory manager (LOW finding: fabricated session IDs).
+	enhancedMem.StartSession(genID())
 }
 
 // bindChatSession wires TUI-only session metadata (persist id, compaction callbacks).
-func bindChatSession(sess *engine.Session, sessionID string, containerRequired bool) {
+func bindChatSession(sess *engine.Session, sessionID string) {
 	if sess == nil {
 		return
 	}
 	if id := strings.TrimSpace(sessionID); id != "" {
 		sess.SetPersistID(id)
 	}
-	sess.SetContainerRequired(containerRequired)
 }
 
 func validateRootFlags() error {
-	if strings.TrimSpace(sandboxFlag) != "" {
-		if _, _, ok := normalizePermissionSandbox(sandboxFlag); !ok {
-			return fmt.Errorf("--sandbox must be one of: strict, workspace, off")
-		}
-	}
 	if outputFormat != "text" && outputFormat != "json" && outputFormat != "stream-json" {
 		return fmt.Errorf("--output-format must be one of: text, json, stream-json")
 	}

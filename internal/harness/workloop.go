@@ -65,19 +65,16 @@ type DimensionScore struct {
 
 // AssetsDetected lists the project harness assets found during evaluation.
 type AssetsDetected struct {
-	AgentsMD      bool     `json:"agents_md"`
-	AgentsMDPath  string   `json:"agents_md_path,omitempty"`
-	ZeroMD        bool     `json:"zero_md"`
-	ZeroMDPath    string   `json:"zero_md_path,omitempty"`
-	Skills        []string `json:"skills"`
-	SpecsCount    int      `json:"specs_count"`
-	Linters       []string `json:"linters"`
-	TestRunners   []string `json:"test_runners"`
-	Hooks         []string `json:"hooks"`
-	SandboxPolicy string   `json:"sandbox_policy"`
-	AutonomyTier  string   `json:"autonomy_tier"`
-	MerlinBridge  bool     `json:"merlin_bridge"`
-	KestrelBridge bool     `json:"kestrel_bridge"`
+	AgentsMD     bool     `json:"agents_md"`
+	AgentsMDPath string   `json:"agents_md_path,omitempty"`
+	ZeroMD       bool     `json:"zero_md"`
+	ZeroMDPath   string   `json:"zero_md_path,omitempty"`
+	Skills       []string `json:"skills"`
+	SpecsCount   int      `json:"specs_count"`
+	Linters      []string `json:"linters"`
+	TestRunners  []string `json:"test_runners"`
+	Hooks        []string `json:"hooks"`
+	AutonomyTier string   `json:"autonomy_tier"`
 }
 
 // HarnessReport represents the complete self-contained evaluation report for a workspace.
@@ -156,19 +153,16 @@ func (r *HarnessReport) ToContractReport() *harnesscontracts.Report {
 		Dimensions:    dims,
 		Findings:      findings,
 		Assets: harnesscontracts.AssetsDetected{
-			AgentsMD:      r.Assets.AgentsMD,
-			AgentsMDPath:  r.Assets.AgentsMDPath,
-			ZeroMD:        r.Assets.ZeroMD,
-			ZeroMDPath:    r.Assets.ZeroMDPath,
-			Skills:        r.Assets.Skills,
-			SpecsCount:    r.Assets.SpecsCount,
-			Linters:       r.Assets.Linters,
-			TestRunners:   r.Assets.TestRunners,
-			Hooks:         r.Assets.Hooks,
-			SandboxPolicy: r.Assets.SandboxPolicy,
-			AutonomyTier:  r.Assets.AutonomyTier,
-			MerlinBridge:  r.Assets.MerlinBridge,
-			KestrelBridge: r.Assets.KestrelBridge,
+			AgentsMD:     r.Assets.AgentsMD,
+			AgentsMDPath: r.Assets.AgentsMDPath,
+			ZeroMD:       r.Assets.ZeroMD,
+			ZeroMDPath:   r.Assets.ZeroMDPath,
+			Skills:       r.Assets.Skills,
+			SpecsCount:   r.Assets.SpecsCount,
+			Linters:      r.Assets.Linters,
+			TestRunners:  r.Assets.TestRunners,
+			Hooks:        r.Assets.Hooks,
+			AutonomyTier: r.Assets.AutonomyTier,
 		},
 		Summary: r.Summary,
 	}

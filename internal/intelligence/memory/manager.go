@@ -12,7 +12,6 @@ type MemoryManager struct {
 	Auto     *AutoMemory
 	Evolving *EvolvingMemory
 	Zen      *ZenBrain
-	Harrier  *HarrierBridge
 }
 
 // NewMemoryManager creates a MemoryManager with all subsystems initialized.
@@ -21,7 +20,6 @@ func NewMemoryManager(projectDir string) *MemoryManager {
 		Auto:     NewAutoMemory(projectDir),
 		Evolving: NewEvolvingMemory(),
 		Zen:      NewZenBrain(),
-		Harrier:  NewHarrierBridge(),
 	}
 }
 
@@ -34,7 +32,6 @@ func (mm *MemoryManager) LoadStartup() error {
 		return err
 	}
 	// AutoMemory.LoadStartup is a read that returns content, no error to handle.
-	// HarrierBridge initializes in its constructor; nothing extra needed.
 	return nil
 }
 
@@ -43,7 +40,6 @@ func (mm *MemoryManager) LoadStartup() error {
 func (mm *MemoryManager) Recall(query string, tokenBudget int) (string, error) {
 	seen := make(map[string]bool)
 	var parts []string
-	budgetPer := tokenBudget / 4
 
 	// 1. Core memories (package-level Search).
 	if mems, err := Search(query); err == nil {
@@ -83,22 +79,12 @@ func (mm *MemoryManager) Recall(query string, tokenBudget int) (string, error) {
 		}
 	}
 
-	// 5. Harrier bridge.
-	if harrierResult, err := mm.Harrier.Recall(query, budgetPer); err == nil && harrierResult != "" {
-		for _, line := range strings.Split(harrierResult, "\n") {
-			key := strings.ToLower(strings.TrimSpace(line))
-			if key != "" && !seen[key] {
-				seen[key] = true
-				parts = append(parts, line)
-			}
-		}
-	}
-
+	// 5. Harrier bridge removed.
 	return strings.Join(parts, "\n"), nil
 }
 
 // Remember routes content to the appropriate subsystem based on category.
-// Implements engine.MemoryRecaller. The ctx bounds the harrier network path.
+// Implements engine.MemoryRecaller.
 func (mm *MemoryManager) Remember(ctx context.Context, content, category string) error {
 	switch category {
 	case "guideline", "lesson":
@@ -117,10 +103,7 @@ func (mm *MemoryManager) Remember(ctx context.Context, content, category string)
 		mm.Zen.Store(LayerEpisodic, content, []string{category})
 		return mm.Zen.Save()
 	default:
-		// Default: store in harrier if ready, otherwise fall back to core Memory.
-		if mm.Harrier.Ready() {
-			return mm.Harrier.RememberWithContext(ctx, content, category)
-		}
+		// Default: store in core Memory.
 		return Save(&Memory{Content: content, Tags: []string{category}})
 	}
 }

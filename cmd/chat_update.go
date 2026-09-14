@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -102,9 +101,8 @@ func shouldReturnToPromptOnType(msg tea.KeyMsg) bool {
 // quitModel performs the shared graceful-quit sequence used by every exit
 // path (Ctrl+C twice, /quit, SIGINT as tea.InterruptMsg, SIGTERM/SIGHUP as
 // tea.QuitMsg): cancel any in-flight stream, persist the session, stop
-// background workers (watcher, parallel agents, background tasks), stop the
-// sandbox container, and mark the model as quitting so the final view can
-// show the resume hint.
+// background workers (watcher, parallel agents, background tasks), and mark
+// the model as quitting so the final view can show the resume hint.
 func (m *chatModel) quitModel() (tea.Model, tea.Cmd) {
 	if m.cancel != nil {
 		m.cancel()
@@ -121,7 +119,6 @@ func (m *chatModel) quitModel() (tea.Model, tea.Cmd) {
 	if m.bgCancel != nil {
 		m.bgCancel()
 	}
-	m.stopContainer()
 	m.quitting = true
 	return m, tea.Quit
 }
@@ -801,27 +798,6 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Container failed and is retryable. Hawk is fail-closed: the only
-		// recovery path is to restore Docker isolation.
-		if m.containerRetryable {
-			switch msg.String() {
-			case "r", "R":
-				m.containerRetryable = false
-				m.containerEnabled = true
-				m.containerErr = nil
-				m.containerStatus = "checking docker…"
-				if m.session != nil {
-					m.session.SetContainerRequired(true)
-				}
-				// Silent retry — no chat message spam. The welcome badge
-				// already reflects container state, and a failure below
-				// will surface only if the banner is no longer visible.
-				m.viewDirty = true
-				m.updateViewportContent()
-				cwd, _ := os.Getwd()
-				return m, bootContainerCmd(cwd)
-			}
-		}
 		// AskUser prompt active — Enter submits answer
 		if m.askReq != nil {
 			if msg.String() == "enter" {
@@ -983,12 +959,6 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.updateViewportContent()
 					return m, nil
 				case "ctrl+l":
-					if m.containerEnabled && !m.containerReady {
-						m.messages = append(m.messages, displayMsg{role: "system", content: "Waiting for container — higher tiers unlock when the Docker container is ready."})
-						m.viewDirty = true
-						m.updateViewportContent()
-						return m, nil
-					}
 					// Expire a stale Supervised-confirmation prompt.
 					if m.supervisedPending && time.Since(m.supervisedPendingAt) > 1500*time.Millisecond {
 						m.supervisedPending = false
@@ -1587,56 +1557,6 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.waiting {
 			return m, tea.Batch(cmds...)
 		}
-
-	case containerStatusMsg:
-		m.containerStatus = msg.status
-		m.containerReady = msg.ready
-		m.containerErr = msg.err
-		if msg.sandbox != nil {
-			m.containerSandbox = msg.sandbox
-			if m.session != nil {
-				m.session.ApplyIsolationProfile(engine.IsolationContainer)
-				m.session.SetContainerExecutor(msg.sandbox)
-			}
-		}
-		if msg.ready && m.session != nil {
-			m.session.ApplyIsolationProfile(engine.IsolationContainer)
-			if m.session.PermSvc().Autonomy() == 0 && !m.session.PermSvc().AutonomyExplicit() {
-				m.session.PermSvc().SetAutonomy(DefaultContainerAutonomy)
-			}
-			m.invalidateConnStatus()
-			m.containerRetryable = false
-			// Auto-submit any input that was queued while the container was booting.
-			if m.pendingSubmit != "" {
-				m.input.SetValue(m.pendingSubmit)
-				m.pendingSubmit = ""
-				m.rebuildWelcomeCache(m.blinkClosed)
-				m.viewDirty = true
-				m.updateViewportContent()
-				return m.submitUserMessage()
-			}
-		}
-		if msg.err != nil {
-			// Docker-only execution fails closed. Keep the session container
-			// requirement enabled and disable every tool until retry succeeds.
-			m.containerEnabled = true
-			m.containerReady = false
-			m.containerRetryable = true
-			if m.session != nil {
-				m.session.SetContainerRequired(true)
-				m.session.SetContainerExecutor(nil)
-			}
-			m.messages = append(m.messages, displayMsg{
-				role: "warning",
-				content: icons.Alert() + " Docker isolation required\n" +
-					msg.err.Error() + "\n" +
-					icons.Refresh() + " Press r to retry  ·  Ctrl+C to quit",
-			})
-			m.input.Focus()
-		}
-		m.rebuildWelcomeCache(m.blinkClosed)
-		m.viewDirty = true
-		m.updateViewportContent()
 	}
 
 	if !m.waiting && m.uiFocus == focusPrompt {

@@ -112,13 +112,3 @@ func TestKeywordOverlap(t *testing.T) {
 		}
 	}
 }
-
-func TestProactiveContext_TrackFiles(t *testing.T) {
-	pc := NewProactiveContext(nil)
-	if pc == nil {
-		t.Fatal("nil")
-	}
-	pc.TrackFile("main.go")
-	pc.TrackFiles([]string{"config.go", "handler.go"})
-	pc.Reset()
-}

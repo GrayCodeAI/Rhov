@@ -12,7 +12,7 @@ import (
 // RegisterDefaultTools
 // ---------------------------------------------------------------------------
 
-func TestRegisterDefaultTools_RegistersAllSevenTools(t *testing.T) {
+func TestRegisterDefaultTools_RegistersAllTools(t *testing.T) {
 	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
 	RegisterDefaultTools(server, nil)
 
@@ -31,8 +31,6 @@ func TestRegisterDefaultTools_RegistersAllSevenTools(t *testing.T) {
 		"hawk_search":        false,
 		"hawk_memory_recall": false,
 		"hawk_memory_store":  false,
-		"hawk_review":        false,
-		"hawk_scan":          false,
 		"hawk_compress":      false,
 	}
 
@@ -49,8 +47,8 @@ func TestRegisterDefaultTools_RegistersAllSevenTools(t *testing.T) {
 			t.Errorf("tool %q not registered", name)
 		}
 	}
-	if len(tools) != 7 {
-		t.Errorf("expected 7 tools, got %d", len(tools))
+	if len(tools) != 5 {
+		t.Errorf("expected 5 tools, got %d", len(tools))
 	}
 }
 
@@ -125,35 +123,6 @@ func TestHawkSearchTool_EmptyQuery(t *testing.T) {
 // hawk_memory_recall tool
 // ---------------------------------------------------------------------------
 
-func TestHawkMemoryRecallTool_ValidQuery(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		if name != "core_memory" {
-			return "", fmt.Errorf("expected core_memory, got %s", name)
-		}
-		return "recalled memory", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"last decision"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "recalled memory")
-}
-
-func TestHawkMemoryRecallTool_WithNamespace(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		return "namespaced result", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"test","namespace":"project"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "namespaced result")
-}
-
 func TestHawkMemoryRecallTool_EmptyQuery(t *testing.T) {
 	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
 	RegisterDefaultTools(server, nil)
@@ -163,21 +132,35 @@ func TestHawkMemoryRecallTool_EmptyQuery(t *testing.T) {
 	assertIsError(t, resp)
 }
 
+func TestHawkMemoryRecallTool_NoMatches(t *testing.T) {
+	t.Setenv("HAWK_STATE_DIR", t.TempDir())
+	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
+	RegisterDefaultTools(server, nil)
+
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"definitely-not-stored"}}}` + "\n"
+	resp := sendRequest(t, server, req)
+	assertNoError(t, resp)
+	assertResponseContains(t, resp, "No memories matched")
+}
+
 // ---------------------------------------------------------------------------
 // hawk_memory_store tool
 // ---------------------------------------------------------------------------
 
-func TestHawkMemoryStoreTool_ValidInput(t *testing.T) {
+func TestHawkMemoryStoreTool_RoundTrip(t *testing.T) {
+	t.Setenv("HAWK_STATE_DIR", t.TempDir())
 	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		return "stored", nil
-	}
-	RegisterDefaultTools(server, executor)
+	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_store","arguments":{"key":"decision-1","content":"use Go for backend"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "stored")
+	storeReq := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_memory_store","arguments":{"key":"decision","content":"use Go for the backend"}}}` + "\n"
+	storeResp := sendRequest(t, server, storeReq)
+	assertNoError(t, storeResp)
+	assertResponseContains(t, storeResp, "Stored memory")
+
+	recallReq := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"hawk_memory_recall","arguments":{"query":"backend"}}}` + "\n"
+	recallResp := sendRequest(t, server, recallReq)
+	assertNoError(t, recallResp)
+	assertResponseContains(t, recallResp, "use Go for the backend")
 }
 
 func TestHawkMemoryStoreTool_MissingKey(t *testing.T) {
@@ -199,115 +182,17 @@ func TestHawkMemoryStoreTool_MissingContent(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// hawk_review tool
-// ---------------------------------------------------------------------------
-
-func TestHawkReviewTool_WithPath(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		if name != "code_review" {
-			return "", fmt.Errorf("expected code_review, got %s", name)
-		}
-		return "review result", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_review","arguments":{"path":"internal/mcp/server.go"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "review result")
-}
-
-func TestHawkReviewTool_WithDiff(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		return "diff review", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_review","arguments":{"diff":"+func New() {}"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "diff review")
-}
-
-func TestHawkReviewTool_NeitherPathNorDiff(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	RegisterDefaultTools(server, nil)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_review","arguments":{}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertIsError(t, resp)
-}
-
-// ---------------------------------------------------------------------------
-// hawk_scan tool
-// ---------------------------------------------------------------------------
-
-func TestHawkScanTool_ValidPath(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		if name != "security_scan" {
-			return "", fmt.Errorf("expected security_scan, got %s", name)
-		}
-		return "scan result", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_scan","arguments":{"path":"."}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "scan result")
-}
-
-func TestHawkScanTool_MissingPath(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	RegisterDefaultTools(server, nil)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_scan","arguments":{}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertIsError(t, resp)
-}
-
-func TestHawkScanTool_WithSeverity(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		var input struct {
-			Path     string `json:"path"`
-			Severity string `json:"severity"`
-		}
-		_ = json.Unmarshal(params, &input)
-		if input.Severity != "high" {
-			return "", fmt.Errorf("expected severity high, got %s", input.Severity)
-		}
-		return "high severity scan", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_scan","arguments":{"path":".","severity":"high"}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "high severity scan")
-}
-
-// ---------------------------------------------------------------------------
 // hawk_compress tool
 // ---------------------------------------------------------------------------
 
 func TestHawkCompressTool_ValidText(t *testing.T) {
 	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		if name != "compress" {
-			return "", fmt.Errorf("expected compress, got %s", name)
-		}
-		return "compressed text", nil
-	}
-	RegisterDefaultTools(server, executor)
+	RegisterDefaultTools(server, nil)
 
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":"long text to compress"}}}` + "\n"
+	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":"the quick brown fox jumps over the lazy dog. the quick brown fox jumps over the lazy dog."}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertNoError(t, resp)
-	assertResponseContains(t, resp, "compressed text")
+	assertResponseContains(t, resp, "original_tokens")
 }
 
 func TestHawkCompressTool_EmptyText(t *testing.T) {
@@ -317,27 +202,6 @@ func TestHawkCompressTool_EmptyText(t *testing.T) {
 	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":""}}}` + "\n"
 	resp := sendRequest(t, server, req)
 	assertIsError(t, resp)
-}
-
-func TestHawkCompressTool_WithRatio(t *testing.T) {
-	server := NewMCPServer(ServerInfo{Name: "hawk", Version: "test"})
-	executor := func(ctx context.Context, name string, params json.RawMessage) (string, error) {
-		var input struct {
-			Text  string  `json:"text"`
-			Ratio float64 `json:"ratio"`
-		}
-		_ = json.Unmarshal(params, &input)
-		if input.Ratio != 0.5 {
-			return "", fmt.Errorf("expected ratio 0.5, got %f", input.Ratio)
-		}
-		return "ratio compressed", nil
-	}
-	RegisterDefaultTools(server, executor)
-
-	req := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hawk_compress","arguments":{"text":"some text","ratio":0.5}}}` + "\n"
-	resp := sendRequest(t, server, req)
-	assertNoError(t, resp)
-	assertResponseContains(t, resp, "ratio compressed")
 }
 
 // ---------------------------------------------------------------------------

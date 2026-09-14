@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 	"github.com/GrayCodeAI/hawk/internal/types"
 )
@@ -204,70 +203,17 @@ func TestExecuteSingleTool_PropagatesPermissionContext(t *testing.T) {
 	capture := &contextCaptureTool{}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
 	sess.PermSvc().SetAutonomy(AutonomyYOLO)
-	sess.PermSvc().SetSandboxMode(sandbox.ModeOff)
 	sess.SetAllowedDirs([]string{"/tmp/extra"})
 	ch := make(chan StreamEvent, 4)
 	res := sess.executeSingleTool(context.Background(), types.ToolCall{Name: "Read", ID: "ctx"}, ch, 0, "")
 	if res.isErr || capture.ctx == nil {
 		t.Fatalf("tool failed or context missing: %#v", res)
 	}
-	if capture.ctx.SandboxMode != sandbox.ModeOff {
-		t.Fatalf("SandboxMode = %q, want off", capture.ctx.SandboxMode)
-	}
 	if len(capture.ctx.AllowedDirectories) != 1 || capture.ctx.AllowedDirectories[0] != "/tmp/extra" {
 		t.Fatalf("AllowedDirectories = %#v", capture.ctx.AllowedDirectories)
 	}
 	if got := sess.PermSvc().AllowedDirs(); len(got) != 1 || got[0] != "/tmp/extra" {
 		t.Fatalf("service AllowedDirs = %#v", got)
-	}
-}
-
-// sandboxModeCaptureTool records ModeFromContext so we can assert the session
-// sandbox policy is bridged onto the tool execution context for Bash wrap.
-type sandboxModeCaptureTool struct {
-	mode sandbox.Mode
-}
-
-func (t *sandboxModeCaptureTool) Name() string        { return "Read" }
-func (t *sandboxModeCaptureTool) Description() string { return "capture sandbox mode" }
-func (t *sandboxModeCaptureTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{"type": "object", "properties": map[string]interface{}{}}
-}
-
-func (t *sandboxModeCaptureTool) Execute(ctx context.Context, _ json.RawMessage) (string, error) {
-	t.mode = sandbox.ModeFromContext(ctx)
-	return "ok", nil
-}
-
-func TestExecuteSingleTool_BridgesSandboxModeOntoContext(t *testing.T) {
-	capture := &sandboxModeCaptureTool{}
-	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
-	sess.PermSvc().SetSandboxMode(sandbox.ModeWorkspace)
-	ch := make(chan StreamEvent, 4)
-	res := sess.executeSingleTool(context.Background(), types.ToolCall{Name: "Read", ID: "sb"}, ch, 0, "")
-	if res.isErr {
-		t.Fatalf("tool failed: %#v", res)
-	}
-	if capture.mode != sandbox.ModeWorkspace {
-		t.Fatalf("ModeFromContext = %q, want %q (session sandbox must wrap shell)", capture.mode, sandbox.ModeWorkspace)
-	}
-}
-
-func TestExecuteSingleTool_SandboxOffDoesNotSetModeOnContext(t *testing.T) {
-	capture := &sandboxModeCaptureTool{}
-	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
-	sess.PermSvc().SetSandboxMode(sandbox.ModeOff)
-	ch := make(chan StreamEvent, 4)
-	res := sess.executeSingleTool(context.Background(), types.ToolCall{Name: "Read", ID: "sb-off"}, ch, 0, "")
-	if res.isErr {
-		t.Fatalf("tool failed: %#v", res)
-	}
-	// ModeOff / unset should leave ModeFromContext as ModeOff so host shell
-	// is not force-wrapped without a backend.
-	if capture.mode != sandbox.ModeOff {
-		t.Fatalf("ModeFromContext = %q, want off", capture.mode)
 	}
 }
 

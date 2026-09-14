@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -24,10 +23,10 @@ import (
 func newExecutionGraphCmd() *cobra.Command {
 	graphCmd := &cobra.Command{
 		Use:   "graph",
-		Short: "Merlin Hawk's portable execution graph",
+		Short: "Export a portable execution graph",
 		Long: `Project Hawk-owned sessions, task requests, structured tasks, runtime tasks,
-tool calls, policy observations, verification results, and explicit Swift
-checkpoint links into the shared graph contract.
+tool calls, policy observations, verification results, and explicit checkpoint
+links into the shared graph contract.
 
 This command is read-only. Existing runtime components remain the source of
 truth for scheduling, tools, policy, verification, persistence, and tracing.`,
@@ -102,7 +101,6 @@ func buildExecutionGraphExport(
 		repositoryID,
 		swiftCheckpointIDs,
 		now,
-		swiftCLICorrelationResolver{},
 	)
 }
 
@@ -111,7 +109,6 @@ func buildExecutionGraphExportWithSwift(
 	repositoryID string,
 	swiftCheckpointIDs []string,
 	now time.Time,
-	resolver swiftCorrelationResolver,
 ) (executiongraph.Export, error) {
 	saved, err := loadExecutionGraphSession(args)
 	if err != nil {
@@ -141,14 +138,6 @@ func buildExecutionGraphExportWithSwift(
 		})
 	}
 	swiftSessions := make([]executiongraph.SwiftSessionRef, 0)
-	if resolver != nil {
-		correlation, correlationErr := resolver.Resolve(context.Background(), saved.ID)
-		if correlationErr == nil {
-			resolvedSessions, resolvedCheckpoints := swiftReferencesFromCorrelation(correlation, now)
-			swiftSessions = append(swiftSessions, resolvedSessions...)
-			swiftRefs = append(swiftRefs, resolvedCheckpoints...)
-		}
-	}
 
 	scope := graphcontracts.Scope{
 		RepositoryID: executionGraphRepositoryID(repositoryID, saved.CWD),
@@ -176,35 +165,6 @@ func buildExecutionGraphExportWithSwift(
 		return executiongraph.Export{}, fmt.Errorf("build execution graph: %w", err)
 	}
 	return export, nil
-}
-
-func swiftReferencesFromCorrelation(
-	correlation swiftCorrelation,
-	fallback time.Time,
-) ([]executiongraph.SwiftSessionRef, []executiongraph.SwiftCheckpointRef) {
-	sessions := make([]executiongraph.SwiftSessionRef, 0, len(correlation.Matches))
-	checkpoints := make([]executiongraph.SwiftCheckpointRef, 0)
-	for _, match := range correlation.Matches {
-		sessions = append(sessions, executiongraph.SwiftSessionRef{
-			SessionID: match.SwiftSessionID,
-			CreatedAt: graphCorrelationTime(match.StartedAt, fallback),
-		})
-		for _, checkpointID := range match.CheckpointIDs {
-			checkpoints = append(checkpoints, executiongraph.SwiftCheckpointRef{
-				CheckpointID:   checkpointID,
-				SwiftSessionID: match.SwiftSessionID,
-				CreatedAt:      fallback,
-			})
-		}
-	}
-	return sessions, checkpoints
-}
-
-func graphCorrelationTime(value, fallback time.Time) time.Time {
-	if value.IsZero() {
-		return fallback
-	}
-	return value.UTC()
 }
 
 func loadExecutionGraphSession(args []string) (*session.Session, error) {

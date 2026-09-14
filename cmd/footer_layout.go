@@ -104,14 +104,6 @@ func clipRenderedBlock(s string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-func shortenFooterContainerStatus(status string) string {
-	// Docker container IDs are 12+ hex chars — keep the footer row readable.
-	if len(status) > 14 {
-		return status[:12] + "…"
-	}
-	return status
-}
-
 func formatTokenCountCompact(tokens int) string {
 	if tokens >= 1_000_000 {
 		return fmt.Sprintf("%.1fM", float64(tokens)/1_000_000)

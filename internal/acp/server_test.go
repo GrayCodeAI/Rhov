@@ -32,7 +32,11 @@ func runServer(t *testing.T, factory SessionFactory, inputLines []string) []rpcM
 	pr, pw := io.Pipe()
 
 	srv := NewServer(factory)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// The deadline is generous on purpose: a prompt turn resolves model
+	// metadata through the provider catalog, which can take several seconds
+	// on a cold cache (and longer under -race). A tight deadline cancels the
+	// turn mid-stream and surfaces as a spurious "cancelled" stopReason.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var wg sync.WaitGroup

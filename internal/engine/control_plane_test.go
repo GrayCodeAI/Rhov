@@ -6,40 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/tool"
 	"github.com/GrayCodeAI/hawk/internal/types"
 )
-
-func TestParseIsolationProfile(t *testing.T) {
-	p, err := ParseIsolationProfile("workspace")
-	if err != nil || p.OSMode != sandbox.ModeWorkspace {
-		t.Fatalf("workspace: %#v %v", p, err)
-	}
-	p, err = ParseIsolationProfile("container")
-	if err != nil || !p.ContainerRequired || p.OSMode != sandbox.ModeWorkspace {
-		t.Fatalf("container: %#v %v", p, err)
-	}
-	p, err = ParseIsolationProfile("os=strict,container=true")
-	if err != nil || p.OSMode != sandbox.ModeStrict || !p.ContainerRequired {
-		t.Fatalf("custom: %#v %v", p, err)
-	}
-}
-
-func TestApplyIsolationProfile(t *testing.T) {
-	sess := NewSession("test", "test", "sys", tool.NewRegistry())
-	sess.ApplyIsolationProfile(IsolationWorkspace)
-	if sess.PermSvc().SandboxMode() != sandbox.ModeWorkspace {
-		t.Fatalf("sandbox mode = %q", sess.PermSvc().SandboxMode())
-	}
-	if sess.Isolation().Label != "workspace" {
-		t.Fatalf("isolation label = %q", sess.Isolation().Label)
-	}
-	sess.ApplyIsolationProfile(IsolationContainer)
-	if !sess.Isolation().ContainerRequired {
-		t.Fatal("expected container required")
-	}
-}
 
 func TestWorkModePlanFiltersToolsAndBash(t *testing.T) {
 	reg := tool.NewRegistry(

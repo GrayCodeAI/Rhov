@@ -23,6 +23,12 @@ func TestDetectCapability(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Clear every variable detectTerminal consults so the host
+			// environment (e.g. a Ghostty or Kitty session running the tests)
+			// cannot leak into the probe.
+			for _, k := range []string{"KITTY_PID", "KITTY_WINDOW_ID", "GHOSTTY_RESOURCES_DIR", "TERM_PROGRAM"} {
+				t.Setenv(k, "")
+			}
 			for k, v := range tc.env {
 				t.Setenv(k, v)
 			}

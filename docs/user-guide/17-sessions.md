@@ -134,7 +134,7 @@ hawk -p "Second" --resume "$ID"
 
 | Document | What You Will Learn |
 |----------|-------------------|
-| [Sandbox](18-sandbox.md) | Security isolation |
+| [Execution & Permissions](18-execution-and-permissions.md) | Security isolation |
 | [Plan Mode](19-plan-mode.md) | Spec workflow |
 
 ---

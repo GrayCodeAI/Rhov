@@ -34,10 +34,6 @@ func (mo *modeSubcommand) Handle(m *chatModel, args []string, text string) (tea.
 		if m.session != nil {
 			work = m.session.WorkMode()
 		}
-		iso := "dev"
-		if m.session != nil {
-			iso = m.session.Isolation().String()
-		}
 		tr := engine.ProjectTrust("")
 		ac := "off"
 		if m.session != nil && m.session.AutoCommit() {
@@ -48,8 +44,8 @@ func (mo *modeSubcommand) Handle(m *chatModel, args []string, text string) (tea.
 			visible = len(m.session.Tools().Registry().EyrieTools())
 		}
 		m.messages = append(m.messages, displayMsg{role: "system", content: fmt.Sprintf(
-			"Work mode:  %s  (plan | act | review)\nShell mode: %s  (auto | shell | agent)\nIsolation:  %s\nTrust:      %s\nAuto-commit: %s\nTools visible: %d\n\n/start · /isolation · /trust · /branch-agent · /auto-commit",
-			work, shell, iso, tr.String(), ac, visible,
+			"Work mode:  %s  (plan | act | review)\nShell mode: %s  (auto | shell | agent)\nTrust:      %s\nAuto-commit: %s\nTools visible: %d\n\n/start · /trust · /branch-agent · /auto-commit",
+			work, shell, tr.String(), ac, visible,
 		)})
 		return m, nil
 	}

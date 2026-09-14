@@ -1,5 +1,10 @@
 # Hawk Architecture Baseline
 
+> **Historical.** This document describes the pre-2026-09 multi-engine
+> ecosystem. Hawk now depends only on `eyrie` and embeds its own token engine;
+> the harrier, kestrel, merlin, shrike, and swift integrations have been
+> removed. Kept for record.
+
 **Status:** Phase 0 baseline
 **Date:** 2026-08-04
 **Baseline commit:** `69ce83f55f9098623e5a891e8c52be636db89c7c`

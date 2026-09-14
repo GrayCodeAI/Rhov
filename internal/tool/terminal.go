@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/terminal"
 )
 
@@ -84,14 +83,7 @@ func (t TerminalCreateTool) Execute(ctx context.Context, input json.RawMessage) 
 		cols = 80
 	}
 
-	sbCfg := sandbox.SandboxConfig{}
-	if sbMode := sandbox.ModeFromContext(ctx); sbMode == sandbox.ModeWorkspace {
-		sbCfg.Security = sandbox.SecurityWorkspace
-	} else if sbMode == sandbox.ModeStrict {
-		sbCfg.Security = sandbox.SecurityStrict
-	}
-
-	term, err := resolveStore(t.Store).Create(ctx, sessionID, p.CWD, p.Command, rows, cols, sbCfg)
+	term, err := resolveStore(t.Store).Create(ctx, sessionID, p.CWD, p.Command, rows, cols)
 	if err != nil {
 		return "", fmt.Errorf("failed to create terminal: %w", err)
 	}

@@ -40,7 +40,6 @@ This is the main configuration file. Hawk writes to it when you save changes via
 {
   "autonomy": {
     "tier": "builder",
-    "sandbox": "workspace",
     "dry_run": false
   }
 }
@@ -53,11 +52,6 @@ This is the main configuration file. Hawk writes to it when you save changes via
 - `operator` — full tool access for trusted operations
 - `autonomous` — no permission prompts
 
-**Sandbox profiles** control permissions inside Hawk's mandatory Docker
-execution boundary:
-- `off` — no additional policy restrictions
-- `workspace` — filesystem access limited to project directory
-- `strict` — minimal access, cwd only
 - `devbox` — container-oriented development policy
 
 ### Agent Configuration
@@ -131,33 +125,8 @@ Place configuration in `.hawk/` within your repository:
 | File | Purpose |
 |------|---------|
 | `.hawk/settings.json` | Project settings (autonomy, rules) |
-| `.hawk/sandbox.toml` | Custom sandbox profiles |
 | `.hawk/lsp.json` | LSP server configuration |
 | `AGENTS.md` | Project instructions |
-
----
-
-## Sandbox Profiles
-
-Location: `~/.hawk/sandbox.toml` (user) or `.hawk/sandbox.toml` (project)
-
-Define custom sandbox profiles:
-
-```toml
-[profiles.strict]
-extends = "workspace"
-deny = ["**/.env", "**/*.pem", "**/credentials/**"]
-
-[profiles.ci]
-extends = "strict"
-network = "deny"
-```
-
-**Built-in profiles:**
-- `off` — no restrictions
-- `workspace` — project directory access
-- `strict` — minimal access
-- `devbox` — container-oriented development policy
 
 ---
 

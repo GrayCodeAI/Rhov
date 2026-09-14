@@ -46,9 +46,9 @@ fi
 echo "--- credentials list ---"
 ./hawk credentials list 2>&1 | head -10 && pass "credentials list runs" || fail "credentials list failed"
 
-# 6. Sandbox status
-echo "--- sandbox status ---"
-./hawk sandbox status 2>&1 | head -10 && pass "sandbox status runs" || fail "sandbox status failed"
+# 6. Diff-sandbox status (staged file changes)
+echo "--- diff sandbox status ---"
+./hawk sandbox status 2>&1 | head -10 && pass "diff sandbox status runs" || fail "diff sandbox status failed"
 
 # 7. Shell completions generate
 echo "--- shell completions ---"

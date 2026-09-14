@@ -9,10 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	hawkconfig "github.com/GrayCodeAI/hawk/internal/config"
 	"github.com/GrayCodeAI/hawk/internal/engine"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
-
-const defaultPermissionSandbox = "workspace"
 
 func normalizePermissionTier(raw string) (engine.AutonomyLevel, string, bool) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -60,22 +57,10 @@ func effectivePermissionTier(sess *engine.Session) engine.AutonomyLevel {
 	return perms.Autonomy()
 }
 
-// containerNetworkFlag is the CLI override for container network mode.
-var containerNetworkFlag string
-
-func normalizeContainerNetwork(raw string) (string, bool) {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "none", "bridge", "isolated":
-		return strings.ToLower(strings.TrimSpace(raw)), true
-	default:
-		return "", false
-	}
-}
-
 func normalizePermissionSandbox(raw string) (string, string, bool) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "":
-		return defaultPermissionSandbox, "Workspace", true
+		return "workspace", "Workspace", true
 	case "strict":
 		return "strict", "Strict", true
 	case "workspace":
@@ -85,16 +70,6 @@ func normalizePermissionSandbox(raw string) (string, string, bool) {
 	default:
 		return "", "", false
 	}
-}
-
-func effectivePermissionSandbox(settings hawkconfig.Settings) string {
-	if normalized, _, ok := normalizePermissionSandbox(sandboxFlag); ok && strings.TrimSpace(sandboxFlag) != "" {
-		return normalized
-	}
-	if normalized, _, ok := normalizePermissionSandbox(settings.Sandbox); ok {
-		return normalized
-	}
-	return defaultPermissionSandbox
 }
 
 func permissionBehaviorSummary(level engine.AutonomyLevel) string {
@@ -176,11 +151,8 @@ func markOverridden(profile *engine.AutonomyProfile, flag string) string {
 
 func autonomyCommandHelp() string {
 	return "Autonomy Center\n" +
-		"  /autonomy                          Show current tier, sandbox, spec stage, and rules\n" +
+		"  /autonomy                          Show current tier, spec stage, and rules\n" +
 		"  /autonomy tier <scout|builder|operator|autonomous>\n" +
-		"  /autonomy sandbox <strict|workspace|off>\n" +
-		"                                      Permission policy inside the Docker sandbox\n" +
-		"                                      (strict=always ask, workspace=allow project files, off=allow all)\n" +
 		"  /autonomy bypass <on|off>          Break-glass bypass (optionally --scope --for --reason)\n" +
 		"  /autonomy dry-run <on|off>         Deny every tool call unconditionally (kill switch)\n" +
 		"  /autonomy allow <rule>\n" +
@@ -191,11 +163,8 @@ func autonomyCommandHelp() string {
 		"  /autonomy audit                    Show recent permission decisions with reasons\n" +
 		"  /autonomy metrics                  Show permission decision counters\n" +
 		"  /autonomy grants cleanup           Rebuild active rules from settings (clear learned)\n" +
-		"  /autonomy reset                    Reset tier, sandbox, dry-run, and rules\n" +
+		"  /autonomy reset                    Reset tier, dry-run, and rules\n" +
 		"  /autonomy save [project|global]    Persist the current policy\n" +
-		"\n" +
-		"Note: Docker isolation is always required; this setting controls the\n" +
-		"      approval policy applied inside the container.\n" +
 		"\n" +
 		"For the spec-driven workflow (gates Write/Edit/Bash until approved), see /spec."
 }
@@ -206,13 +175,11 @@ func autonomyCenterSummary(m *chatModel) string {
 	}
 	level := effectivePermissionTier(m.session)
 	tier := autonomyTierName(level)
-	_, sandboxLabel, _ := normalizePermissionSandbox(effectivePermissionSandbox(m.settings))
 	allowRules := effectiveAllowRules(m.settings)
 	denyRules := effectiveDenyRules(m.settings)
 	var b strings.Builder
 	b.WriteString("Autonomy Center\n")
 	b.WriteString(fmt.Sprintf("  Tier: %s\n", tier))
-	b.WriteString(fmt.Sprintf("  Permission sandbox: %s\n", sandboxLabel))
 	b.WriteString(fmt.Sprintf("  Spec stage: %s\n", specStageLabel(m.session)))
 	if currentDryRun(m.session) {
 		b.WriteString("  Dry-run: ON — every tool call is being denied unconditionally\n")
@@ -363,7 +330,6 @@ func savePermissionSettings(scope string, settings hawkconfig.Settings, level en
 	}
 	settings.Autonomy = permissionTierSettingValue(level)
 	settings.AutonomyExplicit = true
-	settings.Sandbox = effectivePermissionSandbox(settings)
 	settings.AllowedTools = dedupeStrings(settings.AllowedTools)
 	settings.DisallowedTools = dedupeStrings(settings.DisallowedTools)
 
@@ -377,7 +343,6 @@ func savePermissionSettings(scope string, settings hawkconfig.Settings, level en
 		target.DisallowedTools = append([]string{}, settings.DisallowedTools...)
 		target.Autonomy = settings.Autonomy
 		target.AutonomyExplicit = true
-		target.Sandbox = settings.Sandbox
 		if err := hawkconfig.SaveGlobal(target); err != nil {
 			return "", err
 		}
@@ -392,11 +357,8 @@ func resetPermissionCenter(m *chatModel) {
 		return
 	}
 	m.session.PermSvc().SetAutonomy(DefaultContainerAutonomy)
-	m.session.PermSvc().SetSandboxMode(sandbox.ParseMode(defaultPermissionSandbox))
 	m.settings.Autonomy = permissionTierSettingValue(DefaultContainerAutonomy)
 	m.settings.AutonomyExplicit = true
-	m.settings.Sandbox = defaultPermissionSandbox
-	sandboxFlag = defaultPermissionSandbox
 	m.settings.AutoAllow = nil
 	m.settings.AllowedTools = nil
 	m.settings.DisallowedTools = nil
@@ -435,21 +397,6 @@ func (m *chatModel) handleAutonomyCommand(parts []string) (chatModel, tea.Cmd) {
 		m.settings.Autonomy = permissionTierSettingValue(level)
 		m.settings.AutonomyExplicit = true
 		m.messages = append(m.messages, displayMsg{role: "system", content: fmt.Sprintf("Autonomy tier → %s\nBehavior: %s", label, permissionBehaviorSummary(level))})
-	case "sandbox":
-		if len(parts) < 3 {
-			_, label, _ := normalizePermissionSandbox(effectivePermissionSandbox(m.settings))
-			m.messages = append(m.messages, displayMsg{role: "system", content: "Permission sandbox: " + label + "\nUsage: /autonomy sandbox <strict|workspace|off>"})
-			return *m, nil
-		}
-		mode, label, ok := normalizePermissionSandbox(parts[2])
-		if !ok {
-			m.messages = append(m.messages, displayMsg{role: "error", content: "Valid permission sandbox modes: strict, workspace, off"})
-			return *m, nil
-		}
-		m.settings.Sandbox = mode
-		sandboxFlag = mode
-		m.session.PermSvc().SetSandboxMode(sandbox.ParseMode(mode))
-		m.messages = append(m.messages, displayMsg{role: "system", content: fmt.Sprintf("Permission sandbox → %s\nControls tool filesystem/process policy independently of the autonomy tier.", label)})
 	case "dry-run":
 		if len(parts) < 3 {
 			state := "off"
@@ -656,23 +603,6 @@ func (m *chatModel) handleAutonomyCommand(parts []string) (chatModel, tea.Cmd) {
 		default:
 			m.messages = append(m.messages, displayMsg{role: "error", content: "Usage: /autonomy spec-tests <on|off>"})
 		}
-	case "isolation":
-		if len(parts) < 3 {
-			cur := strings.TrimSpace(containerNetworkFlag)
-			if cur == "" {
-				cur = "bridge"
-			}
-			m.messages = append(m.messages, displayMsg{role: "system", content: "Container network isolation: " + cur + "\nUsage: /autonomy isolation <none|bridge|isolated>\n  none     — no network access\n  bridge   — shared bridge (default)\n  isolated — per-container network, concurrent containers can't probe each other"})
-			return *m, nil
-		}
-		mode, ok := normalizeContainerNetwork(parts[2])
-		if !ok {
-			m.messages = append(m.messages, displayMsg{role: "error", content: "Valid modes: none, bridge, isolated"})
-			return *m, nil
-		}
-		containerNetworkFlag = mode
-		m.settings.ContainerNetwork = mode
-		m.messages = append(m.messages, displayMsg{role: "system", content: "Container network isolation → " + mode + "\n(affects next container start)"})
 	case "never":
 		if m.session == nil || m.session.PermSvc() == nil {
 			m.messages = append(m.messages, displayMsg{role: "error", content: "No active session."})

@@ -53,7 +53,7 @@ func RenderMarkdown(report *HarnessReport) string {
 	sb.WriteString(fmt.Sprintf("- **Linters**: %s\n", strings.Join(report.Assets.Linters, ", ")))
 	sb.WriteString(fmt.Sprintf("- **Test Runners**: %s\n", strings.Join(report.Assets.TestRunners, ", ")))
 	sb.WriteString(fmt.Sprintf("- **Hooks**: %s\n", strings.Join(report.Assets.Hooks, ", ")))
-	sb.WriteString(fmt.Sprintf("- **Autonomy Policy**: `%s` tier (Sandbox: `%s`)\n\n", report.Assets.AutonomyTier, report.Assets.SandboxPolicy))
+	sb.WriteString(fmt.Sprintf("- **Autonomy Policy**: `%s` tier\n\n", report.Assets.AutonomyTier))
 
 	sb.WriteString("## Prioritized Findings & Repair Recommendations\n\n")
 	if len(report.Findings) == 0 {

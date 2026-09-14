@@ -12,8 +12,8 @@ var ecosystemJSON bool
 
 var ecosystemCmd = &cobra.Command{
 	Use:   "ecosystem",
-	Short: "Show eyrie, harrier, and shrike integration status",
-	Long:  "Print the ecosystem panel summarizing LLM provider (eyrie), memory graph (harrier), and token pipeline (shrike). Same block as the top of hawk doctor.",
+	Short: "Show eyrie and token-pipeline integration status",
+	Long:  "Print the ecosystem panel summarizing the LLM provider runtime (eyrie) and the local token/compression pipeline. Same block as the top of hawk doctor.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		settings, err := loadEffectiveSettings()
 		if err != nil {

@@ -85,7 +85,7 @@ curl -v http://localhost:4590/v1/ready
 Check the response body for the specific failed check. Common causes:
 
 - No model configured — set `HAWK_MODEL` or provider credentials.
-- Eyrie catalog not initialized — the nine Go modules are independent sibling
+- Eyrie catalog not initialized — the Go modules are independent sibling
   repositories; from a full parent workspace, run `make setup` in hawk to
   regenerate the parent `go.work`:
   ```bash

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"os/user"
 	"regexp"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/GrayCodeAI/hawk/internal/env"
 	homepkg "github.com/GrayCodeAI/hawk/internal/home"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 )
 
 // dangerousCommands are commands that should ALWAYS be blocked.
@@ -129,30 +127,6 @@ var commandSubstitutionPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`~\[`),              // zsh-style parameter expansion
 	regexp.MustCompile(`\(\+`),             // zsh glob qualifier with command execution
 	regexp.MustCompile(`\}\s*always\s*\{`), // zsh always block
-}
-
-// ContainerExecutor allows BashTool to route commands through a container
-// instead of local execution. When set via context, all commands run inside
-// the container (Docker-first mode).
-type ContainerExecutor interface {
-	Exec(ctx context.Context, command string, timeout time.Duration) (string, error)
-	Running() bool
-}
-
-type containerExecKey struct{}
-
-// WithContainerExecutor injects a container executor into the context.
-// When present, BashTool routes all commands through it instead of local shell.
-func WithContainerExecutor(ctx context.Context, ce ContainerExecutor) context.Context {
-	return context.WithValue(ctx, containerExecKey{}, ce)
-}
-
-// ContainerExecutorFromContext extracts the container executor, if any.
-func ContainerExecutorFromContext(ctx context.Context) ContainerExecutor {
-	if ce, ok := ctx.Value(containerExecKey{}).(ContainerExecutor); ok {
-		return ce
-	}
-	return nil
 }
 
 // limitedWriter is an io.Writer that caps the total bytes stored in its
@@ -612,77 +586,14 @@ func (BashTool) Execute(ctx context.Context, input json.RawMessage) (string, err
 	defer cancel()
 
 	if p.RunInBackground {
-		// Apply sandbox wrapping for background bash, same as the foreground
-		// path below. Background bash previously bypassed the sandbox entirely
-		// (C2) — it returned before the sandbox-wrapping block was reached.
-		bgExecName := "bash"
-		bgExecArgs := []string{"-c", p.Command}
-		if sbMode := sandbox.ModeFromContext(ctx); sbMode != sandbox.ModeOff {
-			workDir, _ := os.Getwd()
-			cfg := sandbox.SandboxConfig{Mode: sbMode, WorkspaceDir: workDir, AllowNetwork: sandbox.ModeAllowsNetwork(sbMode)}
-			switch sbMode {
-			case sandbox.ModeStrict:
-				cfg.Security = sandbox.SecurityStrict
-			case sandbox.ModeWorkspace:
-				cfg.Security = sandbox.SecurityWorkspace
-			}
-			var wrapErr error
-			bgExecName, bgExecArgs, wrapErr = sandbox.WrapCommand(p.Command, cfg)
-			if wrapErr != nil {
-				return "", fmt.Errorf("sandbox unavailable (mode=%s): %w", sbMode, wrapErr)
-			}
-		}
-		id, err := startBackgroundBash(ctx, p.Command, bgExecName, bgExecArgs)
+		id, err := startBackgroundBash(ctx, p.Command, "bash", []string{"-c", p.Command})
 		if err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("Started background task %s. Use TaskOutput with task_id=%q to read output, or TaskStop to stop it.", id, id), nil
 	}
 
-	// Container mode: if a ContainerExecutor is in context, route through Docker.
-	// Full container isolation — no permission prompts needed.
-	if ce := ContainerExecutorFromContext(ctx); ce != nil && ce.Running() {
-		result, err := ce.Exec(ctx, p.Command, timeout)
-		result = TruncateOutput(result)
-		result = strings.TrimRight(result, "\n")
-		if err != nil {
-			return fmt.Sprintf("%s\n\nexit code: %s", result, err.Error()), nil
-		}
-		return result, nil
-	}
-
-	// Sandbox wrapping: if a sandbox mode is configured, wrap the command
-	// with the platform sandbox (macOS Seatbelt, Linux unshare). We always
-	// call WrapCommand — it fails closed (returns an error) when no backend
-	// is available. The previous sandbox.Available() guard caused fail-open
-	// behavior: when no backend was present the command ran unsandboxed on
-	// the host, contradicting the documented "fail closed" promise.
-	execName := "bash"
-	execArgs := []string{"-c", p.Command}
-	if sbMode := sandbox.ModeFromContext(ctx); sbMode != sandbox.ModeOff {
-		workDir, _ := os.Getwd()
-		// Network follows the mode (strict denies; workspace allows) instead
-		// of being unconditionally on, so a sandboxed command can no longer
-		// exfiltrate data in strict mode. See sandbox.ModeAllowsNetwork.
-		cfg := sandbox.SandboxConfig{Mode: sbMode, WorkspaceDir: workDir, AllowNetwork: sandbox.ModeAllowsNetwork(sbMode)}
-		// Map the legacy Mode to the corresponding Security. ModeStrict
-		// → SecurityStrict (deny all), ModeWorkspace → SecurityWorkspace
-		// (allow workspace writes, deny process exec — the new safe
-		// default), ModeOff is handled above so we never get here.
-		switch sbMode {
-		case sandbox.ModeStrict:
-			cfg.Security = sandbox.SecurityStrict
-		case sandbox.ModeWorkspace:
-			cfg.Security = sandbox.SecurityWorkspace
-		}
-		var wrapErr error
-		execName, execArgs, wrapErr = sandbox.WrapCommand(p.Command, cfg)
-		if wrapErr != nil {
-			return "", fmt.Errorf("sandbox unavailable (mode=%s): %w", sbMode, wrapErr)
-		}
-	}
-
-	cmd := exec.CommandContext(ctx, execName, execArgs...) // #nosec G204 -- command parsed from tool-configured command string (lint/test command)
+	cmd := exec.CommandContext(ctx, "bash", "-c", p.Command) // #nosec G204 -- command parsed from tool-configured command string (lint/test command)
 	// Never pass provider API keys to the child: the guard regexes block
 	// obvious dumps, but any process the agent runs can otherwise read
 	// ANTHROPIC_API_KEY etc. from the inherited environment.

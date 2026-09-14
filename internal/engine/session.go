@@ -21,7 +21,6 @@ import (
 	"github.com/GrayCodeAI/hawk/internal/prompts"
 	"github.com/GrayCodeAI/hawk/internal/provider/gateway"
 	"github.com/GrayCodeAI/hawk/internal/resilience/ratelimit"
-	"github.com/GrayCodeAI/hawk/internal/sandbox"
 	"github.com/GrayCodeAI/hawk/internal/schedule"
 	"github.com/GrayCodeAI/hawk/internal/session"
 	"github.com/GrayCodeAI/hawk/internal/snapshot"
@@ -56,7 +55,7 @@ type SnapshotTracker interface {
 //	llm            *ChatService        (Phase 1: LLM transport)
 //	perms          *PermissionService  (Phase 2: safety/approval)
 //	life           *LifecycleService   (Phase 3: self-improvement loop)
-//	memory         *MemoryService      (Phase 4: harrier bridge)
+//	memory         *MemoryService      (Phase 4: memory layer)
 //	persist        *PersistenceService (Phase 5: conversation store)
 //	tools          *ToolService        (Phase 6: tool execution)
 //
@@ -141,10 +140,6 @@ type Session struct {
 	// recent LLM-based compaction pass, emitted as compaction.summary.
 	lastCompactionSummary string
 
-	// lastSandboxStatement tracks the most recent sandbox policy statement
-	// emitted into the transcript (DSH sandbox:policy).
-	lastSandboxStatement string
-
 	// lastSkillCatalogDigest tracks the most recent skill catalog digest
 	// emitted into the transcript (DSH tool-skill catalog digest).
 	lastSkillCatalogDigest string
@@ -159,8 +154,7 @@ type Session struct {
 	announcements *AnnouncementFeed
 
 	// Control plane (product modes) — orthogonal to SpecStage and shellmode.
-	workMode  WorkMode
-	isolation IsolationProfile
+	workMode WorkMode
 }
 
 // NewSession creates a conversation session through Eyrie's engine facade.
@@ -517,25 +511,6 @@ func (s *Session) DeploymentRouting() bool {
 	return false
 }
 
-// ContainerExecutor returns the executor that runs Bash in an isolated
-// container, or nil. Read through to the ToolService.
-func (s *Session) ContainerExecutor() tool.ContainerExecutor {
-	if s.tools != nil {
-		return s.tools.ContainerExecutor()
-	}
-	return nil
-}
-
-// ContainerRequired reports whether tools are blocked until the
-// container executor is running (container-first mode). Read through to
-// the ToolService.
-func (s *Session) ContainerRequired() bool {
-	if s.tools != nil {
-		return s.tools.ContainerRequired()
-	}
-	return false
-}
-
 // SubServices is the composed view of the 6 sub-services extracted
 // in Phases 1-6 of the god-object decomposition. New code should
 // prefer the SubServices() accessor over direct Session state.
@@ -828,14 +803,6 @@ func (s *Session) SetSnapshots(snap *snapshot.Tracker) {
 	}
 }
 
-// SetContainerRequired sets the container-first mode flag on the
-// ToolService (the source of truth).
-func (s *Session) SetContainerRequired(v bool) {
-	if s.tools != nil {
-		s.tools.SetContainerRequired(v)
-	}
-}
-
 // SetAutoCommit enables git auto-commit after successful Write/Edit tools.
 func (s *Session) SetAutoCommit(enabled bool) {
 	if s != nil && s.tools != nil {
@@ -849,14 +816,6 @@ func (s *Session) AutoCommit() bool {
 		return false
 	}
 	return s.tools.AutoCommit()
-}
-
-// SetContainerExecutor sets the container executor on the ToolService
-// (the source of truth), preserving the current required flag.
-func (s *Session) SetContainerExecutor(ce tool.ContainerExecutor) {
-	if s.tools != nil {
-		s.tools.SetContainerExecutor(ce)
-	}
 }
 
 // SetAskUserFn sets the user-prompt callback. New code should
@@ -1007,54 +966,6 @@ func (s *Session) WorkingDir() string {
 // Cwd returns the session's working directory.
 func (s *Session) Cwd() string {
 	return s.WorkingDir()
-}
-
-// EnsureSandboxPolicyStatement resolves the effective sandbox policy and
-// appends a concise durable context message on the first request and on each
-// effective policy change. Unchanged requests add nothing. System prompt is
-// unchanged across mode switches (KV-cache stability).
-func (s *Session) EnsureSandboxPolicyStatement() string {
-	if s == nil || s.tools == nil || s.tools.Registry() == nil || len(s.tools.Registry().EyrieTools()) == 0 {
-		return ""
-	}
-
-	defaultMode := sandbox.ModeWorkspace
-	if perms := s.PermSvc(); perms != nil {
-		defaultMode = perms.SandboxMode()
-	}
-	res := sandbox.ResolvePolicy(s, defaultMode)
-	stmt := res.Statement()
-	if stmt == "" {
-		return ""
-	}
-
-	s.mu.Lock()
-	last := s.lastSandboxStatement
-	s.mu.Unlock()
-
-	if last == "" {
-		if p := s.Persistence(); p != nil {
-			for _, m := range p.RawMessages() {
-				if strings.HasPrefix(m.Content, "Sandbox policy:") {
-					last = m.Content
-					s.mu.Lock()
-					s.lastSandboxStatement = last
-					s.mu.Unlock()
-				}
-			}
-		}
-	}
-
-	if stmt != last {
-		if p := s.Persistence(); p != nil {
-			p.AppendUserJournaled(types.EyrieMessage{Role: "user", Content: stmt})
-		}
-		s.mu.Lock()
-		s.lastSandboxStatement = stmt
-		s.mu.Unlock()
-		return stmt
-	}
-	return ""
 }
 
 // EnsureSkillCatalogStatement computes the current digest over model-invocable skills

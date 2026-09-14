@@ -170,11 +170,7 @@ func detectAssets(root string) AssetsDetected {
 		assets.Hooks = append(assets.Hooks, "git-hooks")
 	}
 
-	// Default assumption for bridges
-	assets.MerlinBridge = true
-	assets.KestrelBridge = true
 	assets.AutonomyTier = "Builder"
-	assets.SandboxPolicy = "workspace"
 
 	return assets
 }
@@ -400,21 +396,24 @@ func evalVerification(root string, assets AssetsDetected, report *HarnessReport)
 	score := 95
 	state := EvidenceStatePresent
 
-	if !assets.MerlinBridge || !assets.KestrelBridge {
+	// Verification evidence comes from the project's own test runners and
+	// linters. Hawk's built-in verification (VerifyPlanExecution, ProjectVerify,
+	// AppVerify) runs them; there is no external bridge to check for.
+	if len(assets.TestRunners) == 0 {
 		score -= 15
 		state = EvidenceStatePartial
 		report.Findings = append(report.Findings, Finding{
 			ID:              "VF-001",
 			Dimension:       DimensionVerification,
 			Severity:        SeverityLow,
-			Title:           "Verification Audit Bridges Unverified",
-			Description:     "Security audit (merlin) or code review (kestrel) engines are operating in baseline mode.",
-			Impact:          "Deep security vulnerability scans and formal diff review quality graphs are unattached.",
-			EvidenceSource:  "internal/bridge",
+			Title:           "No Test Runner Detected",
+			Description:     "No test runner was found, so verification evidence cannot be produced automatically.",
+			Impact:          "Changes cannot be validated against a project test suite before they ship.",
+			EvidenceSource:  "project manifest",
 			EvidenceState:   EvidenceStatePartial,
-			ExpectedOutcome: "Active security audit and code review sub-module bridges.",
-			ScopedRepair:    "Verify external support sub-modules via `hawk doctor`.",
-			ValidationRoute: "hawk doctor",
+			ExpectedOutcome: "A detectable test runner (go test, npm test, pytest, cargo test, ...).",
+			ScopedRepair:    "Add a test command or document one in AGENTS.md.",
+			ValidationRoute: "hawk verify",
 		})
 	}
 
@@ -425,7 +424,7 @@ func evalVerification(root string, assets AssetsDetected, report *HarnessReport)
 		Dimension:     DimensionVerification,
 		Score:         score,
 		State:         state,
-		Summary:       fmt.Sprintf("Verification & Safeguards score %d%%. Security & Review bridges active.", score),
+		Summary:       fmt.Sprintf("Verification & Safeguards score %d%%. Test runners detected: %d.", score, len(assets.TestRunners)),
 		FindingsCount: countFindingsByDimension(report.Findings, DimensionVerification),
 	}
 }

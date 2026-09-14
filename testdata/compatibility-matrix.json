@@ -2,46 +2,32 @@
   "$schema": "./compatibility-matrix.schema.json",
   "description": "Cross-repo compatibility tracking for GrayCodeAI repositories. Each `matrix` entry records a combination of component versions that have been tested together. CI runs the matrix on a schedule and on PR to ensure released components stay compatible.",
   "version": "1",
-  "updated": "2026-06-02",
+  "updated": "2026-09-14",
   "components": [
     "hawk",
-    "robin",
-    "eyrie",
-    "kestrel",
-    "merlin",
-    "harrier"
+    "eyrie"
   ],
   "dependencies": {
-    "hawk":            ["eyrie", "kestrel", "merlin"],
-    "robin": ["hawk"],
-    "kestrel":           ["hawk", "eyrie"],
-    "merlin":         ["hawk"],
-    "harrier":            [],
-    "eyrie":           []
+    "hawk": [
+      "eyrie"
+    ],
+    "eyrie": []
   },
   "matrices": [
     {
       "name": "stable",
       "description": "Latest tested-together stable combination across the eco. This is what new users get when installing.",
       "components": {
-        "hawk":            "0.0.1",
-        "robin": "0.1.0",
-        "eyrie":           "0.0.1",
-        "kestrel":           "0.1.0",
-        "merlin":         "0.1.0",
-        "harrier":            "0.1.0"
+        "hawk": "0.0.1",
+        "eyrie": "0.0.1"
       }
     },
     {
       "name": "next",
       "description": "Combination that the upcoming release will ship — kept up to date by release-please as components advance. Tested in CI on every PR.",
       "components": {
-        "hawk":            "main",
-        "robin": "main",
-        "eyrie":           "main",
-        "kestrel":           "main",
-        "merlin":         "main",
-        "harrier":            "main"
+        "hawk": "main",
+        "eyrie": "main"
       }
     }
   ]

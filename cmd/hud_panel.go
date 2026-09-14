@@ -26,10 +26,10 @@ type HUDData struct {
 	// Message bus activity (most recent first)
 	RecentMessages []HUDMessage
 
-	// Memory stats (from harrier)
+	// Memory stats (from the local memory subsystem)
 	MemoryReady    bool
-	MemoryNodes    int
-	MemoryEdges    int
+	MemoryRecalls  int
+	MemoryHitRate  float64
 	MemorySessions int
 }
 
@@ -144,13 +144,13 @@ func renderHUDMemorySection(data HUDData, width int) string {
 	b.WriteString(hudSectionStyle.Render("▸ Memory"))
 	b.WriteString("\n")
 	if !data.MemoryReady {
-		b.WriteString(hudDimHUDStyle.Render("  harrier not connected"))
+		b.WriteString(hudDimHUDStyle.Render("  memory not initialized"))
 		b.WriteString("\n")
 		return b.String()
 	}
-	b.WriteString(fmt.Sprintf("  %s %d  %s %d  %s %d\n",
-		hudLabelStyle.Render("nodes:"), data.MemoryNodes,
-		hudLabelStyle.Render("edges:"), data.MemoryEdges,
+	b.WriteString(fmt.Sprintf("  %s %d  %s %.0f%%  %s %d\n",
+		hudLabelStyle.Render("recalls:"), data.MemoryRecalls,
+		hudLabelStyle.Render("hit:"), data.MemoryHitRate*100,
 		hudLabelStyle.Render("sessions:"), data.MemorySessions))
 	return b.String()
 }
@@ -158,13 +158,25 @@ func renderHUDMemorySection(data HUDData, width int) string {
 // collectHUDData assembles a HUD snapshot from the chat model's available state.
 // Mission, agent, and message-bus data are populated when a mission is attached
 // to the session; otherwise the HUD reports an idle state. Memory stats are read
-// from the session's memory bridge when available.
+// from the session's local memory subsystem when available.
 func (m *chatModel) collectHUDData() HUDData {
 	data := HUDData{
 		MissionStatus: "idle",
 	}
-	if m.session != nil && m.session.MemorySvc().Harrier() != nil && m.session.MemorySvc().Harrier().Ready() {
-		data.MemoryReady = true
+	if m.session != nil && m.session.MemorySvc() != nil {
+		if enhanced := m.session.MemorySvc().Enhanced(); enhanced != nil {
+			data.MemoryReady = true
+			health := enhanced.HealthCheck()
+			if n, ok := health["total_recalls"].(int); ok {
+				data.MemoryRecalls = n
+			}
+			if rate, ok := health["hit_rate"].(float64); ok {
+				data.MemoryHitRate = rate
+			}
+			if n, ok := health["total_sessions"].(int); ok {
+				data.MemorySessions = n
+			}
+		}
 	}
 	return data
 }
