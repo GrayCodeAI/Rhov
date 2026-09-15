@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/GrayCodeAI/rho/internal/engine/diff"
+	"github.com/GrayCodeAI/rho/internal/engine/planning"
 	"github.com/GrayCodeAI/rho/internal/hooks"
 	"github.com/GrayCodeAI/rho/internal/intelligence/repomap"
 	"github.com/GrayCodeAI/rho/internal/observability/metrics"
@@ -317,12 +318,12 @@ func (s *ToolService) ExecuteAll(ctx context.Context, calls []types.ToolCall, ch
 		}
 		return results
 	}
-	plannedCalls := make([]PlannedCall, len(calls))
+	plannedCalls := make([]planning.PlannedCall, len(calls))
 	concurrentCalls := make([]indexedToolCall, 0, len(calls))
 	sequentialCalls := make([]indexedToolCall, 0, len(calls))
 	for i, call := range calls {
 		targets := s.ExtractTargets(call)
-		plannedCalls[i] = PlannedCall{ToolName: call.Name, Args: call.Arguments, Targets: targets}
+		plannedCalls[i] = planning.PlannedCall{ToolName: call.Name, Args: call.Arguments, Targets: targets}
 		item := indexedToolCall{index: i, tc: call}
 		if tool.IsReadOnly(call.Name) {
 			concurrentCalls = append(concurrentCalls, item)
@@ -330,7 +331,7 @@ func (s *ToolService) ExecuteAll(ctx context.Context, calls []types.ToolCall, ch
 			sequentialCalls = append(sequentialCalls, item)
 		}
 	}
-	if report := EstimateBlastRadius(plannedCalls); report.Radius.NeedsConfirmation() && ch != nil {
+	if report := planning.EstimateBlastRadius(plannedCalls); report.Radius.NeedsConfirmation() && ch != nil {
 		emitEvent(ctx, ch, StreamEvent{Type: "blast_radius", Content: report.Message})
 	}
 
@@ -879,8 +880,8 @@ func (s *ToolService) ExtractTargets(tc types.ToolCall) []string {
 
 // EstimateBlastRadius returns a blast-radius report for a set of
 // planned tool calls. Drives the "needs confirmation" prompt.
-func (s *ToolService) EstimateBlastRadius(planned []PlannedCall) *BlastRadiusReport {
-	return EstimateBlastRadius(planned)
+func (s *ToolService) EstimateBlastRadius(planned []planning.PlannedCall) *planning.BlastRadiusReport {
+	return planning.EstimateBlastRadius(planned)
 }
 
 // ExecuteRegistered is the compatibility entry point for callers that still
