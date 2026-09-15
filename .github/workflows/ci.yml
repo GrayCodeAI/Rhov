@@ -558,6 +558,8 @@ jobs:
           go test -run='^$' -fuzz=FuzzParseMessage       -fuzztime=60s ./internal/session
           go test -run='^$' -fuzz=FuzzParseSessionMeta   -fuzztime=60s ./internal/session
           go test -run='^$' -fuzz=FuzzParseDeltaSpec    -fuzztime=60s ./internal/spec
+          go test -run='^$' -fuzz=FuzzParseSearchReplace -fuzztime=60s ./internal/engine/diff
+          go test -run='^$' -fuzz=FuzzParseToolCallResult -fuzztime=60s ./internal/mcp
 
   # -------------------------------------------------------------------------
   # 10. Smoke — build rho and verify ecosystem CLI wiring.
