@@ -3,11 +3,13 @@ package engine
 import (
 	"context"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 func TestApprovalGate_Disabled_NoOp(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyYOLO)
+	s.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	// No gate configured: high-risk action proceeds (default behavior unchanged).
 	ok, _ := s.CheckApproval(context.Background(), "Bash", map[string]interface{}{"command": "rm -rf /tmp/x"})
 	if !ok {
@@ -24,7 +26,7 @@ func TestApprovalGate_Disabled_NoOp(t *testing.T) {
 func TestApprovalGate_FlaggedDestructiveRequiresApproval(t *testing.T) {
 	approvedCalls := 0
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull) // above MaxAutoApprove default (supervised)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull) // above MaxAutoApprove default (supervised)
 	s.SetApproval(&ApprovalGate{
 		Enabled: true,
 		ConfirmFn: func(req ApprovalRequest) ApprovalResponse {
@@ -50,7 +52,7 @@ func TestApprovalGate_FlaggedDestructiveRequiresApproval(t *testing.T) {
 
 func TestApprovalGate_HumanApproves(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.SetApproval(&ApprovalGate{
 		Enabled:   true,
 		ConfirmFn: func(req ApprovalRequest) ApprovalResponse { return ApprovalApprove },
@@ -64,10 +66,10 @@ func TestApprovalGate_HumanApproves(t *testing.T) {
 func TestApprovalGate_AutoApproveThreshold(t *testing.T) {
 	called := false
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyBasic) // <= MaxAutoApprove
+	s.PermSvc().SetAutonomy(safety.AutonomyBasic) // <= MaxAutoApprove
 	s.SetApproval(&ApprovalGate{
 		Enabled:        true,
-		MaxAutoApprove: AutonomySemi,
+		MaxAutoApprove: safety.AutonomySemi,
 		ConfirmFn:      func(req ApprovalRequest) ApprovalResponse { called = true; return ApprovalReject },
 	})
 	ok, _ := s.CheckApproval(context.Background(), "Bash", map[string]interface{}{"command": "rm -rf x"})
@@ -82,7 +84,7 @@ func TestApprovalGate_AutoApproveThreshold(t *testing.T) {
 func TestApprovalGate_NonRiskyActionNotGated(t *testing.T) {
 	called := false
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyYOLO)
+	s.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	s.SetApproval(&ApprovalGate{
 		Enabled:   true,
 		ConfirmFn: func(req ApprovalRequest) ApprovalResponse { called = true; return ApprovalReject },
@@ -100,7 +102,7 @@ func TestApprovalGate_NonRiskyActionNotGated(t *testing.T) {
 func TestApprovalGate_CategoryFilter(t *testing.T) {
 	called := false
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.SetApproval(&ApprovalGate{
 		Enabled:    true,
 		Categories: map[ApprovalCategory]bool{ApprovalNetwork: true}, // only network gated
@@ -127,7 +129,7 @@ func TestApprovalGate_CategoryFilter(t *testing.T) {
 
 func TestApprovalGate_FlaggedTool(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	denied := false
 	s.SetApproval(&ApprovalGate{
 		Enabled:      true,
@@ -145,7 +147,7 @@ func TestApprovalGate_FlaggedTool(t *testing.T) {
 
 func TestApprovalGate_FailClosedNoHandler(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.SetAskUserFn(nil)
 	s.SetApproval(&ApprovalGate{Enabled: true}) // no ConfirmFn, no AskUserFn
 	ok, msg := s.CheckApproval(context.Background(), "Bash", map[string]interface{}{"command": "rm -rf x"})
@@ -159,7 +161,7 @@ func TestApprovalGate_FailClosedNoHandler(t *testing.T) {
 
 func TestApprovalGate_FallbackAskUserFn(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.SetAskUserFn(func(q string) (string, error) { return "yes", nil })
 	s.SetApproval(&ApprovalGate{Enabled: true})
 	ok, _ := s.CheckApproval(context.Background(), "Bash", map[string]interface{}{"command": "rm -rf x"})
@@ -170,7 +172,7 @@ func TestApprovalGate_FallbackAskUserFn(t *testing.T) {
 
 func TestApprovalGate_ApproveForNDefaultsToFive(t *testing.T) {
 	s := NewSession("test", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	confirmations := 0
 	s.SetApproval(&ApprovalGate{
 		Enabled: true,
@@ -201,7 +203,7 @@ func TestApprovalGate_SQLWriteCategory(t *testing.T) {
 	for _, toolName := range []string{"SQL", "sql", "sql_query"} {
 		t.Run(toolName, func(t *testing.T) {
 			s := NewSession("test", "m", "", nil)
-			s.PermSvc().SetAutonomy(AutonomyFull)
+			s.PermSvc().SetAutonomy(safety.AutonomyFull)
 			s.SetApproval(&ApprovalGate{
 				Enabled: true,
 				ConfirmFn: func(req ApprovalRequest) ApprovalResponse {
@@ -223,7 +225,7 @@ func TestApprovalGate_WaterfallDispatch(t *testing.T) {
 	t.Run("waterfall answers", func(t *testing.T) {
 		confirmCalled := false
 		s := NewSession("test", "m", "", nil)
-		s.PermSvc().SetAutonomy(AutonomyFull)
+		s.PermSvc().SetAutonomy(safety.AutonomyFull)
 		wf := NewApprovalWaterfall()
 		wf.Add(func(_ context.Context, req ApprovalRequest) (ApprovalResponse, bool) {
 			if req.ToolName != "Bash" {
@@ -250,7 +252,7 @@ func TestApprovalGate_WaterfallDispatch(t *testing.T) {
 
 	t.Run("empty waterfall fail-closed", func(t *testing.T) {
 		s := NewSession("test", "m", "", nil)
-		s.PermSvc().SetAutonomy(AutonomyFull)
+		s.PermSvc().SetAutonomy(safety.AutonomyFull)
 		s.SetApproval(&ApprovalGate{
 			Enabled:   true,
 			Waterfall: NewApprovalWaterfall(), // no deciders -> deny

@@ -3,16 +3,17 @@ package cmd
 import (
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/mattn/go-runewidth"
 )
 
 // autonomyPickerEntry is one selectable row in the picker.
 type autonomyPickerEntry struct {
-	Level       engine.AutonomyLevel
+	Level       safety.AutonomyLevel
 	Name        string
 	Description string
 }
@@ -22,12 +23,12 @@ type autonomyPickerEntry struct {
 // containerAutonomyTiers (the Ctrl+L cycle), which deliberately excludes
 // Supervised so repeated key-presses can't land you in max-friction mode by
 // accident — the picker is a deliberate selection, so Supervised is fine here.
-var allAutonomyTiers = []engine.AutonomyLevel{
-	engine.AutonomySupervised,
-	engine.AutonomyBasic,
-	engine.AutonomySemi,
-	engine.AutonomyFull,
-	engine.AutonomyYOLO,
+var allAutonomyTiers = []safety.AutonomyLevel{
+	safety.AutonomySupervised,
+	safety.AutonomyBasic,
+	safety.AutonomySemi,
+	safety.AutonomyFull,
+	safety.AutonomyYOLO,
 }
 
 // AutonomyPicker is a Ctrl+L-adjacent quick-select overlay for choosing a
@@ -68,7 +69,7 @@ func NewAutonomyPicker(width int) *AutonomyPicker {
 }
 
 // Open opens the picker, pre-selecting the currently active tier.
-func (ap *AutonomyPicker) Open(current engine.AutonomyLevel) {
+func (ap *AutonomyPicker) Open(current safety.AutonomyLevel) {
 	ap.open = true
 	ap.input.SetValue("")
 	ap.input.Focus()

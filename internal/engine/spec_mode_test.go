@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -31,7 +33,7 @@ func newSpecModeSession(approveImplement bool) (*Session, *int) {
 	)
 	s := NewSession("", "", "test", registry)
 	prompts := 0
-	s.SetPermissionFn(func(req PermissionRequest) {
+	s.SetPermissionFn(func(req safety.PermissionRequest) {
 		prompts++
 		allow := true
 		if req.ToolName == "ApproveImplementation" {
@@ -71,9 +73,9 @@ func ensureTestConstitution(t *testing.T, s *Session) {
 
 func TestSpecMode_SpecifyAdvancesStage(t *testing.T) {
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageSpecify)
+	s.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 	runSpecTool(t, s, "Specify", map[string]interface{}{"title": "test", "spec": "problem statement"})
-	if s.PermSvc().SpecStage() != SpecStageSpecify {
+	if s.PermSvc().SpecStage() != safety.SpecStageSpecify {
 		t.Errorf("expected stage Specify after Specify tool, got %v", s.PermSvc().SpecStage())
 	}
 }
@@ -85,25 +87,25 @@ func TestSpecMode_PlanTasksAdvanceStage(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(old) })
 
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageProposal)
+	s.PermSvc().SetSpecStage(safety.SpecStageProposal)
 	runSpecTool(t, s, "Proposal", map[string]interface{}{"title": "test", "proposal": "proposal"})
 	ensureTestConstitution(t, s)
 	runSpecTool(t, s, "Specify", map[string]interface{}{"title": "test", "spec": "problem statement"})
 	runSpecTool(t, s, "Design", map[string]interface{}{"design": "technical design"})
 	runSpecTool(t, s, "Plan", map[string]interface{}{"plan": "## Summary\n### Simplicity: using <=3 projects\n### Anti-Abstraction: framework directly\n### Integration-First: contract defined\n### Complexity Tracking\n| Gate | Justification |\n|------|---------------|\n"})
-	if s.PermSvc().SpecStage() != SpecStagePlan {
+	if s.PermSvc().SpecStage() != safety.SpecStagePlan {
 		t.Errorf("expected stage Plan after Plan tool, got %v", s.PermSvc().SpecStage())
 	}
 
 	runSpecTool(t, s, "Tasks", map[string]interface{}{"tasks": "task breakdown"})
-	if s.PermSvc().SpecStage() != SpecStageTasks {
+	if s.PermSvc().SpecStage() != safety.SpecStageTasks {
 		t.Errorf("expected stage Tasks after Tasks tool, got %v", s.PermSvc().SpecStage())
 	}
 }
 
 func TestSpecMode_WriteDeniedMidStage(t *testing.T) {
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageSpecify)
+	s.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 
 	res := runSpecTool(t, s, "Write", map[string]interface{}{
 		"file_path": "/tmp/should_not_write.txt",
@@ -119,7 +121,7 @@ func TestSpecMode_WriteDeniedMidStage(t *testing.T) {
 
 func TestSpecMode_ReadsUnrestrictedMidStage(t *testing.T) {
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageSpecify)
+	s.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 
 	res := runSpecTool(t, s, "Read", map[string]interface{}{"file_path": "/tmp/does_not_exist_but_permission_should_pass.txt"})
 	// The read itself may fail (file doesn't exist), but it must not be
@@ -136,8 +138,8 @@ func TestSpecMode_ReadsUnrestrictedMidStage(t *testing.T) {
 // gate must not allow that regardless of tier.
 func TestSpecMode_WriteDeniedEvenAtYOLO(t *testing.T) {
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetAutonomy(AutonomyYOLO)
-	s.PermSvc().SetSpecStage(SpecStageSpecify)
+	s.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	s.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 
 	res := runSpecTool(t, s, "Write", map[string]interface{}{
 		"file_path": "/tmp/should_not_write_even_at_yolo.txt",
@@ -150,8 +152,8 @@ func TestSpecMode_WriteDeniedEvenAtYOLO(t *testing.T) {
 
 func TestSpecMode_ApproveImplementationAlwaysPrompts(t *testing.T) {
 	s, prompts := newSpecModeSession(true)
-	s.PermSvc().SetAutonomy(AutonomyYOLO)
-	s.PermSvc().SetSpecStage(SpecStageTasks)
+	s.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	s.PermSvc().SetSpecStage(safety.SpecStageTasks)
 
 	res := runSpecTool(t, s, "ApproveImplementation", map[string]interface{}{})
 	if res.isErr {
@@ -160,7 +162,7 @@ func TestSpecMode_ApproveImplementationAlwaysPrompts(t *testing.T) {
 	if *prompts == 0 {
 		t.Errorf("expected an approval prompt on ApproveImplementation even at AutonomyYOLO")
 	}
-	if s.PermSvc().SpecStage() != SpecStageImplementing {
+	if s.PermSvc().SpecStage() != safety.SpecStageImplementing {
 		t.Errorf("expected stage Implementing after approval, got %v", s.PermSvc().SpecStage())
 	}
 	if !strings.Contains(strings.ToLower(res.output), "implementation") {
@@ -170,13 +172,13 @@ func TestSpecMode_ApproveImplementationAlwaysPrompts(t *testing.T) {
 
 func TestSpecMode_ApproveImplementationDeniedStaysGated(t *testing.T) {
 	s, _ := newSpecModeSession(false)
-	s.PermSvc().SetSpecStage(SpecStageTasks)
+	s.PermSvc().SetSpecStage(safety.SpecStageTasks)
 
 	res := runSpecTool(t, s, "ApproveImplementation", map[string]interface{}{})
 	if !res.isErr {
 		t.Errorf("denied ApproveImplementation should report an error result to keep the gate closed")
 	}
-	if s.PermSvc().SpecStage() != SpecStageTasks {
+	if s.PermSvc().SpecStage() != safety.SpecStageTasks {
 		t.Errorf("expected to stay at Tasks stage after denial, got %v", s.PermSvc().SpecStage())
 	}
 }
@@ -198,7 +200,7 @@ func TestSpecMode_ApprovalPromptShowsSpecContent(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(old) })
 
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageProposal)
+	s.PermSvc().SetSpecStage(safety.SpecStageProposal)
 	runSpecTool(t, s, "Proposal", map[string]interface{}{"title": "test", "proposal": "proposal"})
 	ensureTestConstitution(t, s)
 	runSpecTool(t, s, "Specify", map[string]interface{}{"title": "approval preview test", "spec": "unique spec marker xyz123"})
@@ -207,7 +209,7 @@ func TestSpecMode_ApprovalPromptShowsSpecContent(t *testing.T) {
 	runSpecTool(t, s, "Tasks", map[string]interface{}{"tasks": "unique tasks marker def789"})
 
 	var lastSummary string
-	s.SetPermissionFn(func(req PermissionRequest) {
+	s.SetPermissionFn(func(req safety.PermissionRequest) {
 		if req.ToolName == "ApproveImplementation" {
 			lastSummary = req.Summary
 		}
@@ -240,7 +242,7 @@ func TestSpecMode_ImplementingLiftsGate(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(old) })
 
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageTasks)
+	s.PermSvc().SetSpecStage(safety.SpecStageTasks)
 	runSpecTool(t, s, "ApproveImplementation", map[string]interface{}{})
 
 	res := runSpecTool(t, s, "Write", map[string]interface{}{
@@ -264,7 +266,7 @@ func TestSpecMode_ResetClearsStageAndSlug(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(old) })
 
 	s, _ := newSpecModeSession(true)
-	s.PermSvc().SetSpecStage(SpecStageProposal)
+	s.PermSvc().SetSpecStage(safety.SpecStageProposal)
 	ensureTestConstitution(t, s)
 	runSpecTool(t, s, "Proposal", map[string]interface{}{"title": "reset-test", "proposal": "proposal"})
 	ensureTestConstitution(t, s)
@@ -273,7 +275,7 @@ func TestSpecMode_ResetClearsStageAndSlug(t *testing.T) {
 		t.Fatal("Specify should set an active slug")
 	}
 	runSpecTool(t, s, "SpecReset", map[string]interface{}{})
-	if s.PermSvc().SpecStage() != SpecStageNone || s.PermSvc().SpecSlug() != "" {
+	if s.PermSvc().SpecStage() != safety.SpecStageNone || s.PermSvc().SpecSlug() != "" {
 		t.Fatalf("reset left stage=%v slug=%q", s.PermSvc().SpecStage(), s.PermSvc().SpecSlug())
 	}
 }

@@ -3,6 +3,8 @@ package engine
 import (
 	"context"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 // TestDryRun_DeniesEverythingRegardlessOfTierOrStage covers the dry-run
@@ -11,10 +13,10 @@ import (
 // when a spec-workflow tool would otherwise always be allowed.
 func TestDryRun_DeniesEverythingRegardlessOfTierOrStage(t *testing.T) {
 	sess := newTestSession()
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.PermSvc().SetDryRun(true)
 
-	granted, deny := sess.PermSvc().CheckTool(context.Background(), ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
+	granted, deny := sess.PermSvc().CheckTool(context.Background(), safety.ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
 	if granted {
 		t.Fatal("dry-run should deny Read even at AutonomyYOLO")
 	}
@@ -24,8 +26,8 @@ func TestDryRun_DeniesEverythingRegardlessOfTierOrStage(t *testing.T) {
 
 	// Even spec-workflow tools, which are otherwise always allowed while a
 	// stage is active, must be denied under dry-run.
-	sess.PermSvc().SetSpecStage(SpecStageSpecify)
-	granted, _ = sess.PermSvc().CheckTool(context.Background(), ToolCallInfo{Name: "Specify", Args: map[string]interface{}{}})
+	sess.PermSvc().SetSpecStage(safety.SpecStageSpecify)
+	granted, _ = sess.PermSvc().CheckTool(context.Background(), safety.ToolCallInfo{Name: "Specify", Args: map[string]interface{}{}})
 	if granted {
 		t.Fatal("dry-run should deny Specify even during an active spec stage")
 	}
@@ -33,11 +35,11 @@ func TestDryRun_DeniesEverythingRegardlessOfTierOrStage(t *testing.T) {
 
 func TestDryRun_OffRestoresNormalBehavior(t *testing.T) {
 	sess := newTestSession()
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.PermSvc().SetDryRun(true)
 	sess.PermSvc().SetDryRun(false)
 
-	granted, _ := sess.PermSvc().CheckTool(context.Background(), ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
+	granted, _ := sess.PermSvc().CheckTool(context.Background(), safety.ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
 	if !granted {
 		t.Fatal("expected Read to be allowed again once dry-run is turned off")
 	}

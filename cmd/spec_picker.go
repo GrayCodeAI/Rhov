@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -53,7 +54,7 @@ type SpecPicker struct {
 	filtered []specPickerEntry
 	sel      int
 	width    int
-	stage    engine.SpecStage
+	stage    safety.SpecStage
 }
 
 // NewSpecPicker creates a new spec workflow picker.
@@ -72,7 +73,7 @@ func NewSpecPicker(width int) *SpecPicker {
 }
 
 // Open opens the picker, recording the current stage for the header line.
-func (sp *SpecPicker) Open(stage engine.SpecStage) {
+func (sp *SpecPicker) Open(stage safety.SpecStage) {
 	sp.open = true
 	sp.input.SetValue("")
 	sp.input.Focus()
@@ -205,19 +206,19 @@ func (sp *SpecPicker) Render(viewWidth int) string {
 // specStageDisplayName mirrors specStageLabel but takes a stage value
 // directly, since the picker tracks the stage snapshot from when it opened
 // rather than a *engine.Session.
-func specStageDisplayName(stage engine.SpecStage) string {
+func specStageDisplayName(stage safety.SpecStage) string {
 	switch stage {
-	case engine.SpecStageProposal:
+	case safety.SpecStageProposal:
 		return "Proposal"
-	case engine.SpecStageSpecify:
+	case safety.SpecStageSpecify:
 		return "Specify"
-	case engine.SpecStageDesign:
+	case safety.SpecStageDesign:
 		return "Design"
-	case engine.SpecStagePlan:
+	case safety.SpecStagePlan:
 		return "Plan"
-	case engine.SpecStageTasks:
+	case safety.SpecStageTasks:
 		return "Tasks"
-	case engine.SpecStageImplementing:
+	case safety.SpecStageImplementing:
 		return "Implementing"
 	default:
 		return "None"

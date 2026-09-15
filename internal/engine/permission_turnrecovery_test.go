@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 // extractedToken pulls the opaque permission_request_id out of a denial
@@ -36,7 +38,7 @@ func isHex(s string) bool {
 func rejectingSession(t *testing.T, promptCount *int) *Session {
 	t.Helper()
 	s := NewSession("recovery", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.EnableTurnRecovery()
 	s.SetApproval(&ApprovalGate{
 		Enabled: true,
@@ -113,7 +115,7 @@ func TestTurnRecovery_OnlyOpaqueTokenEscalates(t *testing.T) {
 func TestTurnRecovery_DisabledIsUnchanged(t *testing.T) {
 	prompts := 0
 	s := NewSession("plain", "m", "", nil)
-	s.PermSvc().SetAutonomy(AutonomyFull)
+	s.PermSvc().SetAutonomy(safety.AutonomyFull)
 	s.SetApproval(&ApprovalGate{
 		Enabled: true,
 		ConfirmFn: func(req ApprovalRequest) ApprovalResponse {

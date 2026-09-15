@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -67,7 +69,7 @@ func (selfDeadlineTool) RetryPolicy() tool.RetryPolicy {
 func newTimeoutTestSession(t *testing.T, tools ...tool.Tool) *Session {
 	t.Helper()
 	sess := NewSession("timeout-test", "test", "system", tool.NewRegistry(tools...))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	return sess
 }
 

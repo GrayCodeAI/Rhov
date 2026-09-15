@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 func TestRunSubcommand_UsesBashToolForSafeCommand(t *testing.T) {
 	m := newTestChatModel()
-	m.session.PermSvc().SetAutonomy(engine.AutonomyYOLO)
+	m.session.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	result, _ := (&runSubcommand{}).Handle(m, []string{"printf", "hello"}, "/run printf hello")
 	cm := requireChatModel(t, result)
@@ -32,7 +32,7 @@ func TestRunSubcommand_UsesBashToolForSafeCommand(t *testing.T) {
 
 func TestRunSubcommand_RespectsSpecStageGate(t *testing.T) {
 	m := newTestChatModel()
-	m.session.PermSvc().SetSpecStage(engine.SpecStageSpecify)
+	m.session.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 
 	result, _ := (&runSubcommand{}).Handle(m, []string{"printf", "hello"}, "/run printf hello")
 	cm := requireChatModel(t, result)
@@ -54,7 +54,7 @@ func TestRunSubcommand_RespectsSpecStageGate(t *testing.T) {
 
 func TestRunSubcommand_BashToolBlocksEnvDumpEvenWhenBypassed(t *testing.T) {
 	m := newTestChatModel()
-	m.session.PermSvc().SetAutonomy(engine.AutonomyYOLO)
+	m.session.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	result, _ := (&runSubcommand{}).Handle(m, []string{"env"}, "/run env")
 	cm := requireChatModel(t, result)
@@ -73,7 +73,7 @@ func TestRunSubcommand_BashToolBlocksEnvDumpEvenWhenBypassed(t *testing.T) {
 
 func TestTestSubcommand_DetectsNonzeroExit(t *testing.T) {
 	m := newTestChatModel()
-	m.session.PermSvc().SetAutonomy(engine.AutonomyYOLO)
+	m.session.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	result, _ := (&testSubcommand{}).Handle(m, []string{"false"}, "/test false")
 	cm := requireChatModel(t, result)

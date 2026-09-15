@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/graphjournal"
 	"github.com/GrayCodeAI/rho/internal/token"
 	"github.com/GrayCodeAI/rho/internal/tool"
@@ -29,7 +31,7 @@ func TestToolExecutionAutomaticallyRecordsPolicyAndVerification(t *testing.T) {
 
 	sess := NewSession("test", "test", "system", tool.NewRegistry(graphVerifyTool{}))
 	sess.SetPersistID("graph-runtime-session")
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	ch := make(chan StreamEvent, 4)
 
 	result := sess.executeSingleTool(

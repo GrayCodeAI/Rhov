@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/provider/routing"
 )
@@ -213,7 +215,7 @@ func ApplyPowerLevel(sess *engine.Session, level int) {
 
 	// Configure autonomy based on power level
 	if config.AutoApply {
-		sess.PermSvc().SetAutonomy(engine.AutonomySemi)
+		sess.PermSvc().SetAutonomy(safety.AutonomySemi)
 	}
 }
 

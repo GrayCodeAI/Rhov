@@ -4,17 +4,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 var (
 	configNoticeRedactorOnce sync.Once
-	configNoticeRedactor     *engine.OutputRedactor
+	configNoticeRedactor     *safety.OutputRedactor
 )
 
-func configNoticeRedact() *engine.OutputRedactor {
+func configNoticeRedact() *safety.OutputRedactor {
 	configNoticeRedactorOnce.Do(func() {
-		configNoticeRedactor = engine.NewOutputRedactor()
+		configNoticeRedactor = safety.NewOutputRedactor()
 	})
 	return configNoticeRedactor
 }

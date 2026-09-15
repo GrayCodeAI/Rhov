@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 
 	"github.com/GrayCodeAI/rho/internal/engine/streaming"
@@ -832,7 +834,7 @@ func (s *Session) SetAskUserFn(fn func(question string) (string, error)) {
 }
 
 // SetPermissionFn configures the permission callback on PermissionService.
-func (s *Session) SetPermissionFn(fn func(PermissionRequest)) {
+func (s *Session) SetPermissionFn(fn func(safety.PermissionRequest)) {
 	if s.perms != nil {
 		s.perms.SetPermissionFn(fn)
 	}

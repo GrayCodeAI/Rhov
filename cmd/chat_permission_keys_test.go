@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
 	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
-	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestPermissionAlwaysAllowDoesNotNilDeref(t *testing.T) {
 	m := newTestChatModel()
-	req := engine.PermissionRequest{
+	req := safety.PermissionRequest{
 		PermissionRequest: contracts.PermissionRequest{
 			ToolName: "Bash",
 			Summary:  "git -C /tmp status",
@@ -50,7 +51,7 @@ func TestPermissionAlwaysAllowDoesNotNilDeref(t *testing.T) {
 
 func TestPermissionAlwaysDenyDoesNotNilDeref(t *testing.T) {
 	m := newTestChatModel()
-	req := engine.PermissionRequest{
+	req := safety.PermissionRequest{
 		PermissionRequest: contracts.PermissionRequest{
 			ToolName: "Bash",
 			Summary:  "rm -rf /",

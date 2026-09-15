@@ -6,44 +6,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
-func normalizePermissionTier(raw string) (engine.AutonomyLevel, string, bool) {
+func normalizePermissionTier(raw string) (safety.AutonomyLevel, string, bool) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "always_ask", "always-ask", "supervised", "ask":
-		return engine.AutonomySupervised, "Always Ask", true
+		return safety.AutonomySupervised, "Always Ask", true
 	case "scout", "basic", "read":
-		return engine.AutonomyBasic, "Scout", true
+		return safety.AutonomyBasic, "Scout", true
 	case "builder", "semi", "edit":
-		return engine.AutonomySemi, "Builder", true
+		return safety.AutonomySemi, "Builder", true
 	case "operator", "full", "run":
-		return engine.AutonomyFull, "Operator", true
+		return safety.AutonomyFull, "Operator", true
 	case "autonomous", "yolo", "auto":
-		return engine.AutonomyYOLO, "Autonomous", true
+		return safety.AutonomyYOLO, "Autonomous", true
 	default:
 		return 0, "", false
 	}
 }
 
-func permissionTierSettingValue(level engine.AutonomyLevel) int {
+func permissionTierSettingValue(level safety.AutonomyLevel) int {
 	switch level {
-	case engine.AutonomyBasic:
+	case safety.AutonomyBasic:
 		return 1
-	case engine.AutonomySemi:
+	case safety.AutonomySemi:
 		return 2
-	case engine.AutonomyFull:
+	case safety.AutonomyFull:
 		return 3
-	case engine.AutonomyYOLO:
+	case safety.AutonomyYOLO:
 		return 4
 	default:
 		return 0
 	}
 }
 
-func effectivePermissionTier(sess *engine.Session) engine.AutonomyLevel {
+func effectivePermissionTier(sess *engine.Session) safety.AutonomyLevel {
 	if sess == nil {
 		return DefaultContainerAutonomy
 	}
@@ -72,17 +74,17 @@ func normalizePermissionSandbox(raw string) (string, string, bool) {
 	}
 }
 
-func permissionBehaviorSummary(level engine.AutonomyLevel) string {
+func permissionBehaviorSummary(level safety.AutonomyLevel) string {
 	switch level {
-	case engine.AutonomySupervised:
+	case safety.AutonomySupervised:
 		return "prompts for every tool call"
-	case engine.AutonomyBasic:
+	case safety.AutonomyBasic:
 		return "reads auto-approve; edits and commands ask first"
-	case engine.AutonomySemi:
+	case safety.AutonomySemi:
 		return "reads and file changes auto-approve; commands ask first"
-	case engine.AutonomyFull:
+	case safety.AutonomyFull:
 		return "reads, edits, and normal commands auto-run; risky actions ask first"
-	case engine.AutonomyYOLO:
+	case safety.AutonomyYOLO:
 		return "minimal prompts; only highest-risk actions stop"
 	default:
 		return "prompts for every tool call"
@@ -96,9 +98,9 @@ func specStageLabel(sess *engine.Session) string {
 
 // currentSpecStage returns the session's active spec stage, or
 // SpecStageNone if the session (or its permission engine) isn't set up yet.
-func currentSpecStage(sess *engine.Session) engine.SpecStage {
+func currentSpecStage(sess *engine.Session) safety.SpecStage {
 	if sess == nil || sess.PermSvc() == nil {
-		return engine.SpecStageNone
+		return safety.SpecStageNone
 	}
 	return sess.PermSvc().SpecStage()
 }
@@ -142,7 +144,7 @@ func parseBypassFlags(args []string) (scope []string, expires time.Time, reason 
 
 // markOverridden returns " *" if the flag was explicitly overridden by the
 // user, so the profile display can mark customized flags.
-func markOverridden(profile *engine.AutonomyProfile, flag string) string {
+func markOverridden(profile *safety.AutonomyProfile, flag string) string {
 	if profile != nil && profile.IsOverridden(flag) {
 		return " *"
 	}
@@ -302,7 +304,7 @@ func rebuildSessionPermissionRules(sess *engine.Session, settings rhoconfig.Sett
 	}
 	mem := perm.Memory()
 	if mem == nil {
-		mem = engine.NewPermissionMemory()
+		mem = safety.NewPermissionMemory()
 		sess.PermSvc().SetMemory(mem)
 	}
 	mem.Reset()
@@ -323,7 +325,7 @@ func rebuildSessionPermissionRules(sess *engine.Session, settings rhoconfig.Sett
 	}
 }
 
-func savePermissionSettings(scope string, settings rhoconfig.Settings, level engine.AutonomyLevel) (string, error) {
+func savePermissionSettings(scope string, settings rhoconfig.Settings, level safety.AutonomyLevel) (string, error) {
 	scope = strings.ToLower(strings.TrimSpace(scope))
 	if scope == "" {
 		scope = "global"
@@ -362,7 +364,7 @@ func resetPermissionCenter(m *chatModel) {
 	m.settings.AutoAllow = nil
 	m.settings.AllowedTools = nil
 	m.settings.DisallowedTools = nil
-	m.session.PermSvc().SetSpecStage(engine.SpecStageNone)
+	m.session.PermSvc().SetSpecStage(safety.SpecStageNone)
 	m.session.PermSvc().SetDryRun(false)
 	rebuildSessionPermissionRules(m.session, m.settings)
 }

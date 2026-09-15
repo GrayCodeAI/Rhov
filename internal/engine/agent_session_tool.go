@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 
 	engagent "github.com/GrayCodeAI/rho/internal/engine/agent"
@@ -203,7 +205,7 @@ func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normali
 	sub.PermSvc().SetAskUserFn(func(question string) (string, error) {
 		return "", fmt.Errorf("subagent cannot prompt user for interactive input")
 	})
-	sub.SetPermissionFn(func(req PermissionRequest) {
+	sub.SetPermissionFn(func(req safety.PermissionRequest) {
 		if req.Response != nil {
 			req.Response <- false
 		}

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/token"
 
 	"github.com/GrayCodeAI/rho/internal/engine/diff"
@@ -414,7 +416,7 @@ func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, overrid
 		return finishDenied("denied", "permission service is unavailable")
 	}
 	result.state = ToolStatePermissionWait
-	granted, denyMsg := s.deps.permissions.CheckTool(ctx, ToolCallInfo{Name: tc.Name, ID: tc.ID, Args: tc.Arguments})
+	granted, denyMsg := s.deps.permissions.CheckTool(ctx, safety.ToolCallInfo{Name: tc.Name, ID: tc.ID, Args: tc.Arguments})
 	if s.deps.recordPolicy != nil {
 		s.deps.recordPolicy(tc, "permission", granted, denyMsg)
 	}

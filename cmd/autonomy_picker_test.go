@@ -3,8 +3,9 @@ package cmd
 import (
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -44,9 +45,9 @@ func TestAutonomyPicker_HasAllFiveTiers(t *testing.T) {
 	if len(ap.entries) != 5 {
 		t.Fatalf("expected 5 tiers, got %d", len(ap.entries))
 	}
-	wantOrder := []engine.AutonomyLevel{
-		engine.AutonomySupervised, engine.AutonomyBasic, engine.AutonomySemi,
-		engine.AutonomyFull, engine.AutonomyYOLO,
+	wantOrder := []safety.AutonomyLevel{
+		safety.AutonomySupervised, safety.AutonomyBasic, safety.AutonomySemi,
+		safety.AutonomyFull, safety.AutonomyYOLO,
 	}
 	for i, level := range wantOrder {
 		if ap.entries[i].Level != level {
@@ -57,25 +58,25 @@ func TestAutonomyPicker_HasAllFiveTiers(t *testing.T) {
 
 func TestAutonomyPicker_OpenPreselectsCurrentTier(t *testing.T) {
 	ap := NewAutonomyPicker(80)
-	ap.Open(engine.AutonomyFull)
+	ap.Open(safety.AutonomyFull)
 	if !ap.IsOpen() {
 		t.Fatal("expected picker to be open")
 	}
 	sel := ap.Selected()
-	if sel == nil || sel.Level != engine.AutonomyFull {
+	if sel == nil || sel.Level != safety.AutonomyFull {
 		t.Fatalf("expected preselected tier AutonomyFull, got %+v", sel)
 	}
 }
 
 func TestAutonomyPicker_EnterSelectsAndCloses(t *testing.T) {
 	ap := NewAutonomyPicker(80)
-	ap.Open(engine.AutonomySupervised)
+	ap.Open(safety.AutonomySupervised)
 
 	chosen, handled := ap.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if !handled || chosen != nil {
 		t.Fatalf("KeyDown should navigate, not select: chosen=%v handled=%v", chosen, handled)
 	}
-	if ap.Selected().Level != engine.AutonomyBasic {
+	if ap.Selected().Level != safety.AutonomyBasic {
 		t.Fatalf("expected selection to move to AutonomyBasic, got %v", ap.Selected().Level)
 	}
 
@@ -83,7 +84,7 @@ func TestAutonomyPicker_EnterSelectsAndCloses(t *testing.T) {
 	if !handled {
 		t.Fatal("expected Enter to be handled")
 	}
-	if chosen == nil || chosen.Level != engine.AutonomyBasic {
+	if chosen == nil || chosen.Level != safety.AutonomyBasic {
 		t.Fatalf("expected chosen AutonomyBasic, got %v", chosen)
 	}
 	if ap.IsOpen() {
@@ -93,7 +94,7 @@ func TestAutonomyPicker_EnterSelectsAndCloses(t *testing.T) {
 
 func TestAutonomyPicker_EscClosesWithoutSelecting(t *testing.T) {
 	ap := NewAutonomyPicker(80)
-	ap.Open(engine.AutonomyBasic)
+	ap.Open(safety.AutonomyBasic)
 
 	chosen, handled := ap.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if !handled || chosen != nil {
@@ -106,12 +107,12 @@ func TestAutonomyPicker_EscClosesWithoutSelecting(t *testing.T) {
 
 func TestAutonomyPicker_FilterByName(t *testing.T) {
 	ap := NewAutonomyPicker(80)
-	ap.Open(engine.AutonomyBasic)
+	ap.Open(safety.AutonomyBasic)
 
 	for _, r := range "scout" {
 		ap.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
-	if len(ap.filtered) != 1 || ap.filtered[0].Level != engine.AutonomyBasic {
+	if len(ap.filtered) != 1 || ap.filtered[0].Level != safety.AutonomyBasic {
 		t.Fatalf("expected filter 'scout' to match only Basic tier, got %+v", ap.filtered)
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 
 	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
@@ -218,20 +220,20 @@ func TestIntegration_PermissionFlow(t *testing.T) {
 	sess := newTestSession()
 
 	// file_write always needs permission.
-	if !ToolNeedsPermission("Write", nil) {
+	if !safety.ToolNeedsPermission("Write", nil) {
 		t.Fatal("Write should need permission")
 	}
-	if !ToolNeedsPermission("Edit", nil) {
+	if !safety.ToolNeedsPermission("Edit", nil) {
 		t.Fatal("Edit should need permission")
 	}
 
 	// Safe bash commands do NOT need permission.
-	if ToolNeedsPermission("Bash", map[string]interface{}{"command": "echo hello"}) {
+	if safety.ToolNeedsPermission("Bash", map[string]interface{}{"command": "echo hello"}) {
 		t.Fatal("safe echo should not need permission")
 	}
 
 	// Dangerous bash commands DO need permission.
-	if !ToolNeedsPermission("Bash", map[string]interface{}{"command": "rm -rf /"}) {
+	if !safety.ToolNeedsPermission("Bash", map[string]interface{}{"command": "rm -rf /"}) {
 		t.Fatal("destructive command should need permission")
 	}
 
@@ -251,13 +253,13 @@ func TestIntegration_PermissionFlow(t *testing.T) {
 
 	// Test permission function callback.
 	permCalled := false
-	sess.SetPermissionFn(func(req PermissionRequest) {
+	sess.SetPermissionFn(func(req safety.PermissionRequest) {
 		permCalled = true
 		req.Response <- true
 	})
 
 	// Create a fresh permission memory to test the callback flow.
-	sess.PermSvc().SetMemory(NewPermissionMemory())
+	sess.PermSvc().SetMemory(safety.NewPermissionMemory())
 	decision = sess.PermSvc().Memory().Check("Write", "/tmp/new-file.txt")
 	if decision != nil {
 		t.Fatal("fresh permission memory should return nil (ask user)")
@@ -268,7 +270,7 @@ func TestIntegration_PermissionFlow(t *testing.T) {
 	}
 	// Simulate calling the permission function.
 	resp := make(chan bool, 1)
-	sess.PermSvc().PermissionFn()(PermissionRequest{
+	sess.PermSvc().PermissionFn()(safety.PermissionRequest{
 		PermissionRequest: contracts.PermissionRequest{
 			ToolName: "Write",
 			ToolID:   "test-id",
@@ -392,32 +394,32 @@ func TestIntegration_TrustTiersAndSpecStage(t *testing.T) {
 	ctx := context.Background()
 
 	// AutonomyYOLO allows everything.
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
-	granted, _ := sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	granted, _ := sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
 	if !granted {
 		t.Fatal("AutonomyYOLO should allow Write")
 	}
 
 	// AutonomySemi allows Write/Edit but not Bash (falls through to prompt).
-	sess.PermSvc().SetAutonomy(AutonomySemi)
-	sess.PermSvc().SetPermissionFn(func(req PermissionRequest) {
+	sess.PermSvc().SetAutonomy(safety.AutonomySemi)
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
 		if req.Response != nil {
 			req.Response <- false
 		}
 	})
-	granted, _ = sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
+	granted, _ = sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
 	if !granted {
 		t.Fatal("AutonomySemi should allow Write")
 	}
-	granted, _ = sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "rm -rf /"}})
+	granted, _ = sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "rm -rf /"}})
 	if granted {
 		t.Fatal("AutonomySemi should ask (and here deny) for Bash")
 	}
 
 	// Spec stage gate denies Write regardless of tier, even at YOLO.
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
-	sess.PermSvc().SetSpecStage(SpecStageSpecify)
-	granted, denyMsg := sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	sess.PermSvc().SetSpecStage(safety.SpecStageSpecify)
+	granted, denyMsg := sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Write", Args: map[string]interface{}{"path": "x.txt"}})
 	if granted {
 		t.Fatal("spec stage should deny Write even at AutonomyYOLO")
 	}
@@ -426,13 +428,13 @@ func TestIntegration_TrustTiersAndSpecStage(t *testing.T) {
 	}
 
 	// Reads remain unrestricted during spec stage.
-	granted, _ = sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
+	granted, _ = sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Read", Args: map[string]interface{}{"path": "x.txt"}})
 	if !granted {
 		t.Fatal("reads should be unrestricted during spec stage")
 	}
 
 	// Specify/Plan/Tasks tools are always allowed during spec stage.
-	granted, _ = sess.PermSvc().CheckTool(ctx, ToolCallInfo{Name: "Specify", Args: map[string]interface{}{}})
+	granted, _ = sess.PermSvc().CheckTool(ctx, safety.ToolCallInfo{Name: "Specify", Args: map[string]interface{}{}})
 	if !granted {
 		t.Fatal("Specify should always be allowed during spec stage")
 	}

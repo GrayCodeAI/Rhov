@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/compression"
 	"github.com/GrayCodeAI/rho/internal/engine/control"
 	"github.com/GrayCodeAI/rho/internal/engine/errs"
@@ -59,7 +61,7 @@ type IntegrationPipeline struct {
 
 	// Security pipeline
 	InjectionScanner *InjectionScanner
-	OutputRedactor   *OutputRedactor
+	OutputRedactor   *safety.OutputRedactor
 
 	// Learning pipeline
 	ExperienceStore   *memory.ExperienceStore
@@ -237,7 +239,7 @@ func NewIntegrationPipeline() *IntegrationPipeline {
 
 		// Security
 		InjectionScanner: NewInjectionScanner(),
-		OutputRedactor:   NewOutputRedactor(),
+		OutputRedactor:   safety.NewOutputRedactor(),
 
 		// Learning
 		ExperienceStore:   memory.NewExperienceStore(filepath.Join(stateRoot, "experience")),

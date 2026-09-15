@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
@@ -161,7 +163,7 @@ type (
 	loopTickMsg                struct{ command string }
 	toolUseMsg                 struct{ name, id string }
 	toolResultMsg              struct{ name, content string }
-	permissionAskMsg           struct{ req engine.PermissionRequest }
+	permissionAskMsg           struct{ req safety.PermissionRequest }
 	permissionPromptTimeoutMsg struct{ seq int }
 	thinkingMsg                string
 	blastRadiusMsg             struct{ message string }
@@ -223,7 +225,7 @@ type chatModel struct {
 	turnHadAssistantOutput     bool                      // current turn produced assistant text
 	turnHadToolActivity        bool                      // current turn produced tool activity
 	messageQueue               []string                  // queued messages while agent is working
-	permReq                    *engine.PermissionRequest // pending permission prompt
+	permReq                    *safety.PermissionRequest // pending permission prompt
 	permReqSeq                 int
 	permTimeoutAt              time.Time   // deadline for the active permission prompt (zero = none)
 	askReq                     *askUserMsg // pending ask_user prompt

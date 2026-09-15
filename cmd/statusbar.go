@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 
 	tea "charm.land/bubbletea/v2"
@@ -14,7 +16,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/engine/git"
 	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
@@ -310,12 +311,12 @@ func specStageForStatus(m *chatModel) string {
 		return ""
 	}
 	stage := m.session.PermSvc().SpecStage()
-	if stage == engine.SpecStageNone {
+	if stage == safety.SpecStageNone {
 		return ""
 	}
 	label := specStageDisplayName(stage)
 	phase, phases := m.session.PermSvc().SpecPhaseProgress()
-	if stage == engine.SpecStageImplementing && phases > 0 {
+	if stage == safety.SpecStageImplementing && phases > 0 {
 		return fmt.Sprintf("%s %s %d/%d", icons.FileDocument(), label, phase, phases)
 	}
 	return fmt.Sprintf("%s %s", icons.FileDocument(), label)

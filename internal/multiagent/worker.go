@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/textutil"
@@ -61,9 +63,9 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 		sess := engine.NewRhoSession(ctx, selection, provider, model, systemPrompt, registry)
 
 		// Configure for autonomous operation
-		level := engine.AutonomyLevel(cfg.AutonomyLevel)
-		if level < engine.AutonomyFull {
-			level = engine.AutonomyFull
+		level := safety.AutonomyLevel(cfg.AutonomyLevel)
+		if level < safety.AutonomyFull {
+			level = safety.AutonomyFull
 		}
 		sess.PermSvc().SetAutonomy(level)
 		// DSH 2.4: Pin child approval policy to never (deny interactive asks deterministically).
@@ -78,7 +80,7 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 		// gate is configured: risky calls (network, destructive file ops)
 		// block until the operator responds. The gate's Await uses the worker
 		// ctx, so mission cancellation still unblocks it.
-		sess.SetPermissionFn(func(req engine.PermissionRequest) {
+		sess.SetPermissionFn(func(req safety.PermissionRequest) {
 			if cfg.ApprovalGate != nil && req.Response != nil {
 				if err := cfg.ApprovalGate.Check(ctx, req.ToolName, req.Summary); err != nil {
 					req.Response <- false
@@ -249,15 +251,15 @@ func ReadOnlyValidationWorker(provider, model, systemPrompt string) WorkerFunc {
 		})
 		sess := engine.NewRhoSession(ctx, selection, provider, model, systemPrompt, registry)
 
-		level := engine.AutonomyLevel(cfg.AutonomyLevel)
-		if level < engine.AutonomyFull {
-			level = engine.AutonomyFull
+		level := safety.AutonomyLevel(cfg.AutonomyLevel)
+		if level < safety.AutonomyFull {
+			level = safety.AutonomyFull
 		}
 		sess.PermSvc().SetAutonomy(level)
 		if setErr := sess.SetMaxTurns(30); setErr != nil {
 			return nil, fmt.Errorf("set max turns: %w", setErr)
 		}
-		sess.SetPermissionFn(func(req engine.PermissionRequest) {
+		sess.SetPermissionFn(func(req safety.PermissionRequest) {
 			if req.Response != nil {
 				req.Response <- true
 			}

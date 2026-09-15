@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -31,7 +33,7 @@ func (t *autoCommitCaptureTool) Execute(ctx context.Context, _ json.RawMessage) 
 func TestSetAutoCommit_PropagatesToToolContext(t *testing.T) {
 	cap := &autoCommitCaptureTool{}
 	sess := NewSession("test", "test", "sys", tool.NewRegistry(cap))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	if sess.AutoCommit() {
 		t.Fatal("default auto-commit should be off")
 	}

@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/netutil"
 	"github.com/GrayCodeAI/rho/internal/observability/metrics"
@@ -142,7 +144,7 @@ type Server struct {
 	// maxAutonomy caps the autonomy tier clients may request (server-side
 	// policy; zero means DefaultMaxAutonomy). The daemon has no human to
 	// approve permission prompts, so full/YOLO must be operator-opted-in.
-	maxAutonomy engine.AutonomyLevel
+	maxAutonomy safety.AutonomyLevel
 }
 
 // ReadyResponse is the JSON response from GET /v1/ready.
@@ -180,7 +182,7 @@ type Config struct {
 	// escalate to full/YOLO autonomy on their own. Zero means the default
 	// cap (AutonomySemi) applies; set explicitly (e.g. to AutonomyFull)
 	// only for trusted, operator-owned deployments.
-	MaxAutonomy engine.AutonomyLevel `json:"-"`
+	MaxAutonomy safety.AutonomyLevel `json:"-"`
 	// GraphLedger durably retains accepted POST /v1/graph/sync payloads for
 	// idempotency across daemon restarts. If nil, the server uses an
 	// in-memory ledger (survives only the process lifetime).
@@ -192,7 +194,7 @@ type Config struct {
 // auto-approves reads and writes but still gates Bash behind permission,
 // which is the most permissive setting that remains safe without a human
 // in the loop.
-const DefaultMaxAutonomy = engine.AutonomySemi
+const DefaultMaxAutonomy = safety.AutonomySemi
 
 // DefaultConfig returns reasonable defaults.
 func DefaultConfig() Config {
@@ -813,7 +815,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	// client must not be able to escalate to full/YOLO autonomy on its own.
 	// Operators opt in to higher tiers explicitly via Config.MaxAutonomy.
 	if req.Autonomy != "" {
-		requested := engine.ParseAutonomyLevel(req.Autonomy)
+		requested := safety.ParseAutonomyLevel(req.Autonomy)
 		max := s.maxAutonomy
 		if max == 0 {
 			max = DefaultMaxAutonomy
@@ -829,8 +831,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Auto-approve permissions based on autonomy (non-interactive)
-	sess.SetPermissionFn(func(pr engine.PermissionRequest) {
-		cfg := engine.PresetConfig(sess.PermSvc().Autonomy())
+	sess.SetPermissionFn(func(pr safety.PermissionRequest) {
+		cfg := safety.PresetConfig(sess.PermSvc().Autonomy())
 		allowed := !cfg.NeedsPermission(pr.ToolName, false)
 		if pr.Response != nil {
 			pr.Response <- allowed

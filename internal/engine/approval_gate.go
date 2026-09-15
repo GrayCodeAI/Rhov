@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 // approval_gate.go implements human-in-the-loop approval gates for high-risk
@@ -66,7 +68,7 @@ type ApprovalGate struct {
 	// auto-approved without prompting. Levels strictly above this still gate.
 	// Defaults to the zero value (AutonomySupervised), meaning every level above
 	// supervised gates flagged actions.
-	MaxAutoApprove AutonomyLevel
+	MaxAutoApprove safety.AutonomyLevel
 	// ConfirmFn asks the human to confirm an action. The typed ApprovalResponse
 	// lets callers return ApprovalApproveForSession to skip future prompts for
 	// the same category. When nil the gate falls back to Session.AskUserFn.

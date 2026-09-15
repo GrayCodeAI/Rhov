@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/spec"
 )
 
@@ -55,7 +56,7 @@ func (s *specSubcommand) Handle(m *chatModel, args []string, text string) (tea.M
 		return handleSpecConfig(m, arg)
 	}
 
-	m.session.PermSvc().SetSpecStage(engine.SpecStageProposal)
+	m.session.PermSvc().SetSpecStage(safety.SpecStageProposal)
 	m.messages = append(m.messages, displayMsg{role: "system", content: "Spec workflow started — Write/Edit/Bash are gated. Start with Proposal, then Specify + Design (parallel), then Plan, Tasks, and ApproveImplementation."})
 	if arg == "" {
 		return m, nil

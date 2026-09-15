@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	mission "github.com/GrayCodeAI/rho/internal/multiagent"
 	"github.com/GrayCodeAI/rho/internal/observability/logger"
 	"github.com/GrayCodeAI/rho/internal/tool"
@@ -66,7 +67,7 @@ func runMission(_ *cobra.Command, args []string) error {
 		effectiveModel = missionModel
 	}
 
-	autonomy := engine.ParseAutonomyLevel(missionAuto)
+	autonomy := safety.ParseAutonomyLevel(missionAuto)
 
 	cfg := mission.Config{
 		MaxWorkers:    missionWorkers,
@@ -206,7 +207,7 @@ func planWithLLM(ctx context.Context, prompt, provider, model string, settings r
 		return nil, err
 	}
 	sess.PermSvc().SetMaxTurns(1)
-	sess.PermSvc().SetPermissionFn(func(req engine.PermissionRequest) {
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
 		if req.Response != nil {
 			req.Response <- true
 		}

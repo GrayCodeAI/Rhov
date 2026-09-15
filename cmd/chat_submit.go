@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
@@ -31,10 +33,10 @@ func (m chatModel) submitUserMessage() (chatModel, tea.Cmd) {
 		m.input.Reset()
 		m.viewDirty = true
 		if strings.EqualFold(text, yoloConfirmToken) && m.session != nil {
-			m.session.PermSvc().SetAutonomy(engine.AutonomyYOLO)
-			m.settings.Autonomy = permissionTierSettingValue(engine.AutonomyYOLO)
+			m.session.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+			m.settings.Autonomy = permissionTierSettingValue(safety.AutonomyYOLO)
 			m.settings.AutonomyExplicit = true
-			m.messages = append(m.messages, displayMsg{role: "system", content: formatAutonomyTierMessage(engine.AutonomyYOLO) + " — enabled. " + icons.CloseThick() + " You will not be prompted for permission."})
+			m.messages = append(m.messages, displayMsg{role: "system", content: formatAutonomyTierMessage(safety.AutonomyYOLO) + " — enabled. " + icons.CloseThick() + " You will not be prompted for permission."})
 		} else {
 			m.messages = append(m.messages, displayMsg{role: "system", content: "Autonomy change cancelled — stayed on the previous tier."})
 		}

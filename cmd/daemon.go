@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/GrayCodeAI/rho/internal/daemon"
 	"github.com/GrayCodeAI/rho/internal/engine"
@@ -401,7 +403,7 @@ func generateDaemonAPIKey() (string, error) {
 // env var into the server-side autonomy cap. An empty value leaves the
 // default cap (AutonomySemi) in place; invalid values fail closed at
 // "supervised" rather than silently allowing full autonomy.
-func daemonAutonomyFromFlag(s string) engine.AutonomyLevel {
+func daemonAutonomyFromFlag(s string) safety.AutonomyLevel {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		s = os.Getenv("RHO_DAEMON_AUTONOMY")
@@ -411,17 +413,17 @@ func daemonAutonomyFromFlag(s string) engine.AutonomyLevel {
 	}
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "0", "supervised":
-		return engine.AutonomySupervised
+		return safety.AutonomySupervised
 	case "1", "basic":
-		return engine.AutonomyBasic
+		return safety.AutonomyBasic
 	case "2", "semi", "accept_edits", "acceptedits":
-		return engine.AutonomySemi
+		return safety.AutonomySemi
 	case "3", "full":
-		return engine.AutonomyFull
+		return safety.AutonomyFull
 	case "4", "yolo", "dont_ask", "dontask":
-		return engine.AutonomyYOLO
+		return safety.AutonomyYOLO
 	default:
-		return engine.AutonomySupervised
+		return safety.AutonomySupervised
 	}
 }
 

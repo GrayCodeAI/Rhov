@@ -4,13 +4,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
-	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestPermissionPromptTimeoutClearsStaleState(t *testing.T) {
 	m := newTestChatModel()
-	req := engine.PermissionRequest{
+	req := safety.PermissionRequest{
 		PermissionRequest: contracts.PermissionRequest{
 			ToolName: "Bash",
 			Summary:  "run git status",
@@ -88,7 +89,7 @@ func TestPromptTimeoutIgnoresNewerPrompt(t *testing.T) {
 
 func TestStreamErrClearsInteractivePromptState(t *testing.T) {
 	m := newTestChatModel()
-	req := engine.PermissionRequest{
+	req := safety.PermissionRequest{
 		PermissionRequest: contracts.PermissionRequest{
 			ToolName: "Bash",
 			Summary:  "run git status",

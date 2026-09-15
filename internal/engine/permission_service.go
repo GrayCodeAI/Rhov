@@ -36,11 +36,11 @@ type PermissionService struct {
 	mu sync.RWMutex
 	// perm is the underlying PermissionEngine. Always non-nil after
 	// construction.
-	perm *PermissionEngine
+	perm *safety.PermissionEngine
 	// memory/autoMode/classifier/bypassKill are the legacy
 	// PermissionEngine sub-fields, re-exported as top-level fields for
 	// backward compat.
-	memory     *PermissionMemory
+	memory     *safety.PermissionMemory
 	autoMode   *permissions.AutoModeState
 	classifier *permissions.Classifier
 	bypassKill *permissions.BypassKillswitch
@@ -50,7 +50,7 @@ type PermissionService struct {
 	// allowedDirs is the list of directories the agent may write to.
 	allowedDirs []string
 	// permissionFn is the user-callback that prompts for approval.
-	permissionFn func(PermissionRequest)
+	permissionFn func(safety.PermissionRequest)
 	// approval is the human-in-the-loop gate for high-risk tool actions.
 	approval *ApprovalGate
 	// askUserFn is the fallback interactive approval callback.
@@ -81,7 +81,7 @@ func NewPermissionService(log *logger.Logger) *PermissionService {
 	if log == nil {
 		log = logger.Default()
 	}
-	pe := NewPermissionEngine()
+	pe := safety.NewPermissionEngine()
 	s := &PermissionService{
 		perm:       pe,
 		memory:     pe.Memory,
@@ -119,12 +119,12 @@ func (s *PermissionService) loadManagedGovernance() {
 
 // WithEngine replaces the underlying PermissionEngine. Used by tests
 // and by callers that want a pre-configured engine.
-func (s *PermissionService) WithEngine(pe *PermissionEngine) *PermissionService {
+func (s *PermissionService) WithEngine(pe *safety.PermissionEngine) *PermissionService {
 	if s == nil {
 		return s
 	}
 	if pe == nil {
-		pe = NewPermissionEngine()
+		pe = safety.NewPermissionEngine()
 	}
 	s.perm = pe
 	s.memory = pe.Memory
@@ -155,12 +155,12 @@ func (s *PermissionService) SetLogger(l *logger.Logger) {
 
 // Engine returns the underlying PermissionEngine. Used by the legacy
 // Session fields that read s.Perm directly.
-func (s *PermissionService) Engine() *PermissionEngine { return s.perm }
+func (s *PermissionService) Engine() *safety.PermissionEngine { return s.perm }
 
 // CheckTool is the central permission check. Returns (granted, denyMsg).
 // The caller (engine/stream_tool_exec.go) handles the tool_result
 // event emission and the post-call side effects.
-func (s *PermissionService) CheckTool(ctx context.Context, info ToolCallInfo) (bool, string) {
+func (s *PermissionService) CheckTool(ctx context.Context, info safety.ToolCallInfo) (bool, string) {
 	if s == nil || s.perm == nil {
 		return false, "permission service is unavailable"
 	}
@@ -175,13 +175,13 @@ func (s *PermissionService) CheckTool(ctx context.Context, info ToolCallInfo) (b
 }
 
 // CheckToolDecision evaluates a request and exposes stable decision metadata.
-func (s *PermissionService) CheckToolDecision(ctx context.Context, info ToolCallInfo) safety.Decision {
+func (s *PermissionService) CheckToolDecision(ctx context.Context, info safety.ToolCallInfo) safety.Decision {
 	perm := s.engineCopy()
 	return perm.CheckToolDecision(ctx, info)
 }
 
 // EvaluateTool returns allow, ask, or deny without blocking on the UI.
-func (s *PermissionService) EvaluateTool(ctx context.Context, info ToolCallInfo) safety.Decision {
+func (s *PermissionService) EvaluateTool(ctx context.Context, info safety.ToolCallInfo) safety.Decision {
 	perm := s.engineCopy()
 	return perm.EvaluateTool(ctx, info)
 }
@@ -196,7 +196,7 @@ func (s *PermissionService) PolicySnapshot() safety.PolicySnapshot {
 }
 
 // CheckToolSnapshot evaluates a request against a previously captured policy.
-func (s *PermissionService) CheckToolSnapshot(ctx context.Context, info ToolCallInfo, snapshot safety.PolicySnapshot) safety.Decision {
+func (s *PermissionService) CheckToolSnapshot(ctx context.Context, info safety.ToolCallInfo, snapshot safety.PolicySnapshot) safety.Decision {
 	perm := s.engineCopy()
 	return perm.CheckToolSnapshot(ctx, info, snapshot)
 }
@@ -204,7 +204,7 @@ func (s *PermissionService) CheckToolSnapshot(ctx context.Context, info ToolCall
 // engineCopy returns a copy of the engine for cross-goroutine evaluation. The
 // service lock is held only for the duration of the copy, so evaluation does
 // not block policy updates or user prompts.
-func (s *PermissionService) engineCopy() *PermissionEngine {
+func (s *PermissionService) engineCopy() *safety.PermissionEngine {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.perm.Copy()
@@ -540,7 +540,7 @@ func (s *PermissionService) SetAllowedDirs(dirs []string) {
 // profile from that level, preserving any user overrides. Writes directly to
 // the underlying PermissionEngine — the same field CheckTool reads — rather
 // than a separate shadow field, so the change actually takes effect.
-func (s *PermissionService) SetAutonomy(level AutonomyLevel) {
+func (s *PermissionService) SetAutonomy(level safety.AutonomyLevel) {
 	if s == nil || s.perm == nil {
 		return
 	}
@@ -587,7 +587,7 @@ func (s *PermissionService) AutonomyProfile() *safety.AutonomyProfile {
 
 // SetSpecStage sets the independent spec-workflow stage. Also writes
 // directly to the engine, same reasoning as SetAutonomy.
-func (s *PermissionService) SetSpecStage(stage SpecStage) {
+func (s *PermissionService) SetSpecStage(stage safety.SpecStage) {
 	if s != nil && s.perm != nil {
 		s.perm.Stage = stage
 	}
@@ -649,7 +649,7 @@ func (s *PermissionService) SetSpecSlug(slug string) {
 }
 
 // SetPermissionFn replaces the user-callback.
-func (s *PermissionService) SetPermissionFn(fn func(PermissionRequest)) {
+func (s *PermissionService) SetPermissionFn(fn func(safety.PermissionRequest)) {
 	if s == nil || s.perm == nil {
 		return
 	}
@@ -659,7 +659,7 @@ func (s *PermissionService) SetPermissionFn(fn func(PermissionRequest)) {
 
 // PermissionFn returns the configured approval callback for sub-agent
 // construction and legacy integrations.
-func (s *PermissionService) PermissionFn() func(PermissionRequest) {
+func (s *PermissionService) PermissionFn() func(safety.PermissionRequest) {
 	if s == nil {
 		return nil
 	}
@@ -691,7 +691,7 @@ func (s *PermissionService) AllowedDirs() []string {
 }
 
 // Autonomy returns the autonomy level.
-func (s *PermissionService) Autonomy() AutonomyLevel {
+func (s *PermissionService) Autonomy() safety.AutonomyLevel {
 	if s == nil || s.perm == nil {
 		return 0
 	}
@@ -699,9 +699,9 @@ func (s *PermissionService) Autonomy() AutonomyLevel {
 }
 
 // SpecStage returns the active spec-workflow stage.
-func (s *PermissionService) SpecStage() SpecStage {
+func (s *PermissionService) SpecStage() safety.SpecStage {
 	if s == nil || s.perm == nil {
-		return SpecStageNone
+		return safety.SpecStageNone
 	}
 	return s.perm.Stage
 }
@@ -758,9 +758,9 @@ func (s *PermissionService) AutonomyExplicit() bool {
 }
 
 // SpecProgress returns the workflow stage and phase counters atomically.
-func (s *PermissionService) SpecProgress() (SpecStage, int, int) {
+func (s *PermissionService) SpecProgress() (safety.SpecStage, int, int) {
 	if s == nil || s.perm == nil {
-		return SpecStageNone, 0, 0
+		return safety.SpecStageNone, 0, 0
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -771,7 +771,7 @@ func (s *PermissionService) SpecProgress() (SpecStage, int, int) {
 // kept in sync with the engine's classification state; callers
 // that historically used `sess.Permissions.AllowSpec(...)` should
 // migrate to `sess.PermSvc().Memory().AllowSpec(...)`.
-func (s *PermissionService) Memory() *PermissionMemory {
+func (s *PermissionService) Memory() *safety.PermissionMemory {
 	if s == nil {
 		return nil
 	}
@@ -779,7 +779,7 @@ func (s *PermissionService) Memory() *PermissionMemory {
 }
 
 // SetMemory replaces the session's permission-memory policy store.
-func (s *PermissionService) SetMemory(m *PermissionMemory) {
+func (s *PermissionService) SetMemory(m *safety.PermissionMemory) {
 	if s == nil || s.perm == nil {
 		return
 	}

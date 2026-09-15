@@ -14,8 +14,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/errhint"
 	"github.com/GrayCodeAI/rho/internal/multiagent/agents"
 	"github.com/GrayCodeAI/rho/internal/notify"
@@ -237,7 +238,7 @@ func runExec(_ *cobra.Command, args []string) error {
 
 	// Apply autonomy level
 	if execAutoLevel != "" {
-		sess.PermSvc().SetAutonomy(engine.ParseAutonomyLevel(execAutoLevel))
+		sess.PermSvc().SetAutonomy(safety.ParseAutonomyLevel(execAutoLevel))
 	}
 
 	// Prompt-injection guard: when the prompt originates from an untrusted
@@ -246,7 +247,7 @@ func runExec(_ *cobra.Command, args []string) error {
 	// cannot drive writes or Bash. Maintainers can opt out with
 	// RHO_GHA_TRUST_EVENT=1.
 	if ghaCtx.Active && !ghaCtx.Trusted {
-		const ceiling = engine.AutonomyBasic
+		const ceiling = safety.AutonomyBasic
 		if sess.PermSvc().Autonomy() > ceiling {
 			fmt.Fprintf(os.Stderr, "%s\n", auditTint(fmt.Sprintf("rho: untrusted GitHub event (author_association=%q); capping autonomy at %s", ghaCtx.AuthorAssociation, ceiling), warnAmber))
 			sess.PermSvc().SetAutonomy(ceiling)
@@ -254,8 +255,8 @@ func runExec(_ *cobra.Command, args []string) error {
 	}
 
 	// In exec mode, auto-approve based on autonomy level (no TUI to ask)
-	sess.PermSvc().SetPermissionFn(func(req engine.PermissionRequest) {
-		cfg := engine.PresetConfig(sess.PermSvc().Autonomy())
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
+		cfg := safety.PresetConfig(sess.PermSvc().Autonomy())
 		allowed := !cfg.NeedsPermission(req.ToolName, false)
 		if req.Response != nil {
 			req.Response <- allowed
@@ -935,12 +936,12 @@ func execOnceInWorktree(prompt string, attemptIdx int) (*ExecResult, error) {
 	}
 
 	if execAutoLevel != "" {
-		sess.PermSvc().SetAutonomy(engine.ParseAutonomyLevel(execAutoLevel))
+		sess.PermSvc().SetAutonomy(safety.ParseAutonomyLevel(execAutoLevel))
 	} else {
-		sess.PermSvc().SetAutonomy(engine.AutonomyFull)
+		sess.PermSvc().SetAutonomy(safety.AutonomyFull)
 	}
-	sess.PermSvc().SetPermissionFn(func(req engine.PermissionRequest) {
-		cfg := engine.PresetConfig(sess.PermSvc().Autonomy())
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
+		cfg := safety.PresetConfig(sess.PermSvc().Autonomy())
 		allowed := !cfg.NeedsPermission(req.ToolName, false)
 		if req.Response != nil {
 			req.Response <- allowed

@@ -3,8 +3,9 @@ package cmd
 import (
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	tea "charm.land/bubbletea/v2"
-	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestSpecPicker_HasSevenActions(t *testing.T) {
@@ -22,18 +23,18 @@ func TestSpecPicker_HasSevenActions(t *testing.T) {
 
 func TestSpecPicker_OpenRecordsStage(t *testing.T) {
 	sp := NewSpecPicker(80)
-	sp.Open(engine.SpecStagePlan)
+	sp.Open(safety.SpecStagePlan)
 	if !sp.IsOpen() {
 		t.Fatal("expected picker to be open")
 	}
-	if sp.stage != engine.SpecStagePlan {
+	if sp.stage != safety.SpecStagePlan {
 		t.Fatalf("expected stage SpecStagePlan, got %v", sp.stage)
 	}
 }
 
 func TestSpecPicker_EnterSelectsAndCloses(t *testing.T) {
 	sp := NewSpecPicker(80)
-	sp.Open(engine.SpecStageNone)
+	sp.Open(safety.SpecStageNone)
 
 	chosen, handled := sp.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if !handled || chosen != nil {
@@ -57,7 +58,7 @@ func TestSpecPicker_EnterSelectsAndCloses(t *testing.T) {
 
 func TestSpecPicker_EscClosesWithoutSelecting(t *testing.T) {
 	sp := NewSpecPicker(80)
-	sp.Open(engine.SpecStageNone)
+	sp.Open(safety.SpecStageNone)
 
 	chosen, handled := sp.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if !handled || chosen != nil {
@@ -70,7 +71,7 @@ func TestSpecPicker_EscClosesWithoutSelecting(t *testing.T) {
 
 func TestSpecPicker_FilterByName(t *testing.T) {
 	sp := NewSpecPicker(80)
-	sp.Open(engine.SpecStageNone)
+	sp.Open(safety.SpecStageNone)
 
 	for _, r := range "reset" {
 		sp.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
@@ -96,7 +97,7 @@ func TestChatSpecSubcommand_WithDescriptionStartsDirectly(t *testing.T) {
 	if cm.specPicker != nil && cm.specPicker.IsOpen() {
 		t.Error("expected /spec with a description to start directly, not open the picker")
 	}
-	if currentSpecStage(cm.session) != engine.SpecStageProposal {
+	if currentSpecStage(cm.session) != safety.SpecStageProposal {
 		t.Fatalf("expected stage SpecStageProposal, got %v", currentSpecStage(cm.session))
 	}
 }

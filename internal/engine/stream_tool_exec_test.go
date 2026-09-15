@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -68,7 +70,7 @@ func (t *countedReadTool) Execute(ctx context.Context, input json.RawMessage) (s
 
 func TestExecuteToolCalls_PreservesOriginalOrder(t *testing.T) {
 	sess := NewSession("test", "test", "system", tool.NewRegistry(orderedReadTool{}))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	calls := []types.ToolCall{
 		{ID: "slow", Name: "Read", Arguments: map[string]interface{}{"id": 1, "delay": 30}},
 		{ID: "fast", Name: "Read", Arguments: map[string]interface{}{"id": 2, "delay": 1}},
@@ -91,7 +93,7 @@ func TestExecuteToolCalls_PreservesOriginalOrder(t *testing.T) {
 func TestExecuteToolCalls_BoundsReadOnlyConcurrency(t *testing.T) {
 	read := &countedReadTool{}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(read))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	calls := make([]types.ToolCall, maxConcurrentReadOnlyToolCalls+6)
 	for i := range calls {
 		calls[i] = types.ToolCall{ID: fmt.Sprintf("r%d", i), Name: "Read", Arguments: map[string]interface{}{"id": i}}
@@ -117,7 +119,7 @@ func TestExecuteOne_PreStageShortCircuitsBeforeExecution(t *testing.T) {
 	executed := false
 	read := &countingExecTool{ran: &executed}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(read))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	// Register a pre-execute interceptor that denies before the raw tool ever
 	// runs, proving the StagePreExecute waterfall is in the ExecuteOne path.
@@ -158,7 +160,7 @@ func TestExecuteOne_EmptyPipelineStillExecutes(t *testing.T) {
 	executed := false
 	read := &countingExecTool{ran: &executed}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(read))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	// No interceptor registered: empty pipeline is a strict pass-through.
 	ch := make(chan StreamEvent, 4)
@@ -172,7 +174,7 @@ func TestExecuteOne_PreStageErrorIsDistinct(t *testing.T) {
 	executed := false
 	read := &countingExecTool{ran: &executed}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(read))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.Tools().Pipeline().Register(tool.StagePreExecute, tool.InterceptFn(func(ctx context.Context, req tool.ToolRequest, res *tool.ToolResult, next func() error) error {
 		return errors.New("pipeline infra failure")
 	}))
@@ -202,7 +204,7 @@ func (t *contextCaptureTool) Execute(ctx context.Context, _ json.RawMessage) (st
 func TestExecuteSingleTool_PropagatesPermissionContext(t *testing.T) {
 	capture := &contextCaptureTool{}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.SetAllowedDirs([]string{"/tmp/extra"})
 	ch := make(chan StreamEvent, 4)
 	res := sess.executeSingleTool(context.Background(), types.ToolCall{Name: "Read", ID: "ctx"}, ch, 0, "")
@@ -238,7 +240,7 @@ func TestGenerateDiffSummary_IncludesUnifiedPreview(t *testing.T) {
 func TestToolServiceWorkingDirPropagatesContext(t *testing.T) {
 	capture := &contextCaptureTool{}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.Tools().SetWorkingDir("/tmp/rho-working-dir")
 
 	ch := make(chan StreamEvent, 4)
@@ -254,7 +256,7 @@ func TestToolServiceWorkingDirPropagatesContext(t *testing.T) {
 func TestToolServiceReadOnlyBashPropagatesContext(t *testing.T) {
 	capture := &contextCaptureTool{}
 	sess := NewSession("test", "test", "system", tool.NewRegistry(capture))
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	sess.Tools().SetReadOnlyBash(true)
 
 	ch := make(chan StreamEvent, 4)

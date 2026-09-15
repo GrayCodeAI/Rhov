@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 
 	"github.com/GrayCodeAI/rho/internal/tool"
@@ -66,7 +68,7 @@ func TestSessionLifecycle(t *testing.T) {
 func TestTrustTiersAndSpecStageRoundTrip(t *testing.T) {
 	sess := NewSession("", "", "test", nil)
 
-	tiers := []AutonomyLevel{AutonomySupervised, AutonomyBasic, AutonomySemi, AutonomyFull, AutonomyYOLO}
+	tiers := []safety.AutonomyLevel{safety.AutonomySupervised, safety.AutonomyBasic, safety.AutonomySemi, safety.AutonomyFull, safety.AutonomyYOLO}
 	for _, tier := range tiers {
 		sess.PermSvc().SetAutonomy(tier)
 		if sess.PermSvc().Autonomy() != tier {
@@ -74,7 +76,7 @@ func TestTrustTiersAndSpecStageRoundTrip(t *testing.T) {
 		}
 	}
 
-	stages := []SpecStage{SpecStageNone, SpecStageSpecify, SpecStagePlan, SpecStageTasks, SpecStageImplementing}
+	stages := []safety.SpecStage{safety.SpecStageNone, safety.SpecStageSpecify, safety.SpecStagePlan, safety.SpecStageTasks, safety.SpecStageImplementing}
 	for _, stage := range stages {
 		sess.PermSvc().SetSpecStage(stage)
 		if sess.PermSvc().SpecStage() != stage {
@@ -189,7 +191,7 @@ func TestToolRegistry(t *testing.T) {
 
 // TestPermissionMemory tests permission memory.
 func TestPermissionMemory(t *testing.T) {
-	pm := NewPermissionMemory()
+	pm := safety.NewPermissionMemory()
 
 	// Test always allow
 	pm.AlwaysAllow("Bash")

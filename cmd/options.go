@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/scaffold"
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
@@ -393,14 +395,14 @@ func configureSessionStartup(sess *engine.Session, settings rhoconfig.Settings, 
 	sess.EnsureAutoCompactor()
 
 	if settings.AutonomyExplicit {
-		sess.PermSvc().SetAutonomy(engine.AutonomySupervised)
+		sess.PermSvc().SetAutonomy(safety.AutonomySupervised)
 	} else if lvl := autonomyFromSettings(settings.Autonomy); lvl != 0 {
 		sess.PermSvc().SetAutonomy(lvl)
 	}
 	// CLI safety overrides saved settings: the explicit dangerous-skip flag
 	// must not be silently downgraded by a persisted autonomy tier.
 	if dangerouslySkipPermissions {
-		sess.PermSvc().SetAutonomy(engine.AutonomyYOLO)
+		sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	}
 
 	// Per-model thinking preference (Setup → Models Think column), with

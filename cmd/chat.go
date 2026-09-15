@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"golang.org/x/term"
 
 	"charm.land/bubbles/v2/spinner"
@@ -318,7 +320,7 @@ func newChatModelWithRegistry(ref *progRef, systemPrompt string, settings rhocon
 	startup.EndPhase("newChatModel:welcome")
 
 	// Wire permission system
-	sess.PermSvc().SetPermissionFn(func(req engine.PermissionRequest) {
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
 		ref.Send(permissionAskMsg{req: req})
 	})
 
@@ -326,7 +328,7 @@ func newChatModelWithRegistry(ref *progRef, systemPrompt string, settings rhocon
 	// of the permission engine; falls back to AskUserFn for confirmation.
 	sess.SetApproval(&engine.ApprovalGate{
 		Enabled:        true,
-		MaxAutoApprove: engine.AutonomySemi,
+		MaxAutoApprove: safety.AutonomySemi,
 	})
 
 	// Wire ask_user tool (5-minute timeout matches permission prompts).

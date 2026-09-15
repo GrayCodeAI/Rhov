@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
@@ -50,7 +52,7 @@ func (p promptInput) readLine(prompt string) (string, error) {
 }
 
 func configureInteractivePrompts(sess *engine.Session, input promptInput) {
-	sess.PermSvc().SetPermissionFn(func(req engine.PermissionRequest) {
+	sess.PermSvc().SetPermissionFn(func(req safety.PermissionRequest) {
 		answer, err := input.readLine(fmt.Sprintf("\nAllow %s: %s [y/N] ", req.ToolName, req.Summary))
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "\nAllow %s: %s [y/N] (denied: %v)\n", req.ToolName, req.Summary, err)

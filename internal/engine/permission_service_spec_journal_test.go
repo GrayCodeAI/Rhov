@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/eventlog"
 )
 
@@ -12,7 +14,7 @@ func TestPermissionServiceAdvanceSpecStageJournalsFact(t *testing.T) {
 	log := eventlog.New(nil)
 	s.SetJournal(log)
 
-	s.SetSpecStage(SpecStageProposal)
+	s.SetSpecStage(safety.SpecStageProposal)
 	s.AdvanceSpecStage("Specify")
 
 	events := log.OfType(eventlog.SpecState)

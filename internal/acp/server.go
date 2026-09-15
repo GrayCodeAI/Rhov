@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/attachment"
 	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/session"
@@ -588,8 +590,8 @@ func (s *Server) handleCancel(msg rpcMessage) {
 
 // permissionFnFor returns a PermissionFn that asks the ACP client to approve a
 // tool call via session/request_permission, falling back to denial on timeout.
-func (s *Server) permissionFnFor(sessionID string) func(engine.PermissionRequest) {
-	return func(req engine.PermissionRequest) {
+func (s *Server) permissionFnFor(sessionID string) func(safety.PermissionRequest) {
+	return func(req safety.PermissionRequest) {
 		params := map[string]any{
 			"sessionId": sessionID,
 			"toolCall": map[string]any{

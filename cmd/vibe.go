@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
@@ -79,7 +81,7 @@ func VibeLoop(ctx context.Context, sess *engine.Session, prompt string, config V
 	}
 
 	// Configure session for full autonomy
-	sess.PermSvc().SetAutonomy(engine.AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 
 	currentPrompt := prompt
 

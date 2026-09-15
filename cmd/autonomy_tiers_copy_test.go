@@ -4,18 +4,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 func TestAutonomyTierDescriptions_PlainLanguage(t *testing.T) {
 	cases := []struct {
-		level engine.AutonomyLevel
+		level safety.AutonomyLevel
 		need  []string
 	}{
-		{engine.AutonomyBasic, []string{"Explore only", "commands ask"}},
-		{engine.AutonomySemi, []string{"File changes auto-approve", "commands ask"}},
-		{engine.AutonomyFull, []string{"Commands auto-run", "risky"}},
-		{engine.AutonomyYOLO, []string{"Minimal prompts", "highest-risk"}},
+		{safety.AutonomyBasic, []string{"Explore only", "commands ask"}},
+		{safety.AutonomySemi, []string{"File changes auto-approve", "commands ask"}},
+		{safety.AutonomyFull, []string{"Commands auto-run", "risky"}},
+		{safety.AutonomyYOLO, []string{"Minimal prompts", "highest-risk"}},
 	}
 	for _, tc := range cases {
 		desc := autonomyTierDescription(tc.level)
@@ -28,7 +28,7 @@ func TestAutonomyTierDescriptions_PlainLanguage(t *testing.T) {
 }
 
 func TestFormatAutonomyTierMessage_NoArrowJargon(t *testing.T) {
-	msg := formatAutonomyTierMessage(engine.AutonomyFull)
+	msg := formatAutonomyTierMessage(safety.AutonomyFull)
 	if strings.Contains(msg, "→") {
 		t.Fatalf("expected no arrow jargon, got %q", msg)
 	}

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
 )
 
 func TestPermissionService_CheckTool(t *testing.T) {
@@ -17,13 +19,13 @@ func TestPermissionService_CheckTool(t *testing.T) {
 	// forces denial (not implemented in the engine, so use a
 	// permissionFn that returns a specific deny). For now, just verify
 	// the wrapper compiles and returns a (bool, string).
-	granted, _ := s.CheckTool(context.Background(), ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "ls"}})
+	granted, _ := s.CheckTool(context.Background(), safety.ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "ls"}})
 	_ = granted
 }
 
 func TestPermissionService_SetSpecStage(t *testing.T) {
 	s := NewPermissionService(nil)
-	stages := []SpecStage{SpecStageNone, SpecStageSpecify, SpecStagePlan, SpecStageTasks, SpecStageImplementing}
+	stages := []safety.SpecStage{safety.SpecStageNone, safety.SpecStageSpecify, safety.SpecStagePlan, safety.SpecStageTasks, safety.SpecStageImplementing}
 	for _, stage := range stages {
 		s.SetSpecStage(stage)
 		if s.SpecStage() != stage {
@@ -46,11 +48,11 @@ func TestPermissionService_BudgetAndTurnCaps(t *testing.T) {
 
 func TestPermissionService_AutonomyAndAllowedDirs(t *testing.T) {
 	s := NewPermissionService(nil)
-	s.SetAutonomy(AutonomySupervised)
+	s.SetAutonomy(safety.AutonomySupervised)
 	dirs := []string{"/tmp", "/var/folders"}
 	s.SetAllowedDirs(dirs)
 	dirs[0] = "/changed"
-	if s.Autonomy() != AutonomySupervised {
+	if s.Autonomy() != safety.AutonomySupervised {
 		t.Errorf("Autonomy = %v, want AutonomySupervised", s.Autonomy())
 	}
 	if len(s.AllowedDirs()) != 2 {
@@ -66,13 +68,13 @@ func TestPermissionService_AutonomyAndAllowedDirs(t *testing.T) {
 func TestPermissionService_ResetSpecIncrementsRevision(t *testing.T) {
 	s := NewPermissionService(nil)
 	s.SetSpecSlug("demo")
-	s.SetSpecStage(SpecStageImplementing)
+	s.SetSpecStage(safety.SpecStageImplementing)
 	before := s.Engine().Revision
 	s.ResetSpec()
 	if got := s.SpecSlug(); got != "" {
 		t.Fatalf("SpecSlug after reset = %q, want empty", got)
 	}
-	if got := s.SpecStage(); got != SpecStageNone {
+	if got := s.SpecStage(); got != safety.SpecStageNone {
 		t.Fatalf("SpecStage after reset = %v, want none", got)
 	}
 	if s.Engine().Revision <= before {
@@ -88,12 +90,12 @@ func TestPermissionService_ConcurrentPolicyUpdates(t *testing.T) {
 		wg.Add(2)
 		go func(i int) {
 			defer wg.Done()
-			s.SetAutonomy(AutonomyLevel(i % int(AutonomyYOLO+1)))
+			s.SetAutonomy(safety.AutonomyLevel(i % int(safety.AutonomyYOLO+1)))
 			s.SetAllowedDirs([]string{"/workspace", "/tmp"})
 		}(i)
 		go func() {
 			defer wg.Done()
-			_ = s.EvaluateTool(ctx, ToolCallInfo{Name: "Read"})
+			_ = s.EvaluateTool(ctx, safety.ToolCallInfo{Name: "Read"})
 			_ = s.PolicySnapshot()
 			_, _, _ = s.SpecProgress()
 		}()
@@ -112,7 +114,7 @@ func TestPermissionService_ApplyPolicySnapshotCopiesRulesAndScopes(t *testing.T)
 	if child.AllowedDirs()[0] != "/workspace" {
 		t.Fatalf("child allowed dirs changed through snapshot alias: %v", child.AllowedDirs())
 	}
-	allowed, reason := child.CheckTool(context.Background(), ToolCallInfo{Name: "Write"})
+	allowed, reason := child.CheckTool(context.Background(), safety.ToolCallInfo{Name: "Write"})
 	if allowed || reason != "Permission denied (rule)." {
 		t.Fatalf("child did not inherit deny rule: allowed=%v reason=%q", allowed, reason)
 	}
@@ -131,7 +133,7 @@ func TestPermissionService_IsZero(t *testing.T) {
 	if !s.IsZero() {
 		t.Error("freshly-constructed PermissionService should be IsZero()")
 	}
-	s.SetPermissionFn(func(req PermissionRequest) {})
+	s.SetPermissionFn(func(req safety.PermissionRequest) {})
 	if s.IsZero() {
 		t.Error("after SetPermissionFn, service should not be IsZero()")
 	}
@@ -153,14 +155,14 @@ func TestPermissionService_NewReturnsReadyEngine(t *testing.T) {
 func TestPermissionService_SetPermissionFn(t *testing.T) {
 	s := NewPermissionService(nil)
 	called := false
-	s.SetPermissionFn(func(req PermissionRequest) {
+	s.SetPermissionFn(func(req safety.PermissionRequest) {
 		called = true
 	})
 	if s.Engine().PromptFn == nil {
 		t.Error("SetPermissionFn should have set the engine's PromptFn")
 	}
 	// Call directly to verify.
-	s.Engine().PromptFn(PermissionRequest{})
+	s.Engine().PromptFn(safety.PermissionRequest{})
 	if !called {
 		t.Error("PromptFn was not called")
 	}

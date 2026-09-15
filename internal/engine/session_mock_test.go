@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -192,8 +194,8 @@ func TestSession_SetAutonomy(t *testing.T) {
 	mc := newMockClient()
 	s := newMockSession(mc)
 
-	s.PermSvc().SetAutonomy(AutonomyYOLO)
-	if s.PermSvc().Autonomy() != AutonomyYOLO {
+	s.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	if s.PermSvc().Autonomy() != safety.AutonomyYOLO {
 		t.Errorf("SetAutonomy did not take effect, got %v", s.PermSvc().Autonomy())
 	}
 }

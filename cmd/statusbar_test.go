@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	lipgloss "charm.land/lipgloss/v2"
 	"github.com/GrayCodeAI/rho/internal/engine"
 )
@@ -37,7 +39,7 @@ func TestRenderStatusBar_SingleLineAtWidth80(t *testing.T) {
 
 func TestRenderStatusBarSecondaryRight_OmitsDuplicatedAutonomy(t *testing.T) {
 	sess := engine.NewSession("", "test-model", "system", nil)
-	sess.PermSvc().SetAutonomy(engine.AutonomyBasic)
+	sess.PermSvc().SetAutonomy(safety.AutonomyBasic)
 
 	if got := renderStatusBarSecondaryRight(&chatModel{session: sess}); strings.Contains(got, "Scout") {
 		t.Fatalf("secondary status = %q, want autonomy shown only in top footer", got)

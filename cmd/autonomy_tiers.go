@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"image/color"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	lipgloss "charm.land/lipgloss/v2"
-	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 // Five container autonomy tiers (Scout → Builder → Operator → Autonomous → Always Ask).
 // Supervised ("Always Ask") is included in the Ctrl+L cycle but requires a
 // deliberate double-press to land on (see chat_update.go ctrl+l handling) so
 // repeated key-presses can't accidentally drop the user into max-friction mode.
-var containerAutonomyTiers = []engine.AutonomyLevel{
-	engine.AutonomyBasic,
-	engine.AutonomySemi,
-	engine.AutonomyFull,
-	engine.AutonomyYOLO,
-	engine.AutonomySupervised,
+var containerAutonomyTiers = []safety.AutonomyLevel{
+	safety.AutonomyBasic,
+	safety.AutonomySemi,
+	safety.AutonomyFull,
+	safety.AutonomyYOLO,
+	safety.AutonomySupervised,
 }
 
 var containerAutonomyTierNames = []string{
@@ -29,14 +30,14 @@ var containerAutonomyTierNames = []string{
 }
 
 // DefaultContainerAutonomy is the tier applied when the Docker container becomes ready.
-const DefaultContainerAutonomy = engine.AutonomySemi
+const DefaultContainerAutonomy = safety.AutonomySemi
 
 // yoloConfirmToken is the exact string a user must type (case-insensitive) to
 // confirm entry into YOLO ("Autonomous") unattended mode via the picker.
 const yoloConfirmToken = "continue"
 
-func autonomyTierName(level engine.AutonomyLevel) string {
-	if level == engine.AutonomySupervised {
+func autonomyTierName(level safety.AutonomyLevel) string {
+	if level == safety.AutonomySupervised {
 		return "Always Ask"
 	}
 	for i, l := range containerAutonomyTiers {
@@ -47,7 +48,7 @@ func autonomyTierName(level engine.AutonomyLevel) string {
 	return "Builder"
 }
 
-func autonomyTierIndex(level engine.AutonomyLevel) int {
+func autonomyTierIndex(level safety.AutonomyLevel) int {
 	for i, l := range containerAutonomyTiers {
 		if l == level {
 			return i
@@ -60,11 +61,11 @@ func autonomyTierIndex(level engine.AutonomyLevel) int {
 // Supervised ("Always Ask") — repeated Ctrl+L wraps YOLO → Basic. Use
 // nextAutonomyTierIncludingSupervised when the user explicitly confirms they
 // want the cautious tier.
-func nextAutonomyTier(level engine.AutonomyLevel) engine.AutonomyLevel {
+func nextAutonomyTier(level safety.AutonomyLevel) safety.AutonomyLevel {
 	idx := autonomyTierIndex(level)
 	for {
 		idx = (idx + 1) % len(containerAutonomyTiers)
-		if containerAutonomyTiers[idx] != engine.AutonomySupervised {
+		if containerAutonomyTiers[idx] != safety.AutonomySupervised {
 			return containerAutonomyTiers[idx]
 		}
 	}
@@ -72,74 +73,74 @@ func nextAutonomyTier(level engine.AutonomyLevel) engine.AutonomyLevel {
 
 // nextAutonomyTierIncludingSupervised returns the next tier with Supervised
 // included in the cycle (used after the user confirms via double-press).
-func nextAutonomyTierIncludingSupervised(level engine.AutonomyLevel) engine.AutonomyLevel {
+func nextAutonomyTierIncludingSupervised(level safety.AutonomyLevel) safety.AutonomyLevel {
 	return containerAutonomyTiers[(autonomyTierIndex(level)+1)%len(containerAutonomyTiers)]
 }
 
 // isSupervisedPending reports whether the next regular cycle step would land
 // on Supervised (i.e. the current tier is YOLO). The UI uses this to prompt
 // for confirmation.
-func isSupervisedPending(level engine.AutonomyLevel) bool {
-	return level == engine.AutonomyYOLO
+func isSupervisedPending(level safety.AutonomyLevel) bool {
+	return level == safety.AutonomyYOLO
 }
 
 // autonomyTierDescription is short copy shown when the user changes tier (ctrl+L).
-func autonomyTierDescription(level engine.AutonomyLevel) string {
+func autonomyTierDescription(level safety.AutonomyLevel) string {
 	switch level {
-	case engine.AutonomySupervised:
+	case safety.AutonomySupervised:
 		return "Prompts for permission on every tool call"
-	case engine.AutonomyBasic:
+	case safety.AutonomyBasic:
 		return "Explore only — edits and commands ask first"
-	case engine.AutonomySemi:
+	case safety.AutonomySemi:
 		return "File changes auto-approve — commands ask first"
-	case engine.AutonomyFull:
+	case safety.AutonomyFull:
 		return "Commands auto-run — risky actions ask first"
-	case engine.AutonomyYOLO:
+	case safety.AutonomyYOLO:
 		return "Minimal prompts — only the highest-risk actions stop"
 	default:
 		return "File changes auto-approve — commands ask first"
 	}
 }
 
-func autonomyTierColor(level engine.AutonomyLevel) color.Color {
+func autonomyTierColor(level safety.AutonomyLevel) color.Color {
 	switch level {
-	case engine.AutonomySupervised:
+	case safety.AutonomySupervised:
 		return lipgloss.Color("#9E9E9E") // matches textMuted's dark value
-	case engine.AutonomyBasic:
+	case safety.AutonomyBasic:
 		return tierInspect
-	case engine.AutonomySemi:
+	case safety.AutonomySemi:
 		return tierEdit
-	case engine.AutonomyFull:
+	case safety.AutonomyFull:
 		return tierRun
-	case engine.AutonomyYOLO:
+	case safety.AutonomyYOLO:
 		return tierTrust
 	default:
 		return tierEdit
 	}
 }
 
-func autonomyTierStyle(level engine.AutonomyLevel) lipgloss.Style {
+func autonomyTierStyle(level safety.AutonomyLevel) lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(autonomyTierColor(level)).Bold(true).Inline(true)
 }
 
-func renderAutonomyTierLabel(level engine.AutonomyLevel) string {
+func renderAutonomyTierLabel(level safety.AutonomyLevel) string {
 	return autonomyTierStyle(level).Render(autonomyTierName(level))
 }
 
-func formatAutonomyTierMessage(level engine.AutonomyLevel) string {
+func formatAutonomyTierMessage(level safety.AutonomyLevel) string {
 	return fmt.Sprintf("Autonomy %s — %s", renderAutonomyTierLabel(level), autonomyTierDescription(level))
 }
 
-func autonomyFromSettings(n int) engine.AutonomyLevel {
+func autonomyFromSettings(n int) safety.AutonomyLevel {
 	switch n {
 	case 1:
-		return engine.AutonomyBasic
+		return safety.AutonomyBasic
 	case 2:
-		return engine.AutonomySemi
+		return safety.AutonomySemi
 	case 3:
-		return engine.AutonomyFull
+		return safety.AutonomyFull
 	case 4:
-		return engine.AutonomyYOLO
+		return safety.AutonomyYOLO
 	default:
 		return 0
 	}

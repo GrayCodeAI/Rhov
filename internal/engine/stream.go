@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 	"github.com/GrayCodeAI/rho/internal/engine/token"
 
@@ -104,7 +106,7 @@ func (s *Session) buildTurnOptions(tc turnContext) types.ChatOptions {
 	// explicit approval handoff before any changes. Ephemeral (not
 	// persisted to s.Persistence().System()) so it disappears once the
 	// stage advances to Implementing.
-	if stage := s.PermSvc().SpecStage(); stage != SpecStageNone && stage != SpecStageImplementing {
+	if stage := s.PermSvc().SpecStage(); stage != safety.SpecStageNone && stage != safety.SpecStageImplementing {
 		opts.System += specStageSystemPrompt
 		// Inject project constitution as governing principles
 		if constitution := constitutionForPrompt(s.PermSvc().SpecSlug()); constitution != "" {

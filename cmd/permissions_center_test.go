@@ -4,21 +4,23 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/GrayCodeAI/rho/internal/engine"
 )
 
 func TestNormalizePermissionTier(t *testing.T) {
 	level, label, ok := normalizePermissionTier("always_ask")
-	if !ok || level != engine.AutonomySupervised || label != "Always Ask" {
+	if !ok || level != safety.AutonomySupervised || label != "Always Ask" {
 		t.Fatalf("always_ask = (%v, %q, %v)", level, label, ok)
 	}
 	level, label, ok = normalizePermissionTier("operator")
-	if !ok || level != engine.AutonomyFull || label != "Operator" {
+	if !ok || level != safety.AutonomyFull || label != "Operator" {
 		t.Fatalf("operator = (%v, %q, %v)", level, label, ok)
 	}
 	level, label, ok = normalizePermissionTier("auto")
-	if !ok || level != engine.AutonomyYOLO || label != "Autonomous" {
+	if !ok || level != safety.AutonomyYOLO || label != "Autonomous" {
 		t.Fatalf("auto = (%v, %q, %v)", level, label, ok)
 	}
 }
@@ -51,8 +53,8 @@ func TestEffectivePermissionRules(t *testing.T) {
 
 func TestAutonomyCenterSummary(t *testing.T) {
 	sess := engine.NewSession("test", "test-model", "system", nil)
-	sess.PermSvc().SetAutonomy(engine.AutonomySemi)
-	sess.PermSvc().SetSpecStage(engine.SpecStageSpecify)
+	sess.PermSvc().SetAutonomy(safety.AutonomySemi)
+	sess.PermSvc().SetSpecStage(safety.SpecStageSpecify)
 	model := &chatModel{
 		session: sess,
 		settings: rhoconfig.Settings{
@@ -70,14 +72,14 @@ func TestAutonomyCenterSummary(t *testing.T) {
 
 func TestPermissionTierSettingValue(t *testing.T) {
 	cases := []struct {
-		level engine.AutonomyLevel
+		level safety.AutonomyLevel
 		want  int
 	}{
-		{engine.AutonomySupervised, 0},
-		{engine.AutonomyBasic, 1},
-		{engine.AutonomySemi, 2},
-		{engine.AutonomyFull, 3},
-		{engine.AutonomyYOLO, 4},
+		{safety.AutonomySupervised, 0},
+		{safety.AutonomyBasic, 1},
+		{safety.AutonomySemi, 2},
+		{safety.AutonomyFull, 3},
+		{safety.AutonomyYOLO, 4},
 	}
 	for _, c := range cases {
 		if got := permissionTierSettingValue(c.level); got != c.want {
@@ -104,20 +106,20 @@ func TestEffectivePermissionTier_ReadsThroughRealSession(t *testing.T) {
 		t.Fatalf("unset autonomy: got %v, want default %v", got, DefaultContainerAutonomy)
 	}
 
-	sess.PermSvc().SetAutonomy(engine.AutonomyFull)
-	if got := effectivePermissionTier(sess); got != engine.AutonomyFull {
-		t.Fatalf("explicit Full: got %v, want %v", got, engine.AutonomyFull)
+	sess.PermSvc().SetAutonomy(safety.AutonomyFull)
+	if got := effectivePermissionTier(sess); got != safety.AutonomyFull {
+		t.Fatalf("explicit Full: got %v, want %v", got, safety.AutonomyFull)
 	}
-	sess.PermSvc().SetAutonomy(engine.AutonomySupervised)
-	if got := effectivePermissionTier(sess); got != engine.AutonomySupervised {
-		t.Fatalf("explicit Supervised: got %v, want %v", got, engine.AutonomySupervised)
+	sess.PermSvc().SetAutonomy(safety.AutonomySupervised)
+	if got := effectivePermissionTier(sess); got != safety.AutonomySupervised {
+		t.Fatalf("explicit Supervised: got %v, want %v", got, safety.AutonomySupervised)
 	}
 }
 
 func TestPermissionBehaviorSummary(t *testing.T) {
 	seen := make(map[string]bool)
-	for _, level := range []engine.AutonomyLevel{
-		engine.AutonomyBasic, engine.AutonomySemi, engine.AutonomyFull, engine.AutonomyYOLO,
+	for _, level := range []safety.AutonomyLevel{
+		safety.AutonomyBasic, safety.AutonomySemi, safety.AutonomyFull, safety.AutonomyYOLO,
 	} {
 		summary := permissionBehaviorSummary(level)
 		if summary == "" {
@@ -132,13 +134,13 @@ func TestPermissionBehaviorSummary(t *testing.T) {
 
 func TestResetPermissionCenter(t *testing.T) {
 	sess := engine.NewSession("", "test-model", "you are helpful", nil)
-	sess.PermSvc().SetAutonomy(engine.AutonomyYOLO)
-	sess.PermSvc().SetSpecStage(engine.SpecStageTasks)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
+	sess.PermSvc().SetSpecStage(safety.SpecStageTasks)
 	sess.PermSvc().SetDryRun(true)
 	model := &chatModel{
 		session: sess,
 		settings: rhoconfig.Settings{
-			Autonomy:        permissionTierSettingValue(engine.AutonomyYOLO),
+			Autonomy:        permissionTierSettingValue(safety.AutonomyYOLO),
 			AutoAllow:       []string{"Read"},
 			AllowedTools:    []string{"Bash(git:*)"},
 			DisallowedTools: []string{"Bash(rm -rf *)"},
@@ -150,7 +152,7 @@ func TestResetPermissionCenter(t *testing.T) {
 	if got := sess.PermSvc().Autonomy(); got != DefaultContainerAutonomy {
 		t.Errorf("autonomy = %v, want default %v", got, DefaultContainerAutonomy)
 	}
-	if got := sess.PermSvc().SpecStage(); got != engine.SpecStageNone {
+	if got := sess.PermSvc().SpecStage(); got != safety.SpecStageNone {
 		t.Errorf("spec stage = %v, want None", got)
 	}
 	if sess.PermSvc().DryRun() {
@@ -166,11 +168,11 @@ func TestHandleAutonomyCommand_Tier(t *testing.T) {
 	model := &chatModel{session: sess}
 
 	updated, _ := model.handleAutonomyCommand([]string{"autonomy", "tier", "operator"})
-	if got := updated.session.PermSvc().Autonomy(); got != engine.AutonomyFull {
+	if got := updated.session.PermSvc().Autonomy(); got != safety.AutonomyFull {
 		t.Fatalf("after tier operator: autonomy = %v, want Full", got)
 	}
-	if updated.settings.Autonomy != permissionTierSettingValue(engine.AutonomyFull) {
-		t.Fatalf("settings.Autonomy = %d, want %d", updated.settings.Autonomy, permissionTierSettingValue(engine.AutonomyFull))
+	if updated.settings.Autonomy != permissionTierSettingValue(safety.AutonomyFull) {
+		t.Fatalf("settings.Autonomy = %d, want %d", updated.settings.Autonomy, permissionTierSettingValue(safety.AutonomyFull))
 	}
 
 	updated, _ = updated.handleAutonomyCommand([]string{"autonomy", "tier", "not-a-tier"})
@@ -178,7 +180,7 @@ func TestHandleAutonomyCommand_Tier(t *testing.T) {
 	if last.role != "error" {
 		t.Fatalf("invalid tier: expected error message, got role %q", last.role)
 	}
-	if got := updated.session.PermSvc().Autonomy(); got != engine.AutonomyFull {
+	if got := updated.session.PermSvc().Autonomy(); got != safety.AutonomyFull {
 		t.Fatalf("invalid tier should not change autonomy: got %v, want Full unchanged", got)
 	}
 

@@ -8,11 +8,12 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
-	"github.com/GrayCodeAI/rho/internal/engine"
 	"github.com/GrayCodeAI/rho/internal/session"
 	"github.com/GrayCodeAI/rho/internal/spec"
 	"github.com/GrayCodeAI/rho/internal/tool"
@@ -558,7 +559,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// YOLO ("Autonomous") is unattended mode: require a typed
 					// confirmation instead of a single Enter, so a stray key
 					// cannot silently drop the session into never-ask.
-					if chosen.Level == engine.AutonomyYOLO {
+					if chosen.Level == safety.AutonomyYOLO {
 						m.pendingYOLOConfirm = true
 						m.messages = append(m.messages, displayMsg{role: "system", content: fmt.Sprintf("Autonomy tier → %s — this enables unattended mode (never prompts for permission). Type %s then Enter to confirm, or type anything else to cancel.", chosen.Name, yoloConfirmToken)})
 						m.viewDirty = true
@@ -602,7 +603,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if chosen != nil && m.session != nil {
 					switch chosen.Action {
 					case specActionStart:
-						m.session.PermSvc().SetSpecStage(engine.SpecStageProposal)
+						m.session.PermSvc().SetSpecStage(safety.SpecStageProposal)
 						m.messages = append(m.messages, displayMsg{role: "system", content: "Spec workflow started — Write/Edit/Bash are gated. Start with Proposal, then Specify + Design (parallel), then Plan, Tasks, and ApproveImplementation."})
 					case specActionStatus:
 						m.messages = append(m.messages, displayMsg{role: "system", content: fmt.Sprintf("Spec stage: %s", specStageLabel(m.session))})
@@ -979,7 +980,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.updateViewportContent()
 						return m, nil
 					}
-					var nextTier engine.AutonomyLevel
+					var nextTier safety.AutonomyLevel
 					if m.supervisedPending && isSupervisedPending(current) {
 						nextTier = nextAutonomyTierIncludingSupervised(current)
 					} else {
@@ -1281,7 +1282,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.permTimeoutAt = time.Now().Add(5 * time.Minute)
 		// Display-only enrichment (risk + why). Keep req.Summary as ToolSummary
 		// for AutoMode / memory matching after y/n/a/d.
-		permBody := engine.FormatPermissionDisplay(msg.req.ToolName, msg.req.Summary)
+		permBody := safety.FormatPermissionDisplay(msg.req.ToolName, msg.req.Summary)
 		m.messages = append(m.messages, displayMsg{role: "permission", content: permBody, timeoutAt: m.permTimeoutAt})
 		m.viewDirty = true
 		m.updateViewportContent()

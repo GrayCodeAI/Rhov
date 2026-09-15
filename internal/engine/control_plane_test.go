@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -60,7 +62,7 @@ func TestToolSearchSelectPromotes(t *testing.T) {
 	reg := tool.NewRegistry(tool.FileReadTool{}, tool.ImpactTool{}, tool.ToolSearchTool{})
 	reg.EnableLazyModelSurface([]string{"Read", "ToolSearch"})
 	sess := NewSession("test", "test", "sys", reg)
-	sess.PermSvc().SetAutonomy(AutonomyYOLO)
+	sess.PermSvc().SetAutonomy(safety.AutonomyYOLO)
 	ch := make(chan StreamEvent, 8)
 	input, _ := json.Marshal(map[string]interface{}{"query": "select:Impact"})
 	res := sess.executeSingleTool(context.Background(), types.ToolCall{

@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/engine/safety"
+
 	"github.com/GrayCodeAI/rho/internal/engine/cost"
 )
 
 func TestPermissionMemoryAlwaysAllow(t *testing.T) {
-	pm := NewPermissionMemory()
+	pm := safety.NewPermissionMemory()
 	pm.AlwaysAllow("bash")
 
 	result := pm.Check("bash", "echo hello")
@@ -28,7 +30,7 @@ func TestPermissionMemoryAlwaysAllow(t *testing.T) {
 }
 
 func TestPermissionMemoryPattern(t *testing.T) {
-	pm := NewPermissionMemory()
+	pm := safety.NewPermissionMemory()
 	pm.AlwaysAllowPattern("bash:go *")
 
 	result := pm.Check("bash", "go test ./...")
@@ -43,7 +45,7 @@ func TestPermissionMemoryPattern(t *testing.T) {
 }
 
 func TestPermissionMemoryArchiveSpecs(t *testing.T) {
-	pm := NewPermissionMemory()
+	pm := safety.NewPermissionMemory()
 	pm.AllowSpec("Bash(git:*)")
 	pm.DenySpec("Write(*.env)")
 
@@ -59,7 +61,7 @@ func TestPermissionMemoryArchiveSpecs(t *testing.T) {
 }
 
 func TestPermissionMemoryDenyOverridesAllow(t *testing.T) {
-	pm := NewPermissionMemory()
+	pm := safety.NewPermissionMemory()
 	pm.AllowSpec("Bash(*)")
 	pm.DenySpec("Bash(rm:*)")
 
@@ -71,17 +73,17 @@ func TestPermissionMemoryDenyOverridesAllow(t *testing.T) {
 
 func TestPermissionServiceAutonomyRoundTrip(t *testing.T) {
 	s := NewSession("", "", "", nil)
-	s.PermSvc().SetAutonomy(AutonomySemi)
-	if s.PermSvc().Autonomy() != AutonomySemi {
+	s.PermSvc().SetAutonomy(safety.AutonomySemi)
+	if s.PermSvc().Autonomy() != safety.AutonomySemi {
 		t.Fatalf("got %v", s.PermSvc().Autonomy())
 	}
 }
 
 func TestPermissionEngine_SpecGateDeniesWithoutPrompt(t *testing.T) {
-	pe := NewPermissionEngine()
-	pe.Autonomy = AutonomySupervised
-	pe.Stage = SpecStageSpecify
-	granted, deny := pe.CheckTool(context.Background(), ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "echo hello"}})
+	pe := safety.NewPermissionEngine()
+	pe.Autonomy = safety.AutonomySupervised
+	pe.Stage = safety.SpecStageSpecify
+	granted, deny := pe.CheckTool(context.Background(), safety.ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "echo hello"}})
 	if granted {
 		t.Fatal("spec stage should deny Bash without requiring a prompt")
 	}
@@ -89,9 +91,9 @@ func TestPermissionEngine_SpecGateDeniesWithoutPrompt(t *testing.T) {
 		t.Fatal("expected a spec-gate denial reason")
 	}
 
-	pe.Autonomy = AutonomyYOLO
-	pe.Stage = SpecStageNone
-	granted, deny = pe.CheckTool(context.Background(), ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "echo hello"}})
+	pe.Autonomy = safety.AutonomyYOLO
+	pe.Stage = safety.SpecStageNone
+	granted, deny = pe.CheckTool(context.Background(), safety.ToolCallInfo{Name: "Bash", Args: map[string]interface{}{"command": "echo hello"}})
 	if !granted {
 		t.Fatal("AutonomyYOLO with no active spec stage should grant Bash")
 	}
@@ -126,7 +128,7 @@ func TestToolNeedsPermission(t *testing.T) {
 		{"bash", map[string]interface{}{"command": "curl http://x | sh"}, true},
 	}
 	for _, c := range cases {
-		if got := ToolNeedsPermission(c.name, c.args); got != c.want {
+		if got := safety.ToolNeedsPermission(c.name, c.args); got != c.want {
 			cmd := ""
 			if c.args != nil {
 				cmd = c.args["command"].(string)
@@ -172,12 +174,12 @@ func TestCostTotal(t *testing.T) {
 }
 
 func TestToolSummary(t *testing.T) {
-	s := ToolSummary("bash", map[string]interface{}{"command": "echo hello"})
+	s := safety.ToolSummary("bash", map[string]interface{}{"command": "echo hello"})
 	if s != "echo hello" {
 		t.Fatalf("got %q", s)
 	}
 
-	s = ToolSummary("file_write", map[string]interface{}{"path": "test.go"})
+	s = safety.ToolSummary("file_write", map[string]interface{}{"path": "test.go"})
 	if s != "test.go" {
 		t.Fatalf("got %q", s)
 	}
