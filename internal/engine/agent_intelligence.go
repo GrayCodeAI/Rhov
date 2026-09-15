@@ -3,6 +3,8 @@ package engine
 import (
 	"context"
 	"strings"
+
+	"github.com/GrayCodeAI/rho/internal/engine/agent"
 )
 
 // AgentIntelligence provides smart routing, auto-spawning, and synthesis for agents.
@@ -26,7 +28,7 @@ type SpawnDecision struct {
 type SubTask struct {
 	ID        string
 	Prompt    string
-	Mode      SubAgentMode
+	Mode      agent.SubAgentMode
 	Priority  int      // higher = run first
 	DependsOn []string // IDs of tasks this depends on
 }
@@ -78,19 +80,19 @@ func (ai *AgentIntelligence) AnalyzeForParallelism(prompt string) SpawnDecision 
 }
 
 // SelectMode picks the optimal agent mode for a subtask.
-func (ai *AgentIntelligence) SelectMode(subtask string) SubAgentMode {
+func (ai *AgentIntelligence) SelectMode(subtask string) agent.SubAgentMode {
 	lower := strings.ToLower(subtask)
 
 	// Read-only tasks → explore mode (cheaper, faster)
 	readOnlyKeywords := []string{"find", "search", "list", "check", "read", "analyze", "look", "scan", "grep", "what is", "where is", "how many"}
 	for _, kw := range readOnlyKeywords {
 		if strings.Contains(lower, kw) {
-			return SubAgentExplore
+			return agent.SubAgentExplore
 		}
 	}
 
 	// Write tasks → general mode
-	return SubAgentGeneral
+	return agent.SubAgentGeneral
 }
 
 // decomposeTask splits a complex task into subtasks based on patterns.
@@ -101,17 +103,17 @@ func (ai *AgentIntelligence) decomposeTask(prompt string, scale TaskScale) []Sub
 	if (strings.Contains(lower, "research") || strings.Contains(lower, "analyze")) &&
 		(strings.Contains(lower, "implement") || strings.Contains(lower, "build") || strings.Contains(lower, "create")) {
 		return []SubTask{
-			{ID: "research", Prompt: "Research and analyze: " + prompt, Mode: SubAgentExplore},
-			{ID: "implement", Prompt: "Based on research, implement: " + prompt, Mode: SubAgentGeneral, DependsOn: []string{"research"}},
+			{ID: "research", Prompt: "Research and analyze: " + prompt, Mode: agent.SubAgentExplore},
+			{ID: "implement", Prompt: "Based on research, implement: " + prompt, Mode: agent.SubAgentGeneral, DependsOn: []string{"research"}},
 		}
 	}
 
 	// Pattern: multi-file refactor — pipeline
 	if strings.Contains(lower, "refactor") && scale >= ScaleMajor {
 		return []SubTask{
-			{ID: "scan", Prompt: "Scan and identify all files that need changes for: " + prompt, Mode: SubAgentExplore},
-			{ID: "plan", Prompt: "Create a refactoring plan based on scan results: " + prompt, Mode: SubAgentExplore, DependsOn: []string{"scan"}},
-			{ID: "execute", Prompt: "Execute the refactoring plan: " + prompt, Mode: SubAgentGeneral, DependsOn: []string{"plan"}},
+			{ID: "scan", Prompt: "Scan and identify all files that need changes for: " + prompt, Mode: agent.SubAgentExplore},
+			{ID: "plan", Prompt: "Create a refactoring plan based on scan results: " + prompt, Mode: agent.SubAgentExplore, DependsOn: []string{"scan"}},
+			{ID: "execute", Prompt: "Execute the refactoring plan: " + prompt, Mode: agent.SubAgentGeneral, DependsOn: []string{"plan"}},
 		}
 	}
 
@@ -185,7 +187,7 @@ func splitOnConjunctions(s string) []string {
 }
 
 // ExecuteWithIntelligence runs a task with smart agent routing.
-func (ai *AgentIntelligence) ExecuteWithIntelligence(ctx context.Context, prompt string, execFn func(context.Context, string, SubAgentMode) (string, error)) (string, error) {
+func (ai *AgentIntelligence) ExecuteWithIntelligence(ctx context.Context, prompt string, execFn func(context.Context, string, agent.SubAgentMode) (string, error)) (string, error) {
 	decision := ai.AnalyzeForParallelism(prompt)
 
 	if !decision.ShouldParallelize {

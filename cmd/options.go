@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/scaffold"
+
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	ctxrepomap "github.com/GrayCodeAI/rho/internal/context/repomap"
 	"github.com/GrayCodeAI/rho/internal/engine"
@@ -380,7 +382,7 @@ func configureSessionStartup(sess *engine.Session, settings rhoconfig.Settings, 
 	sess.LifecycleSvc().SetReflector(engine.NewReflector(sess, sess.Model()))
 
 	// Few-shot learning: collect successful patterns from sessions
-	sess.LifecycleSvc().SetFewShotStore(engine.NewFewShotStore())
+	sess.LifecycleSvc().SetFewShotStore(scaffold.NewFewShotStore())
 
 	// Adaptive prompt: learn user preferences from corrections
 	sess.LifecycleSvc().SetAdaptivePrompt(engine.NewAdaptivePrompt())

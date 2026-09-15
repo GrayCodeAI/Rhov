@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
 )
 
 func TestBackgroundRunner_Delegate(t *testing.T) {
@@ -49,7 +51,7 @@ func TestBackgroundRunner_CollectWhileRunning(t *testing.T) {
 }
 
 func TestCompactionTrigger(t *testing.T) {
-	ct := NewCompactionTrigger(100000)
+	ct := compact.NewCompactionTrigger(100000)
 	if ct.ShouldCompact(50000) {
 		t.Error("50% should not trigger at 75% threshold")
 	}

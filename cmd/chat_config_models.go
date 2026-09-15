@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
 	tea "charm.land/bubbletea/v2"
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
@@ -214,7 +216,7 @@ func applyModelOptionToSession(sess *engine.Session, opt configModelOption) {
 		sess.EnsureAutoCompactor()
 	}
 	if opt.PriceKnown {
-		engine.RegisterLivePricing(opt.ID, opt.InputPricePer1M, opt.OutputPricePer1M)
+		cost.RegisterLivePricing(opt.ID, opt.InputPricePer1M, opt.OutputPricePer1M)
 	}
 }
 

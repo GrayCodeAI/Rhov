@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 	"github.com/GrayCodeAI/rho/internal/ui/icons"
 	"github.com/GrayCodeAI/rho/internal/usage"
@@ -131,12 +133,12 @@ func (s *Session) recordStreamUsage(ch chan<- StreamEvent, prompt, completion in
 }
 
 func estimateStreamCompletionTokens(text string, toolCalls []types.ToolCall) int {
-	n := CountTokensFast(text)
+	n := token.CountTokensFast(text)
 	for _, tc := range toolCalls {
 		if b, err := json.Marshal(tc.Arguments); err == nil {
-			n += CountTokensFast(string(b))
+			n += token.CountTokensFast(string(b))
 		}
-		n += CountTokensFast(tc.Name)
+		n += token.CountTokensFast(tc.Name)
 	}
 	return n
 }

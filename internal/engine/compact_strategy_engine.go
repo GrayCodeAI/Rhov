@@ -3,21 +3,23 @@ package engine
 import (
 	"context"
 
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
 type CompactStrategy interface {
 	Name() string
 	ShouldTrigger(msgs []types.FluxMessage, tokenCount, threshold int) bool
-	Compact(ctx context.Context, s *Session) (*CompactResult, error)
+	Compact(ctx context.Context, s *Session) (*compact.CompactResult, error)
 }
 
 type StrategyRegistry struct {
 	strategies []CompactStrategy
-	config     CompactConfig
+	config     compact.CompactConfig
 }
 
-func NewStrategyRegistry(config CompactConfig) *StrategyRegistry {
+func NewStrategyRegistry(config compact.CompactConfig) *StrategyRegistry {
 	r := &StrategyRegistry{config: config}
 	target := config.ContextWindowSize - config.AutoCompactBuffer - config.MaxOutputTokens
 	r.strategies = []CompactStrategy{

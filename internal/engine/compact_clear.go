@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -80,7 +82,7 @@ func (s *Session) ClearOldToolResults(ctx context.Context) bool {
 	if window <= 0 {
 		return false
 	}
-	tokens := EstimateTokens(raw)
+	tokens := token.EstimateTokens(raw)
 	threshold := int(float64(window) * clearThresholdFraction)
 	if tokens < threshold {
 		return false

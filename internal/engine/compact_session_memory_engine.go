@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 
 	"github.com/GrayCodeAI/rho/internal/engine/compact"
@@ -27,7 +29,7 @@ func (s *SessionMemoryStrategy) ShouldTrigger(msgs []types.FluxMessage, tokenCou
 	return true
 }
 
-func (s *SessionMemoryStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
+func (s *SessionMemoryStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
 	memContent, err := compact.ReadSessionMemory("")
 	if err != nil {
 		return nil, fmt.Errorf("reading session memory: %w", err)
@@ -37,9 +39,9 @@ func (s *SessionMemoryStrategy) Compact(ctx context.Context, sess *Session) (*Co
 	}
 
 	messages := sess.Persistence().RawMessages()
-	tokensBefore := EstimateTokens(messages)
+	tokensBefore := token.EstimateTokens(messages)
 
-	cfg := DefaultSessionMemoryConfig()
+	cfg := compact.DefaultSessionMemoryConfig()
 	keepIdx := compact.CalculateMessagesToKeepIndex(messages, cfg)
 	keepIdx = compact.AdjustIndexToPreserveAPIInvariants(messages, keepIdx)
 
@@ -61,9 +63,9 @@ func (s *SessionMemoryStrategy) Compact(ctx context.Context, sess *Session) (*Co
 	})
 	result = append(result, kept...)
 
-	tokensAfter := EstimateTokens(result)
+	tokensAfter := token.EstimateTokens(result)
 
-	return &CompactResult{
+	return &compact.CompactResult{
 		Messages:     result,
 		Summary:      memContent,
 		TokensBefore: tokensBefore,

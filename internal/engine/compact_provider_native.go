@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/flux/llm"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -19,7 +23,7 @@ func (s *ProviderNativeCompactStrategy) ShouldTrigger(msgs []types.FluxMessage, 
 	return tokenCount >= threshold && len(msgs) >= 8
 }
 
-func (s *ProviderNativeCompactStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
+func (s *ProviderNativeCompactStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
 	if sess == nil {
 		return nil, fmt.Errorf("no session")
 	}
@@ -32,7 +36,7 @@ func (s *ProviderNativeCompactStrategy) Compact(ctx context.Context, sess *Sessi
 	}
 
 	messagesBefore := sess.Persistence().RawMessages()
-	tokensBefore := EstimateTokens(messagesBefore)
+	tokensBefore := token.EstimateTokens(messagesBefore)
 	summary, err := compactor.CompactNative(ctx, llm.NativeCompactionRequest{
 		Provider:        sess.ChatLLM().Provider(),
 		Model:           sess.ChatLLM().Model(),
@@ -50,11 +54,11 @@ func (s *ProviderNativeCompactStrategy) Compact(ctx context.Context, sess *Sessi
 		keepEnd = len(messagesBefore)
 	}
 	tail := append([]types.FluxMessage(nil), messagesBefore[len(messagesBefore)-keepEnd:]...)
-	messages := append([]types.FluxMessage{{Role: "user", Content: FormatCompactSummary(summary)}}, tail...)
-	compact := &CompactResult{
+	messages := append([]types.FluxMessage{{Role: "user", Content: compact.FormatCompactSummary(summary)}}, tail...)
+	compact := &compact.CompactResult{
 		Messages:     messages,
 		TokensBefore: tokensBefore,
-		TokensAfter:  EstimateTokens(messages),
+		TokensAfter:  token.EstimateTokens(messages),
 		Strategy:     "provider_native",
 	}
 	sess.Persistence().SetMessages(compact.Messages)

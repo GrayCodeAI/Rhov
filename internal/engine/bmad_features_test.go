@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/project"
 )
 
 func TestClassifyScale(t *testing.T) {
@@ -78,7 +80,7 @@ func TestProjectContext_Load(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "PROJECT_CONTEXT.md"), []byte("## Stack\n- Go 1.21\n- PostgreSQL"), 0o644)
 
-	pc := NewProjectContext(dir)
+	pc := project.NewProjectContext(dir)
 	content := pc.Load()
 	if !hasSubstr(content, "Go 1.21") {
 		t.Error("expected project context content")
@@ -89,7 +91,7 @@ func TestProjectContext_Load(t *testing.T) {
 }
 
 func TestProjectContext_NoFiles(t *testing.T) {
-	pc := NewProjectContext(t.TempDir())
+	pc := project.NewProjectContext(t.TempDir())
 	content := pc.Load()
 	if content != "" {
 		t.Error("expected empty content when no files exist")

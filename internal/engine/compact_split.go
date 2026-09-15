@@ -5,6 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -27,7 +31,7 @@ func turnTokenBudget(tail []types.FluxMessage) int {
 	}
 	totalTokens := 0
 	for _, msg := range tail {
-		totalTokens += EstimateMessageTokens(msg)
+		totalTokens += token.EstimateMessageTokens(msg)
 	}
 	budget := totalTokens / len(tail) * 3
 	if budget < 2000 {
@@ -51,7 +55,7 @@ func (s *Session) SplitTurnNeeded(keepCount int) bool {
 
 	// Check if any single message in the tail exceeds the budget
 	for _, msg := range tail {
-		if EstimateMessageTokens(msg) > budget {
+		if token.EstimateMessageTokens(msg) > budget {
 			return true
 		}
 	}
@@ -80,7 +84,7 @@ func (s *Session) splitTurnCompact(ctx context.Context) {
 
 	oversizedIdx := -1
 	for i, msg := range tail {
-		if EstimateMessageTokens(msg) > budget {
+		if token.EstimateMessageTokens(msg) > budget {
 			oversizedIdx = i
 			break
 		}
@@ -98,7 +102,7 @@ func (s *Session) splitTurnCompact(ctx context.Context) {
 
 	// Extract file tracking before compaction
 	if s.Persistence().Files() == nil {
-		s.Persistence().SetFiles(NewFileTracker())
+		s.Persistence().SetFiles(compact.NewFileTracker())
 	}
 	files := s.Persistence().Files()
 	files.ExtractFromMessages(raw[:splitPoint])
@@ -176,7 +180,7 @@ func (s *Session) generatePartialSummary(ctx context.Context, messages []types.F
 	}
 
 	var summaryMsgs []types.FluxMessage
-	compactPrompt := BuildCompactPrompt(CompactPartial)
+	compactPrompt := compact.BuildCompactPrompt(compact.CompactPartial)
 	var content strings.Builder
 	content.WriteString(compactPrompt)
 	content.WriteString("\n\nConversation:\n")
@@ -211,7 +215,7 @@ func (s *Session) generatePartialSummary(ctx context.Context, messages []types.F
 	if err != nil {
 		return ""
 	}
-	return FormatCompactSummary(resp.Content)
+	return compact.FormatCompactSummary(resp.Content)
 }
 
 // summarizeOversizedTurn summarizes the content of a single oversized message.
@@ -237,7 +241,7 @@ func (s *Session) summarizeOversizedTurn(ctx context.Context, msg types.FluxMess
 	var summaryMsgs []types.FluxMessage
 	summaryMsgs = append(summaryMsgs, types.FluxMessage{
 		Role: "user",
-		Content: BuildCompactPrompt(CompactUpTo) + "\n\nSummarize the key information from this content prefix (the rest will be retained verbatim):\n\n" +
+		Content: compact.BuildCompactPrompt(compact.CompactUpTo) + "\n\nSummarize the key information from this content prefix (the rest will be retained verbatim):\n\n" +
 			msg.Role + ": " + truncateRunes(content, halfLen),
 	})
 
@@ -256,7 +260,7 @@ func (s *Session) summarizeOversizedTurn(ctx context.Context, msg types.FluxMess
 	if err != nil {
 		return ""
 	}
-	return FormatCompactSummary(resp.Content)
+	return compact.FormatCompactSummary(resp.Content)
 }
 
 // smartCompactFallback is reached when split-turn compaction is detected but

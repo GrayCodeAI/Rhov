@@ -77,7 +77,7 @@ func (s *Session) smartCompactBody(ctx context.Context) {
 
 	// Extract file tracking from messages being compacted
 	if s.Persistence().Files() == nil {
-		s.Persistence().SetFiles(NewFileTracker())
+		s.Persistence().SetFiles(compact.NewFileTracker())
 	}
 	files := s.Persistence().Files()
 	compactedMsgs := raw[:len(raw)-keepEnd]
@@ -138,12 +138,12 @@ func (s *Session) generateSummary(ctx context.Context, raw []types.FluxMessage) 
 	// compaction, merge the NEW messages into it rather than re-summarizing the
 	// entire conversation from scratch. This preserves already-captured context
 	// and avoids the cost of re-deriving it.
-	prior := ExtractPriorSummary(raw)
+	prior := compact.ExtractPriorSummary(raw)
 	newMsgs := raw
 	if prior != "" {
 		// Only the messages that came after the persisted summary are "new".
 		for i, m := range raw {
-			if m.Role == "user" && strings.HasPrefix(m.Content, PriorSummaryPrefix) {
+			if m.Role == "user" && strings.HasPrefix(m.Content, compact.PriorSummaryPrefix) {
 				newMsgs = raw[i+1:]
 				break
 			}
@@ -153,7 +153,7 @@ func (s *Session) generateSummary(ctx context.Context, raw []types.FluxMessage) 
 	// Build a compact version of the conversation for summarization
 	// using the structured compaction prompt from compact_prompt.go
 	var summaryMsgs []types.FluxMessage
-	compactPrompt := BuildIncrementalCompactPrompt(prior)
+	compactPrompt := compact.BuildIncrementalCompactPrompt(prior)
 	summaryMsgs = append(summaryMsgs, types.FluxMessage{
 		Role:    "user",
 		Content: compactPrompt + "\n\nConversation:\n",
@@ -209,7 +209,7 @@ func (s *Session) generateSummary(ctx context.Context, raw []types.FluxMessage) 
 		return ""
 	}
 	// Extract structured summary, stripping analysis block
-	return FormatCompactSummary(resp.Content)
+	return compact.FormatCompactSummary(resp.Content)
 }
 
 // extractSummaryFromCompressed pulls key information from token-compressed text

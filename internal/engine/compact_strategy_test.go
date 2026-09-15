@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -18,7 +22,7 @@ func TestSessionMemoryStrategy_ShouldTrigger(t *testing.T) {
 }
 
 func TestAutoCompactor_CircuitBreaker(t *testing.T) {
-	cfg := DefaultCompactConfig()
+	cfg := compact.DefaultCompactConfig()
 	cfg.MaxFailures = 2
 	cfg.ContextWindowSize = 1000
 	cfg.AutoCompactBuffer = 100
@@ -43,7 +47,7 @@ func TestAutoCompactor_CircuitBreaker(t *testing.T) {
 }
 
 func TestStrategyRegistry_SelectStrategy(t *testing.T) {
-	cfg := DefaultCompactConfig()
+	cfg := compact.DefaultCompactConfig()
 	registry := NewStrategyRegistry(cfg)
 
 	msgs := makeMessages(5)
@@ -109,7 +113,7 @@ func TestTurnTokenBudget(t *testing.T) {
 	for i := range big {
 		big[i] = types.FluxMessage{Role: "user", Content: strings.Repeat("x", 10000)}
 	}
-	avg := EstimateMessageTokens(big[0])
+	avg := token.EstimateMessageTokens(big[0])
 	if avg*3 <= 2000 {
 		t.Fatalf("test messages too small to exceed the 2000 floor: avg=%d", avg)
 	}

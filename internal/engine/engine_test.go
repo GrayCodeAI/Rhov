@@ -3,6 +3,8 @@ package engine
 import (
 	"context"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
 )
 
 func TestPermissionMemoryAlwaysAllow(t *testing.T) {
@@ -135,7 +137,7 @@ func TestToolNeedsPermission(t *testing.T) {
 }
 
 func TestCostPricing(t *testing.T) {
-	c := Cost{Model: "claude-3-5-sonnet-20241022"}
+	c := cost.Cost{Model: "claude-3-5-sonnet-20241022"}
 	c.Add(1000, 500)
 	if c.PromptTokens != 1000 {
 		t.Fatalf("got %d prompt tokens", c.PromptTokens)
@@ -153,7 +155,7 @@ func TestCostPricing(t *testing.T) {
 }
 
 func TestCostSummary(t *testing.T) {
-	c := Cost{Model: "gpt-4o"}
+	c := cost.Cost{Model: "gpt-4o"}
 	c.Add(100, 50)
 	s := c.Summary()
 	if s == "" {
@@ -162,7 +164,7 @@ func TestCostSummary(t *testing.T) {
 }
 
 func TestCostTotal(t *testing.T) {
-	c := Cost{Model: "gpt-4o"}
+	c := cost.Cost{Model: "gpt-4o"}
 	c.Add(100, 50)
 	if c.Total() <= 0 {
 		t.Fatal("expected positive total")

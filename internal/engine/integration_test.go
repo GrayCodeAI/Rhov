@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
 	"github.com/GrayCodeAI/rho/internal/tool"
 )
 
@@ -136,7 +138,7 @@ func TestCompact(t *testing.T) {
 
 // TestCostTracking tests cost tracking.
 func TestCostTracking(t *testing.T) {
-	c := Cost{Model: "gpt-4o"}
+	c := cost.Cost{Model: "gpt-4o"}
 	c.Add(1000, 500)
 
 	if c.PromptTokens != 1000 {

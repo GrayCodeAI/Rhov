@@ -10,6 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
+	"github.com/GrayCodeAI/rho/internal/engine/streaming"
+	"github.com/GrayCodeAI/rho/internal/engine/validation"
+
 	agentcontracts "github.com/GrayCodeAI/rho/internal/contracts/agent"
 	"github.com/GrayCodeAI/rho/internal/conversationarc"
 	"github.com/GrayCodeAI/rho/internal/engine/planning"
@@ -64,7 +69,7 @@ type SnapshotTracker interface {
 // and lifecycle state are owned by the corresponding services below.
 type Session struct {
 	mu   sync.RWMutex
-	Cost Cost
+	Cost cost.Cost
 
 	// llm is the LLM transport service (Phase 1 extraction). All new
 	// code should go through s.llm.* rather than duplicating transport state.
@@ -247,8 +252,8 @@ func NewSessionWithClient(chat ChatClient, provider, model, systemPrompt string,
 	})
 	s.refreshContextWindowCache()
 	s.life.SetAgentsAccumulator(agentsAccum)
-	s.life.SetLintLoop(NewLintLoop())
-	s.life.SetTestLoop(NewTestLoop())
+	s.life.SetLintLoop(validation.NewLintLoop())
+	s.life.SetTestLoop(validation.NewTestLoop())
 	s.promptQueue = NewPromptQueue()
 	s.announcements = NewAnnouncementFeed()
 	return s
@@ -1037,7 +1042,7 @@ func (s *Session) EnsureSkillCatalogStatement() string {
 // CostValue returns the session's cost accumulator (a pointer
 // to a value type, so its methods can be called). New code
 // should call this instead of reading s.Cost directly.
-func (s *Session) CostValue() *Cost {
+func (s *Session) CostValue() *cost.Cost {
 	return &s.Cost
 }
 
@@ -1088,7 +1093,7 @@ func (s *Session) Schedule() *schedule.Manager {
 			content := fmt.Sprintf("[Scheduled Reminder: %s]\n%s", item.ID, item.Prompt)
 			if p := s.Persistence(); p != nil {
 				if sq := p.Steering(); sq != nil {
-					sq.Enqueue(SteeringMessage{
+					sq.Enqueue(streaming.SteeringMessage{
 						Content:  content,
 						Priority: 1,
 					})

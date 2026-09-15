@@ -5,6 +5,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+	"github.com/GrayCodeAI/rho/internal/engine/scaffold"
+
+	"github.com/GrayCodeAI/rho/internal/engine/control"
+	"github.com/GrayCodeAI/rho/internal/engine/lifecycle"
+	"github.com/GrayCodeAI/rho/internal/engine/review"
+	"github.com/GrayCodeAI/rho/internal/engine/streaming"
+	"github.com/GrayCodeAI/rho/internal/engine/validation"
+
 	"github.com/GrayCodeAI/rho/internal/engine/branching"
 	"github.com/GrayCodeAI/rho/internal/engine/token"
 	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
@@ -34,40 +43,40 @@ type LifecycleService struct {
 	// smart turn routing (simple/strong per turn).
 	smartRouting *smartrouting.Config
 	// limit tracking.
-	limits *LimitTracker
+	limits *lifecycle.LimitTracker
 	// doom-loop / snowball / loop detection.
-	loopDet  *LoopDetector
+	loopDet  *control.LoopDetector
 	snowball *branching.SnowballDetector
 	// beliefs.
 	beliefs *BeliefState
 	// decision recording.
-	backtrack *BacktrackEngine
+	backtrack *control.BacktrackEngine
 	// post-write critics.
-	critic *Critic
+	critic *review.Critic
 	// pre-edit shadow validation.
 	shadow *branching.ShadowWorkspace
 	// verbal self-reflection on tool failure.
 	reflector *Reflector
 	// few-shot + adaptive prompt.
-	fewShotStore   *FewShotStore
+	fewShotStore   *scaffold.FewShotStore
 	adaptivePrompt *AdaptivePrompt
 	// activity tracker.
 	activity *memory.ActivityTracker
 	// agents accumulator.
 	agentsAccum *prompts.AgentsAccumulator
 	// response cache (used in agentLoop for cache hits).
-	responseCache *ResponseCache
+	responseCache *streaming.ResponseCache
 	// integration pipeline (pre-query / post-response / end-session).
 	pipeline *IntegrationPipeline
 	// steering queue.
-	steering *SteeringQueue
+	steering *streaming.SteeringQueue
 	// local quality loops run after write tools and belong to lifecycle
 	// feedback rather than transport or persistence.
-	lintLoop *LintLoop
-	testLoop *TestLoop
+	lintLoop *validation.LintLoop
+	testLoop *validation.TestLoop
 	// session-level lifecycle hook.
-	lifecycle   *SessionLifecycle
-	costTracker *CostTracker
+	lifecycle   *lifecycle.SessionLifecycle
+	costTracker *cost.CostTracker
 	teach       TeachConfig
 	trajectory  *TrajectoryDistiller
 	// smartSkills caches loaded SmartSkills for auto-discovery per-turn.
@@ -86,13 +95,13 @@ func NewLifecycleService(log *logger.Logger) *LifecycleService {
 		log = logger.Default()
 	}
 	return &LifecycleService{
-		limits:         NewLimitTracker(DefaultLimits()),
-		loopDet:        NewLoopDetector(10, DoomLoopThreshold),
+		limits:         lifecycle.NewLimitTracker(lifecycle.DefaultLimits()),
+		loopDet:        control.NewLoopDetector(10, control.DoomLoopThreshold),
 		snowball:       branching.NewSnowballDetector(500000),
 		beliefs:        NewBeliefState(),
-		backtrack:      NewBacktrackEngine(),
+		backtrack:      control.NewBacktrackEngine(),
 		lifecycle:      nil, // constructed in New() with cwd
-		responseCache:  NewResponseCache(1000, 24*time.Hour),
+		responseCache:  streaming.NewResponseCache(1000, 24*time.Hour),
 		pipeline:       NewIntegrationPipeline(),
 		log:            log,
 		fewShotStore:   nil, // lazy
@@ -119,7 +128,7 @@ func (s *LifecycleService) OnSessionStart(ctx context.Context, s2 *Session, last
 // adaptive-prompt learning feedback.
 func (s *LifecycleService) OnSessionEnd(ctx context.Context, s2 *Session, success bool, duration time.Duration) {
 	if s.lifecycle != nil {
-		outcome := SessionOutcome{Success: success, Duration: duration}
+		outcome := lifecycle.SessionOutcome{Success: success, Duration: duration}
 		messages := s2.Persistence().RawMessages()
 		if len(messages) > 0 {
 			for _, m := range messages {
@@ -155,7 +164,7 @@ func (s *LifecycleService) Finalize(ctx context.Context, messages []types.FluxMe
 	if s == nil {
 		return
 	}
-	outcome := SessionOutcome{Success: success, Duration: duration, TotalCost: totalCost}
+	outcome := lifecycle.SessionOutcome{Success: success, Duration: duration, TotalCost: totalCost}
 	for _, message := range messages {
 		if message.Role == "user" && len(message.ToolResults) == 0 && outcome.TaskGoal == "" {
 			outcome.TaskGoal = message.Content
@@ -252,28 +261,28 @@ func (s *LifecycleService) SnapshotTurnProgress(tokens int, progress float64) {
 
 func (s *LifecycleService) SetCascade(c *branching.CascadeRouter)       { s.cascade = c }
 func (s *LifecycleService) SetSmartRouting(c *smartrouting.Config)      { s.smartRouting = c }
-func (s *LifecycleService) SetLifecycle(l *SessionLifecycle)            { s.lifecycle = l }
+func (s *LifecycleService) SetLifecycle(l *lifecycle.SessionLifecycle)  { s.lifecycle = l }
 func (s *LifecycleService) SetReflector(r *Reflector)                   { s.reflector = r }
-func (s *LifecycleService) SetCritic(c *Critic)                         { s.critic = c }
+func (s *LifecycleService) SetCritic(c *review.Critic)                  { s.critic = c }
 func (s *LifecycleService) SetShadow(sh *branching.ShadowWorkspace)     { s.shadow = sh }
-func (s *LifecycleService) SetFewShotStore(f *FewShotStore)             { s.fewShotStore = f }
+func (s *LifecycleService) SetFewShotStore(f *scaffold.FewShotStore)    { s.fewShotStore = f }
 func (s *LifecycleService) SetAdaptivePrompt(a *AdaptivePrompt)         { s.adaptivePrompt = a }
 func (s *LifecycleService) SetActivity(act *memory.ActivityTracker)     { s.activity = act }
 func (s *LifecycleService) SetAgentsAccum(a *prompts.AgentsAccumulator) { s.agentsAccum = a }
-func (s *LifecycleService) SetSteering(st *SteeringQueue)               { s.steering = st }
-func (s *LifecycleService) SetLintLoop(loop *LintLoop)                  { s.lintLoop = loop }
-func (s *LifecycleService) SetTestLoop(loop *TestLoop)                  { s.testLoop = loop }
+func (s *LifecycleService) SetSteering(st *streaming.SteeringQueue)     { s.steering = st }
+func (s *LifecycleService) SetLintLoop(loop *validation.LintLoop)       { s.lintLoop = loop }
+func (s *LifecycleService) SetTestLoop(loop *validation.TestLoop)       { s.testLoop = loop }
 
 // Accessors used by stream.go and the agent loop. nil-safe.
 func (s *LifecycleService) Beliefs() *BeliefState                   { return s.beliefs }
-func (s *LifecycleService) Backtrack() *BacktrackEngine             { return s.backtrack }
-func (s *LifecycleService) Limits() *LimitTracker                   { return s.limits }
-func (s *LifecycleService) Critic() *Critic                         { return s.critic }
+func (s *LifecycleService) Backtrack() *control.BacktrackEngine     { return s.backtrack }
+func (s *LifecycleService) Limits() *lifecycle.LimitTracker         { return s.limits }
+func (s *LifecycleService) Critic() *review.Critic                  { return s.critic }
 func (s *LifecycleService) Shadow() *branching.ShadowWorkspace      { return s.shadow }
 func (s *LifecycleService) Reflector() *Reflector                   { return s.reflector }
 func (s *LifecycleService) Cascade() *branching.CascadeRouter       { return s.cascade }
 func (s *LifecycleService) SmartRouting() *smartrouting.Config      { return s.smartRouting }
-func (s *LifecycleService) FewShotStore() *FewShotStore             { return s.fewShotStore }
+func (s *LifecycleService) FewShotStore() *scaffold.FewShotStore    { return s.fewShotStore }
 func (s *LifecycleService) AdaptivePrompt() *AdaptivePrompt         { return s.adaptivePrompt }
 func (s *LifecycleService) Activity() *memory.ActivityTracker       { return s.activity }
 func (s *LifecycleService) AgentsAccum() *prompts.AgentsAccumulator { return s.agentsAccum }
@@ -281,16 +290,16 @@ func (s *LifecycleService) AgentsAccum() *prompts.AgentsAccumulator { return s.a
 // SetAgentsAccumulator attaches the project-learning accumulator.
 func (s *LifecycleService) SetAgentsAccumulator(a *prompts.AgentsAccumulator) { s.agentsAccum = a }
 
-func (s *LifecycleService) ResponseCache() *ResponseCache        { return s.responseCache }
-func (s *LifecycleService) Pipeline() *IntegrationPipeline       { return s.pipeline }
-func (s *LifecycleService) Steering() *SteeringQueue             { return s.steering }
-func (s *LifecycleService) Lifecycle() *SessionLifecycle         { return s.lifecycle }
-func (s *LifecycleService) CostTracker() *CostTracker            { return s.costTracker }
-func (s *LifecycleService) SetCostTracker(c *CostTracker)        { s.costTracker = c }
-func (s *LifecycleService) Teach() TeachConfig                   { return s.teach }
-func (s *LifecycleService) SetTeach(t TeachConfig)               { s.teach = t }
-func (s *LifecycleService) Trajectory() *TrajectoryDistiller     { return s.trajectory }
-func (s *LifecycleService) SetTrajectory(t *TrajectoryDistiller) { s.trajectory = t }
+func (s *LifecycleService) ResponseCache() *streaming.ResponseCache { return s.responseCache }
+func (s *LifecycleService) Pipeline() *IntegrationPipeline          { return s.pipeline }
+func (s *LifecycleService) Steering() *streaming.SteeringQueue      { return s.steering }
+func (s *LifecycleService) Lifecycle() *lifecycle.SessionLifecycle  { return s.lifecycle }
+func (s *LifecycleService) CostTracker() *cost.CostTracker          { return s.costTracker }
+func (s *LifecycleService) SetCostTracker(c *cost.CostTracker)      { s.costTracker = c }
+func (s *LifecycleService) Teach() TeachConfig                      { return s.teach }
+func (s *LifecycleService) SetTeach(t TeachConfig)                  { s.teach = t }
+func (s *LifecycleService) Trajectory() *TrajectoryDistiller        { return s.trajectory }
+func (s *LifecycleService) SetTrajectory(t *TrajectoryDistiller)    { s.trajectory = t }
 
 // LoadSmartSkills loads the session's auto-discovery skills once.
 func (s *LifecycleService) LoadSmartSkills() {
@@ -359,9 +368,9 @@ func (s *LifecycleService) ToggleVerbose() bool {
 	s.verbose = !s.verbose
 	return s.verbose
 }
-func (s *LifecycleService) Verbose() bool       { return s != nil && s.verbose }
-func (s *LifecycleService) LintLoop() *LintLoop { return s.lintLoop }
-func (s *LifecycleService) TestLoop() *TestLoop { return s.testLoop }
+func (s *LifecycleService) Verbose() bool                  { return s != nil && s.verbose }
+func (s *LifecycleService) LintLoop() *validation.LintLoop { return s.lintLoop }
+func (s *LifecycleService) TestLoop() *validation.TestLoop { return s.testLoop }
 
 // containsStringVec reports whether s is present in the slice.
 func containsStringVec(slice []string, s string) bool {

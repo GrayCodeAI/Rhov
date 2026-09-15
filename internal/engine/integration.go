@@ -8,6 +8,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/compression"
+	"github.com/GrayCodeAI/rho/internal/engine/control"
+	"github.com/GrayCodeAI/rho/internal/engine/errs"
+	"github.com/GrayCodeAI/rho/internal/engine/history"
+	"github.com/GrayCodeAI/rho/internal/engine/intelligence"
+	"github.com/GrayCodeAI/rho/internal/engine/memory"
+	"github.com/GrayCodeAI/rho/internal/engine/observability"
+	"github.com/GrayCodeAI/rho/internal/engine/review"
+	"github.com/GrayCodeAI/rho/internal/engine/streaming"
+	"github.com/GrayCodeAI/rho/internal/engine/validation"
+	"github.com/GrayCodeAI/rho/internal/engine/workflow"
+
 	"github.com/GrayCodeAI/rho/internal/engine/ctxmgr"
 	"github.com/GrayCodeAI/rho/internal/engine/token"
 	"github.com/GrayCodeAI/rho/internal/eventlog"
@@ -27,40 +39,40 @@ import (
 // through the request lifecycle.
 type IntegrationPipeline struct {
 	// Pre-query pipeline
-	IntentClassifier *IntentClassifier
-	ToolSelector     *ToolSelector
+	IntentClassifier *intelligence.IntentClassifier
+	ToolSelector     *intelligence.ToolSelector
 	ContextDecay     *ctxmgr.ContextDecay
 	BudgetAllocator  *BudgetAllocator
-	TokenPredictor   *TokenPredictor
+	TokenPredictor   *token.TokenPredictor
 	AdaptivePrompt   *SystemPromptBuilder
 
 	// Post-response pipeline
-	ResponseFormatter   *ResponseFormatter
-	QualityScorer       *QualityScorer
-	FileMentionDetector *FileMentionDetector
+	ResponseFormatter   *streaming.ResponseFormatter
+	QualityScorer       *review.QualityScorer
+	FileMentionDetector *history.FileMentionDetector
 
 	// Post-tool pipeline
-	LintLoop      *LintLoop
-	TestLoop      *TestLoop
-	StallDetector *StallDetector
-	ErrorRecovery *ErrorRecovery
+	LintLoop      *validation.LintLoop
+	TestLoop      *validation.TestLoop
+	StallDetector *control.StallDetector
+	ErrorRecovery *errs.ErrorRecovery
 
 	// Security pipeline
 	InjectionScanner *InjectionScanner
 	OutputRedactor   *OutputRedactor
 
 	// Learning pipeline
-	ExperienceStore   *ExperienceStore
-	KnowledgeBase     *KnowledgeBase
-	FeedbackCollector *FeedbackCollector
-	SelfAssessor      *SelfAssessor
+	ExperienceStore   *memory.ExperienceStore
+	KnowledgeBase     *memory.KnowledgeBase
+	FeedbackCollector *observability.FeedbackCollector
+	SelfAssessor      *review.SelfAssessor
 
 	// Session management
-	Timeline       *Timeline
-	TokenReporter  *TokenReporter
-	WorkspaceState *WorkspaceState
-	CommandHistory *CommandHistory
-	ResponseCache  *ResponseCache
+	Timeline       *compression.Timeline
+	TokenReporter  *token.TokenReporter
+	WorkspaceState *workflow.WorkspaceState
+	CommandHistory *history.CommandHistory
+	ResponseCache  *streaming.ResponseCache
 
 	// Internal
 	sessionStart time.Time
@@ -149,7 +161,7 @@ func (is *InjectionScanner) Scan(input string) *ScanResult {
 
 // PreQueryResult holds the aggregated results of the pre-query pipeline.
 type PreQueryResult struct {
-	Intent           *Intent
+	Intent           *intelligence.Intent
 	SuggestedTools   []string
 	BudgetAllocation map[string]int
 	PredictedCost    float64
@@ -180,8 +192,8 @@ type PostToolResult struct {
 
 // SessionSummary captures the final assessment when a session ends.
 type SessionSummary struct {
-	Assessment    *Assessment
-	Experience    *Experience
+	Assessment    *review.Assessment
+	Experience    *memory.Experience
 	Summary       string
 	TokensTotal   int
 	Duration      time.Duration
@@ -205,40 +217,40 @@ func NewIntegrationPipeline() *IntegrationPipeline {
 
 	return &IntegrationPipeline{
 		// Pre-query
-		IntentClassifier: NewIntentClassifier(),
-		ToolSelector:     NewToolSelector(defaultToolSet()),
+		IntentClassifier: intelligence.NewIntentClassifier(),
+		ToolSelector:     intelligence.NewToolSelector(defaultToolSet()),
 		ContextDecay:     ctxmgr.NewContextDecay(30 * time.Minute),
 		BudgetAllocator:  newDefaultBudgetAllocator(),
-		TokenPredictor:   NewTokenPredictor(),
+		TokenPredictor:   token.NewTokenPredictor(),
 		AdaptivePrompt:   NewSystemPromptBuilder("", 4096),
 
 		// Post-response
-		ResponseFormatter:   NewResponseFormatter(),
-		QualityScorer:       NewQualityScorer(),
-		FileMentionDetector: NewFileMentionDetector("."),
+		ResponseFormatter:   streaming.NewResponseFormatter(),
+		QualityScorer:       review.NewQualityScorer(),
+		FileMentionDetector: history.NewFileMentionDetector("."),
 
 		// Post-tool
-		LintLoop:      NewLintLoop(),
-		TestLoop:      NewTestLoop(),
-		StallDetector: NewStallDetector(),
-		ErrorRecovery: NewErrorRecovery(),
+		LintLoop:      validation.NewLintLoop(),
+		TestLoop:      validation.NewTestLoop(),
+		StallDetector: control.NewStallDetector(),
+		ErrorRecovery: errs.NewErrorRecovery(),
 
 		// Security
 		InjectionScanner: NewInjectionScanner(),
 		OutputRedactor:   NewOutputRedactor(),
 
 		// Learning
-		ExperienceStore:   NewExperienceStore(filepath.Join(stateRoot, "experience")),
-		KnowledgeBase:     NewKnowledgeBase(filepath.Join(stateRoot, "knowledge")),
-		FeedbackCollector: NewFeedbackCollector(filepath.Join(stateRoot, "feedback")),
-		SelfAssessor:      NewSelfAssessor(),
+		ExperienceStore:   memory.NewExperienceStore(filepath.Join(stateRoot, "experience")),
+		KnowledgeBase:     memory.NewKnowledgeBase(filepath.Join(stateRoot, "knowledge")),
+		FeedbackCollector: observability.NewFeedbackCollector(filepath.Join(stateRoot, "feedback")),
+		SelfAssessor:      review.NewSelfAssessor(),
 
 		// Session management
-		Timeline:       NewTimeline("default"),
-		TokenReporter:  NewTokenReporter(200000),
-		WorkspaceState: NewWorkspaceState("."),
-		CommandHistory: NewCommandHistory(),
-		ResponseCache:  NewResponseCache(1000, 24*time.Hour),
+		Timeline:       compression.NewTimeline("default"),
+		TokenReporter:  token.NewTokenReporter(200000),
+		WorkspaceState: workflow.NewWorkspaceState("."),
+		CommandHistory: history.NewCommandHistory(),
+		ResponseCache:  streaming.NewResponseCache(1000, 24*time.Hour),
 
 		// Internal
 		sessionStart: time.Now(),
@@ -246,8 +258,8 @@ func NewIntegrationPipeline() *IntegrationPipeline {
 }
 
 // defaultToolSet returns the standard set of tools available to the agent.
-func defaultToolSet() []ToolInfo {
-	return []ToolInfo{
+func defaultToolSet() []intelligence.ToolInfo {
+	return []intelligence.ToolInfo{
 		{Name: "Read", Category: "file", Cost: "free", ReadOnly: true},
 		{Name: "Write", Category: "file", Cost: "cheap", ReadOnly: false},
 		{Name: "Edit", Category: "file", Cost: "cheap", ReadOnly: false},
@@ -328,7 +340,7 @@ func (p *IntegrationPipeline) PreQuery(messages []types.FluxMessage, userInput s
 	result.InjectionRisk = p.InjectionScanner.Scan(userInput)
 
 	// 8. Check response cache
-	if ShouldCache(userInput) {
+	if streaming.ShouldCache(userInput) {
 		if entry, ok := p.ResponseCache.Get(userInput, ""); ok {
 			result.CacheHit = true
 			result.CachedResponse = entry.Response
@@ -364,7 +376,7 @@ func (p *IntegrationPipeline) PostResponse(response string, messages []types.Flu
 
 	// 2. Score quality
 	userPrompt := lastUserMessage(messages)
-	scoreCtx := ResponseContext{
+	scoreCtx := review.ResponseContext{
 		UserPrompt:        userPrompt,
 		AssistantResponse: result.FormattedResponse,
 		TokensUsed:        EstimateStringTokens(result.FormattedResponse),
@@ -400,12 +412,12 @@ func (p *IntegrationPipeline) PostResponse(response string, messages []types.Flu
 	p.TokenReporter.Record(0, tokensUsed, "", "", 0)
 
 	// 7. Cache the response
-	if ShouldCache(userPrompt) && result.QualityScore >= 0.7 {
+	if streaming.ShouldCache(userPrompt) && result.QualityScore >= 0.7 {
 		p.ResponseCache.Set(userPrompt, result.FormattedResponse, "", tokensUsed)
 	}
 
 	// 8. Update experience store with implicit signal
-	_ = p.FeedbackCollector.RecordImplicit(ImplicitSignal{
+	_ = p.FeedbackCollector.RecordImplicit(observability.ImplicitSignal{
 		Type:      "accepted",
 		SessionID: p.Timeline.SessionID,
 		Timestamp: time.Now(),
@@ -457,7 +469,7 @@ func (p *IntegrationPipeline) PostToolExecution(toolName string, args map[string
 
 	// 4. Attempt error recovery if the tool failed
 	if err != nil {
-		recoveryCtx := &RecoveryContext{
+		recoveryCtx := &errs.RecoveryContext{
 			Error:        err,
 			ErrorMsg:     err.Error(),
 			LastToolCall: toolName,
@@ -521,7 +533,7 @@ func (p *IntegrationPipeline) EndSession(ctx context.Context, success bool, task
 	}
 
 	// 1. Self-assess performance
-	taskCtx := TaskContext{
+	taskCtx := review.TaskContext{
 		Goal:          taskGoal,
 		FilesModified: len(summary.FilesModified),
 		Duration:      summary.Duration,
@@ -547,7 +559,7 @@ func (p *IntegrationPipeline) EndSession(ctx context.Context, success bool, task
 
 	// 3. Update knowledge base
 	if success && taskGoal != "" {
-		_ = p.KnowledgeBase.Add(&KnowledgeEntry{
+		_ = p.KnowledgeBase.Add(&memory.KnowledgeEntry{
 			Title:      fmt.Sprintf("Completed: %s", truncateString(taskGoal, 60)),
 			Content:    fmt.Sprintf("Task completed in %s with %d files modified.", summary.Duration.Round(time.Second), len(summary.FilesModified)),
 			Category:   "session_outcome",
@@ -558,7 +570,7 @@ func (p *IntegrationPipeline) EndSession(ctx context.Context, success bool, task
 	}
 
 	// 4. Collect implicit feedback
-	_ = p.FeedbackCollector.RecordImplicit(ImplicitSignal{
+	_ = p.FeedbackCollector.RecordImplicit(observability.ImplicitSignal{
 		Type:      "accepted",
 		SessionID: p.Timeline.SessionID,
 		Timestamp: time.Now(),
@@ -645,7 +657,7 @@ func formatStatus(name string, active bool) string {
 }
 
 // intentCategory safely extracts the category from a potentially-nil intent.
-func intentCategory(intent *Intent) string {
+func intentCategory(intent *intelligence.Intent) string {
 	if intent == nil {
 		return "unknown"
 	}

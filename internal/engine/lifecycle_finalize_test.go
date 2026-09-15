@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/lifecycle"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -36,7 +38,7 @@ func (m *finalizeMockSkillStore) Retrieve(query string) []string { return nil }
 // distillation was dead code.
 func TestFinalizePopulatesToolsAndFiles_TriggersSkillDistill(t *testing.T) {
 	sk := &finalizeMockSkillStore{}
-	svc := &LifecycleService{lifecycle: &SessionLifecycle{SkillStore: sk}}
+	svc := &LifecycleService{lifecycle: &lifecycle.SessionLifecycle{SkillStore: sk}}
 
 	messages := []types.FluxMessage{
 		{Role: "user", Content: "Refactor the auth module"},
@@ -73,7 +75,7 @@ func TestFinalizePopulatesToolsAndFiles_TriggersSkillDistill(t *testing.T) {
 // tools/files does not trigger distillation (regression guard).
 func TestFinalizeSimpleTaskNoSkillDistill(t *testing.T) {
 	sk := &finalizeMockSkillStore{}
-	svc := &LifecycleService{lifecycle: &SessionLifecycle{SkillStore: sk}}
+	svc := &LifecycleService{lifecycle: &lifecycle.SessionLifecycle{SkillStore: sk}}
 
 	messages := []types.FluxMessage{
 		{Role: "user", Content: "What is 2+2?"},

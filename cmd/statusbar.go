@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
 	"golang.org/x/text/language"
@@ -154,7 +156,7 @@ func renderStatusBarPrimaryRight(m *chatModel) string {
 	return strings.Join(parts, statusDimStyle.Render(" · "))
 }
 
-func formatStatusCost(c *engine.Cost) string {
+func formatStatusCost(c *cost.Cost) string {
 	if c == nil {
 		return icons.Ruby() + " $0.00"
 	}

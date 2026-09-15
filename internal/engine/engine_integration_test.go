@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
 	contracts "github.com/GrayCodeAI/rho/internal/contracts/policy"
 	"github.com/GrayCodeAI/rho/internal/types"
 
@@ -365,7 +367,7 @@ func TestIntegration_MaxTurns(t *testing.T) {
 	}
 
 	// Simulate cost accumulation to test budget checking.
-	sess.Cost = Cost{Model: "gpt-4o"}
+	sess.Cost = cost.Cost{Model: "gpt-4o"}
 	sess.Cost.Add(500_000, 200_000) // ~$3.25 which exceeds $1.0
 	if !sess.exceededBudget() {
 		t.Fatal("expected budget to be exceeded")
@@ -374,7 +376,7 @@ func TestIntegration_MaxTurns(t *testing.T) {
 	// Under-budget should not trigger.
 	sess2 := newTestSession()
 	sess2.SetMaxBudgetUSD(100.0)
-	sess2.Cost = Cost{Model: "gpt-4o"}
+	sess2.Cost = cost.Cost{Model: "gpt-4o"}
 	sess2.Cost.Add(100, 50)
 	if sess2.exceededBudget() {
 		t.Fatal("should not exceed $100 budget with minimal tokens")

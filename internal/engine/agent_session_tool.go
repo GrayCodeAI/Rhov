@@ -137,26 +137,26 @@ func (s *Session) spawnSubAgentRequest(ctx context.Context, req agentcontracts.S
 	return res, nil
 }
 
-func mapContractsType(t agentcontracts.SubagentType) SubAgentMode {
+func mapContractsType(t agentcontracts.SubagentType) engagent.SubAgentMode {
 	switch t {
 	case agentcontracts.TypePlan:
-		return SubAgentPlan
+		return engagent.SubAgentPlan
 	case agentcontracts.TypeGeneralPurpose:
-		return SubAgentGeneral
+		return engagent.SubAgentGeneral
 	default:
-		return SubAgentExplore
+		return engagent.SubAgentExplore
 	}
 }
 
 // spawnSubAgent creates a sub-agent with the given mode and depth tracking.
 // Returns (output, worktreePath, error).
-func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normalized, mode SubAgentMode, depth int) (string, string, error) {
-	if depth >= MaxAgentDepth {
-		return "", "", fmt.Errorf("max agent depth %d exceeded", MaxAgentDepth)
+func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normalized, mode engagent.SubAgentMode, depth int) (string, string, error) {
+	if depth >= engagent.MaxAgentDepth {
+		return "", "", fmt.Errorf("max agent depth %d exceeded", engagent.MaxAgentDepth)
 	}
 
-	maxTurns := DefaultTurnsForMode(mode)
-	if mode == SubAgentExplore && norm.Thoroughness != "" {
+	maxTurns := engagent.DefaultTurnsForMode(mode)
+	if mode == engagent.SubAgentExplore && norm.Thoroughness != "" {
 		maxTurns = engagent.ThoroughnessTurns(engagent.ExploreThoroughness(norm.Thoroughness))
 	}
 
@@ -174,7 +174,7 @@ func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normali
 
 	// Capability mode can further restrict tools beyond profile defaults.
 	if norm.CapabilityMode == agentcontracts.CapReadOnly {
-		registry = registry.Filter(ExploreTools)
+		registry = registry.Filter(engagent.ExploreTools)
 	}
 
 	subPromptCtx := prompts.PromptContext{
@@ -185,14 +185,14 @@ func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normali
 	if err != nil {
 		subSystemPrompt = s.Persistence().System()
 	}
-	if mode == SubAgentPlan {
+	if mode == engagent.SubAgentPlan {
 		subSystemPrompt = planSystemPrefix + "\n\n" + subSystemPrompt
 	}
 
 	sub := s.SubSession(model, subSystemPrompt, registry)
 	sub.PermSvc().SetPermissionFn(s.PermSvc().PermissionFn())
 	// Explore/plan: hard read-only bash allowlist (in addition to tool filter).
-	if IsReadOnlyMode(mode) || norm.CapabilityMode == agentcontracts.CapReadOnly {
+	if engagent.IsReadOnlyMode(mode) || norm.CapabilityMode == agentcontracts.CapReadOnly {
 		sub.Tools().SetReadOnlyBash(true)
 	}
 	// A child receives an independent snapshot of the parent's policy. This
@@ -281,30 +281,30 @@ func (s *Session) spawnSubAgent(ctx context.Context, norm agentcontracts.Normali
 const planSystemPrefix = "You are a planning sub-agent. Produce an ordered, actionable plan. " +
 	"Do not modify files. Prefer research tools (Read, Grep, Glob, LS) and only use Bash for read-only inspection."
 
-func (s *Session) resolveSubAgentModel(mode SubAgentMode) string {
+func (s *Session) resolveSubAgentModel(mode engagent.SubAgentMode) string {
 	current := s.ChatLLM().Model()
 	if s.LifecycleSvc().Cascade() == nil {
 		return current
 	}
 	switch mode {
-	case SubAgentExplore:
+	case engagent.SubAgentExplore:
 		return s.LifecycleSvc().Cascade().SelectModel("summarize", current, s.LifecycleSvc().Cascade().Roles.Explorer)
-	case SubAgentPlan:
+	case engagent.SubAgentPlan:
 		return s.LifecycleSvc().Cascade().SelectModel("planning", current, s.LifecycleSvc().Cascade().Roles.Planner)
-	case SubAgentGeneral:
+	case engagent.SubAgentGeneral:
 		return s.LifecycleSvc().Cascade().SelectModel("implement", current, "")
 	default:
 		return current
 	}
 }
 
-func (s *Session) resolveSubAgentTools(mode SubAgentMode) *tool.Registry {
+func (s *Session) resolveSubAgentTools(mode engagent.SubAgentMode) *tool.Registry {
 	registry := s.Tools().Registry()
 	switch mode {
-	case SubAgentExplore:
-		return registry.Filter(ExploreTools)
-	case SubAgentPlan:
-		return registry.Filter(PlanTools)
+	case engagent.SubAgentExplore:
+		return registry.Filter(engagent.ExploreTools)
+	case engagent.SubAgentPlan:
+		return registry.Filter(engagent.PlanTools)
 	default:
 		return registry
 	}

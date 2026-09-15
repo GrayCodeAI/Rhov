@@ -3,6 +3,8 @@ package engine
 import (
 	"context"
 	"testing"
+
+	"github.com/GrayCodeAI/rho/internal/engine/agent"
 )
 
 func TestAgentIntelligence_SelectMode(t *testing.T) {
@@ -10,14 +12,14 @@ func TestAgentIntelligence_SelectMode(t *testing.T) {
 
 	tests := []struct {
 		prompt string
-		want   SubAgentMode
+		want   agent.SubAgentMode
 	}{
-		{"find all files using deprecated API", SubAgentExplore},
-		{"search for authentication code", SubAgentExplore},
-		{"analyze the dependency graph", SubAgentExplore},
-		{"implement the new endpoint", SubAgentGeneral},
-		{"refactor the auth module", SubAgentGeneral},
-		{"fix the bug in parser.go", SubAgentGeneral},
+		{"find all files using deprecated API", agent.SubAgentExplore},
+		{"search for authentication code", agent.SubAgentExplore},
+		{"analyze the dependency graph", agent.SubAgentExplore},
+		{"implement the new endpoint", agent.SubAgentGeneral},
+		{"refactor the auth module", agent.SubAgentGeneral},
+		{"fix the bug in parser.go", agent.SubAgentGeneral},
 	}
 	for _, tt := range tests {
 		got := ai.SelectMode(tt.prompt)
@@ -67,7 +69,7 @@ func TestAgentIntelligence_ExecuteWithIntelligence_Single(t *testing.T) {
 	ai := NewAgentIntelligence()
 
 	called := false
-	result, err := ai.ExecuteWithIntelligence(context.Background(), "fix typo", func(_ context.Context, prompt string, mode SubAgentMode) (string, error) {
+	result, err := ai.ExecuteWithIntelligence(context.Background(), "fix typo", func(_ context.Context, prompt string, mode agent.SubAgentMode) (string, error) {
 		called = true
 		return "fixed", nil
 	})
@@ -95,8 +97,8 @@ func TestSelfAwareness_ShouldDelegate(t *testing.T) {
 
 func TestSynthesisPrompt(t *testing.T) {
 	subtasks := []SubTask{
-		{ID: "a", Prompt: "find files", Mode: SubAgentExplore},
-		{ID: "b", Prompt: "fix them", Mode: SubAgentGeneral},
+		{ID: "a", Prompt: "find files", Mode: agent.SubAgentExplore},
+		{ID: "b", Prompt: "fix them", Mode: agent.SubAgentGeneral},
 	}
 	results := map[string]string{"a": "found 3 files", "b": "fixed all"}
 	prompt := MergeSynthesisPrompt(subtasks, results)

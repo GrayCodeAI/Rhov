@@ -4,6 +4,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+	"github.com/GrayCodeAI/rho/internal/engine/streaming"
+
 	"github.com/GrayCodeAI/rho/internal/eventlog"
 	"github.com/GrayCodeAI/rho/internal/observability/logger"
 	"github.com/GrayCodeAI/rho/internal/session"
@@ -46,13 +49,13 @@ type PersistenceService struct {
 	// at explicit Save calls).
 	writeBehind *session.WriteBehind
 	// steering is the per-iteration user-guidance queue.
-	steering *SteeringQueue
+	steering *streaming.SteeringQueue
 	// logger.
 	log *logger.Logger
 	// Compaction and checkpoint state belongs to persistence. Session keeps
 	// deprecated aliases only for source compatibility with older callers.
 	autoCompactor        *AutoCompactor
-	files                *FileTracker
+	files                *compact.FileTracker
 	persistID            string
 	lastPromptTokens     int
 	lastCompletionTokens int
@@ -154,10 +157,10 @@ func (s *PersistenceService) SetGraph(graph *session.ConversationGraph) { s.grap
 
 // Steering returns the per-iteration user-guidance queue. New
 // code should access this through s.Persistence().Steering().
-func (s *PersistenceService) Steering() *SteeringQueue { return s.steering }
+func (s *PersistenceService) Steering() *streaming.SteeringQueue { return s.steering }
 
 // SetSteering attaches the user-guidance queue.
-func (s *PersistenceService) SetSteering(sq *SteeringQueue) { s.steering = sq }
+func (s *PersistenceService) SetSteering(sq *streaming.SteeringQueue) { s.steering = sq }
 
 // AddAssistant appends an assistant message.
 func (s *PersistenceService) AddAssistant(content string) {
@@ -538,13 +541,13 @@ func (s *PersistenceService) SetAutoCompactor(ac *AutoCompactor) {
 	s.stateMu.Unlock()
 }
 
-func (s *PersistenceService) Files() *FileTracker {
+func (s *PersistenceService) Files() *compact.FileTracker {
 	s.stateMu.RLock()
 	defer s.stateMu.RUnlock()
 	return s.files
 }
 
-func (s *PersistenceService) SetFiles(files *FileTracker) {
+func (s *PersistenceService) SetFiles(files *compact.FileTracker) {
 	s.stateMu.Lock()
 	s.files = files
 	s.stateMu.Unlock()

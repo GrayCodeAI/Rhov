@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/engine/diff"
 	"github.com/GrayCodeAI/rho/internal/engine/planning"
 	"github.com/GrayCodeAI/rho/internal/hooks"
@@ -595,8 +597,8 @@ func (s *ToolService) NormalizeOutput(output, canonicalTool, toolID string, cont
 	}
 	compressBudget := maxChars / 2
 	if len(output) > compressBudget {
-		compressed, tokens := CompressForContext(output, compressBudget/4)
-		if tokens > 0 && tokens < CountTokensFast(output) {
+		compressed, tokens := token.CompressForContext(output, compressBudget/4)
+		if tokens > 0 && tokens < token.CountTokensFast(output) {
 			output = compressed
 		}
 	}

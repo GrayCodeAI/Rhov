@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 
 	"github.com/GrayCodeAI/rho/internal/engine/compact"
@@ -29,13 +31,13 @@ func (s *MicroCompactStrategy) ShouldTrigger(msgs []types.FluxMessage, tokenCoun
 	return compact.HasTimeGap(msgs, 60*time.Minute)
 }
 
-func (s *MicroCompactStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
+func (s *MicroCompactStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
 	messages := sess.Persistence().RawMessages()
-	tokensBefore := EstimateTokens(messages)
-	result := compact.MicrocompactMessages(messages, DefaultMicroCompactConfig())
-	tokensAfter := EstimateTokens(result)
+	tokensBefore := token.EstimateTokens(messages)
+	result := compact.MicrocompactMessages(messages, compact.DefaultMicroCompactConfig())
+	tokensAfter := token.EstimateTokens(result)
 
-	return &CompactResult{
+	return &compact.CompactResult{
 		Messages:     result,
 		TokensBefore: tokensBefore,
 		TokensAfter:  tokensAfter,

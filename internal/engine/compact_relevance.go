@@ -4,6 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/relevanceprune"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -27,8 +31,8 @@ func (s *RelevancePruneStrategy) ShouldTrigger(msgs []types.FluxMessage, tokenCo
 	return tokenCount >= threshold && len(msgs) >= 20
 }
 
-func (s *RelevancePruneStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
-	tokensBefore := EstimateTokens(sess.Persistence().RawMessages())
+func (s *RelevancePruneStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
+	tokensBefore := token.EstimateTokens(sess.Persistence().RawMessages())
 	raw := sess.Persistence().RawMessages()
 
 	taskContext := lastUserText(raw)
@@ -45,8 +49,8 @@ func (s *RelevancePruneStrategy) Compact(ctx context.Context, sess *Session) (*C
 
 	out := toFluxMessages(pruned)
 	sess.Persistence().SetMessages(out)
-	tokensAfter := EstimateTokens(sess.Persistence().RawMessages())
-	return &CompactResult{
+	tokensAfter := token.EstimateTokens(sess.Persistence().RawMessages())
+	return &compact.CompactResult{
 		Messages:     out,
 		TokensBefore: tokensBefore,
 		TokensAfter:  tokensAfter,

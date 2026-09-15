@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -53,7 +55,7 @@ func TestRecordStreamUsageAttributesResolvedRoute(t *testing.T) {
 		resolvedProvider = "openai"
 		resolvedModel    = "openai/fallback-test-model"
 	)
-	RegisterLivePricing(resolvedModel, 2, 4)
+	cost.RegisterLivePricing(resolvedModel, 2, 4)
 	sess := NewSessionWithClient(NewMockClientForTest(), "anthropic", "anthropic/requested-test-model", "", nil, true)
 	ch := make(chan StreamEvent, 1)
 

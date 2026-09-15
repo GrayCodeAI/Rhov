@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/engine/ctxmgr"
 	modelPkg "github.com/GrayCodeAI/rho/internal/provider/routing"
 )
@@ -71,11 +75,11 @@ func (s *Session) compactThresholdPct() int {
 	return pct
 }
 
-func (s *Session) compactConfig() CompactConfig {
+func (s *Session) compactConfig() compact.CompactConfig {
 	window := s.ContextWindowSize()
 	pct := s.compactThresholdPct()
 	target := window * pct / 100
-	cfg := DefaultCompactConfig()
+	cfg := compact.DefaultCompactConfig()
 	cfg.AutoEnabled = true
 	cfg.ContextWindowSize = window
 	cfg.MaxOutputTokens = 0
@@ -116,7 +120,7 @@ func (s *Session) WillCompactBeforeTurn() bool {
 	if len(s.Persistence().RawMessagesView()) > maxContextMessages {
 		return true
 	}
-	convTokens := EstimateTokens(s.Persistence().RawMessagesView())
+	convTokens := token.EstimateTokens(s.Persistence().RawMessagesView())
 	budget := ctxmgr.NewContextBudget(s.ContextWindowSize())
 	return budget.ShouldCompact(convTokens)
 }
@@ -140,25 +144,25 @@ func (s *Session) ManageContextBeforeTurn(ctx context.Context) (strategy string,
 	}
 
 	if len(s.Persistence().RawMessagesView()) > maxContextMessages {
-		before := EstimateTokens(s.Persistence().RawMessagesView())
+		before := token.EstimateTokens(s.Persistence().RawMessagesView())
 		beforeMsgs := len(s.Persistence().RawMessagesView())
 		s.smartCompact(ctx)
 		s.lastCompactionMsgDelta = beforeMsgs - len(s.Persistence().RawMessagesView())
 		s.lastCompactionSummary = "" // smartCompact may set it via the summary path
-		s.recordCompaction("smart_message_cap", before, EstimateTokens(s.Persistence().RawMessagesView()), false)
+		s.recordCompaction("smart_message_cap", before, token.EstimateTokens(s.Persistence().RawMessagesView()), false)
 		return "smart_message_cap", true
 	}
 
-	convTokens := EstimateTokens(s.Persistence().RawMessagesView())
+	convTokens := token.EstimateTokens(s.Persistence().RawMessagesView())
 	window := s.ContextWindowSize()
 	budget := ctxmgr.NewContextBudget(window)
 	if budget.ShouldCompact(convTokens) {
-		before := EstimateTokens(s.Persistence().RawMessagesView())
+		before := token.EstimateTokens(s.Persistence().RawMessagesView())
 		beforeMsgs := len(s.Persistence().RawMessagesView())
 		s.smartCompact(ctx)
 		s.lastCompactionMsgDelta = beforeMsgs - len(s.Persistence().RawMessagesView())
 		s.lastCompactionSummary = ""
-		s.recordCompaction("smart_budget", before, EstimateTokens(s.Persistence().RawMessagesView()), false)
+		s.recordCompaction("smart_budget", before, token.EstimateTokens(s.Persistence().RawMessagesView()), false)
 		return "smart_budget", true
 	}
 
@@ -173,13 +177,13 @@ func (s *Session) CompactConversation(ctx context.Context) (strategy string, tok
 	s.Persistence().SetRawMessages(ctxmgr.CollapseRepeatedMessages(s.Persistence().RawMessages()))
 	s.EnsureAutoCompactor()
 	beforeMsgs := len(s.Persistence().RawMessages())
-	tokensBefore = EstimateTokens(s.Persistence().RawMessages())
+	tokensBefore = token.EstimateTokens(s.Persistence().RawMessages())
 	strategy, err = s.Persistence().AutoCompactor().RunCompaction(ctx, s)
 	if err != nil {
 		s.smartCompact(ctx)
 		strategy = "smart_fallback"
 	}
-	tokensAfter = EstimateTokens(s.Persistence().RawMessages())
+	tokensAfter = token.EstimateTokens(s.Persistence().RawMessages())
 	s.lastCompactionMsgDelta = beforeMsgs - len(s.Persistence().RawMessages())
 	s.recordCompaction(strategy, tokensBefore, tokensAfter, true)
 	return strategy, tokensBefore, tokensAfter, nil
@@ -188,6 +192,6 @@ func (s *Session) CompactConversation(ctx context.Context) (strategy string, tok
 // ShouldCompactByBudget reports whether conversation tokens exceed the configured % of window.
 func (s *Session) ShouldCompactByBudget() bool {
 	window := s.ContextWindowSize()
-	conv := EstimateTokens(s.Persistence().RawMessages())
+	conv := token.EstimateTokens(s.Persistence().RawMessages())
 	return conv >= window*s.compactThresholdPct()/100
 }

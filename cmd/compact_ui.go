@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	tea "charm.land/bubbletea/v2"
 	lipgloss "charm.land/lipgloss/v2"
 	"github.com/mattn/go-runewidth"
@@ -174,7 +176,7 @@ func (m *chatModel) startManualCompact() (chatModel, tea.Cmd) {
 	m.compactBarWindow = m.contextWindowTokens()
 	m.compactBarUsed = sessionContextUsedTokens(m.session)
 	if m.compactBarUsed <= 0 && m.session != nil {
-		m.compactBarUsed = engine.EstimateTokens(m.session.RawMessages())
+		m.compactBarUsed = token.EstimateTokens(m.session.RawMessages())
 	}
 	if m.brailleSpinner != nil {
 		m.brailleSpinner.SetLabel("")

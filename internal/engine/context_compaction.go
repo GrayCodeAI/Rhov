@@ -3,6 +3,8 @@ package engine
 import (
 	"path/filepath"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
 	"github.com/GrayCodeAI/rho/internal/eventlog"
 	"github.com/GrayCodeAI/rho/internal/session"
 	"github.com/GrayCodeAI/rho/internal/storage"
@@ -73,7 +75,7 @@ func (s *Session) ContextUsedTokens() int {
 		return cache
 	}
 
-	est := EstimateTokens(msgs)
+	est := token.EstimateTokens(msgs)
 	persist.SetTokenEstimateCache(est, count, lastLen)
 
 	return est

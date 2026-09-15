@@ -6,6 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/compact"
+
 	"github.com/GrayCodeAI/rho/internal/circuitbreaker"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -14,13 +18,13 @@ import (
 type AutoCompactor struct {
 	mu           sync.Mutex
 	registry     *StrategyRegistry
-	config       CompactConfig
+	config       compact.CompactConfig
 	breaker      *circuitbreaker.Breaker
 	lastStrategy string
 }
 
 // NewAutoCompactor creates an auto-compactor with the given config.
-func NewAutoCompactor(config CompactConfig) *AutoCompactor {
+func NewAutoCompactor(config compact.CompactConfig) *AutoCompactor {
 	return &AutoCompactor{
 		registry: NewStrategyRegistry(config),
 		config:   config,
@@ -29,7 +33,7 @@ func NewAutoCompactor(config CompactConfig) *AutoCompactor {
 }
 
 // Configure updates compaction settings and rebuilds the strategy registry.
-func (ac *AutoCompactor) Configure(config CompactConfig) {
+func (ac *AutoCompactor) Configure(config compact.CompactConfig) {
 	if ac == nil {
 		return
 	}
@@ -61,7 +65,7 @@ func (ac *AutoCompactor) ShouldAutoCompact(sess *Session) bool {
 		return false
 	}
 
-	tokenCount := EstimateTokens(sess.Persistence().RawMessages())
+	tokenCount := token.EstimateTokens(sess.Persistence().RawMessages())
 	threshold := ac.GetAutoCompactThreshold()
 	return tokenCount >= threshold
 }
@@ -73,7 +77,7 @@ func (ac *AutoCompactor) AutoCompactIfNeeded(ctx context.Context, sess *Session)
 		return "", false
 	}
 
-	tokensBefore := EstimateTokens(sess.Persistence().RawMessages())
+	tokensBefore := token.EstimateTokens(sess.Persistence().RawMessages())
 	strategy, err := ac.RunCompaction(ctx, sess)
 	if err != nil {
 		ac.mu.Lock()
@@ -84,12 +88,12 @@ func (ac *AutoCompactor) AutoCompactIfNeeded(ctx context.Context, sess *Session)
 			"failures": ac.breaker.ConsecutiveFailures(),
 		})
 		sess.compact(ctx)
-		tokensAfter := EstimateTokens(sess.Persistence().RawMessages())
+		tokensAfter := token.EstimateTokens(sess.Persistence().RawMessages())
 		sess.recordCompaction("truncate_fallback", tokensBefore, tokensAfter, false)
 		return "truncate_fallback", true
 	}
 
-	tokensAfter := EstimateTokens(sess.Persistence().RawMessages())
+	tokensAfter := token.EstimateTokens(sess.Persistence().RawMessages())
 	if tokensAfter >= tokensBefore {
 		// Strategy ran but produced no reduction (e.g. LLM summary was
 		// rejected, or messages were not reduced); fall back to truncation.
@@ -101,7 +105,7 @@ func (ac *AutoCompactor) AutoCompactIfNeeded(ctx context.Context, sess *Session)
 			"tokens_after":  tokensAfter,
 		})
 		sess.compact(ctx)
-		tokensAfter = EstimateTokens(sess.Persistence().RawMessages())
+		tokensAfter = token.EstimateTokens(sess.Persistence().RawMessages())
 		sess.recordCompaction("truncate_fallback", tokensBefore, tokensAfter, false)
 		return "truncate_fallback", true
 	}
@@ -122,7 +126,7 @@ func (ac *AutoCompactor) RunCompaction(ctx context.Context, sess *Session) (stri
 	ac.mu.Unlock()
 
 	messages := sess.Persistence().RawMessages()
-	tokenCount := EstimateTokens(messages)
+	tokenCount := token.EstimateTokens(messages)
 	strategy := registry.SelectStrategy(sess, messages, tokenCount)
 	if strategy == nil {
 		return "", errors.New("no compaction strategy available")
@@ -177,13 +181,13 @@ func (s *SmartCompactStrategy) ShouldTrigger(msgs []types.FluxMessage, tokenCoun
 	return tokenCount >= threshold && len(msgs) > 20
 }
 
-func (s *SmartCompactStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
-	tokensBefore := EstimateTokens(sess.Persistence().RawMessages())
+func (s *SmartCompactStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
+	tokensBefore := token.EstimateTokens(sess.Persistence().RawMessages())
 	sess.smartCompact(ctx)
 	messages := sess.Persistence().RawMessages()
-	tokensAfter := EstimateTokens(messages)
+	tokensAfter := token.EstimateTokens(messages)
 
-	return &CompactResult{
+	return &compact.CompactResult{
 		Messages:     messages,
 		TokensBefore: tokensBefore,
 		TokensAfter:  tokensAfter,
@@ -200,13 +204,13 @@ func (s *TruncateStrategy) ShouldTrigger(_ []types.FluxMessage, tokenCount, thre
 	return tokenCount >= threshold
 }
 
-func (s *TruncateStrategy) Compact(ctx context.Context, sess *Session) (*CompactResult, error) {
-	tokensBefore := EstimateTokens(sess.Persistence().RawMessages())
+func (s *TruncateStrategy) Compact(ctx context.Context, sess *Session) (*compact.CompactResult, error) {
+	tokensBefore := token.EstimateTokens(sess.Persistence().RawMessages())
 	sess.compact(ctx)
 	messages := sess.Persistence().RawMessages()
-	tokensAfter := EstimateTokens(messages)
+	tokensAfter := token.EstimateTokens(messages)
 
-	return &CompactResult{
+	return &compact.CompactResult{
 		Messages:     messages,
 		TokensBefore: tokensBefore,
 		TokensAfter:  tokensAfter,

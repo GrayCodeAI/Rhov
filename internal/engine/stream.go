@@ -8,6 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/engine/cost"
+	"github.com/GrayCodeAI/rho/internal/engine/token"
+
+	"github.com/GrayCodeAI/rho/internal/engine/control"
+
 	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 	"github.com/GrayCodeAI/rho/internal/smartrouting"
 	"github.com/GrayCodeAI/rho/internal/types"
@@ -228,8 +233,8 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 	toolTurns := 0 // turns that used tools (for skill distillation)
 	var toolsUsedSet map[string]bool
 	var filesModifiedSet map[string]bool
-	snowball := branching.NewSnowballDetector(500000) // 500K token ceiling
-	loopDet := NewLoopDetector(10, DoomLoopThreshold) // 10-step window, 3 repeats = doom loop
+	snowball := branching.NewSnowballDetector(500000)                 // 500K token ceiling
+	loopDet := control.NewLoopDetector(10, control.DoomLoopThreshold) // 10-step window, 3 repeats = doom loop
 
 	for {
 		// Close the boundary of the previous turn before evaluating whether to
@@ -259,12 +264,12 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			s.LifecycleSvc().Beliefs().Prune(turnCount)
 		}
 		// Context governor: collapse → micro/smart/truncate (settings threshold %).
-		tokensBefore := EstimateTokens(s.Persistence().RawMessages())
+		tokensBefore := token.EstimateTokens(s.Persistence().RawMessages())
 		if s.WillCompactBeforeTurn() {
 			emit(StreamEvent{Type: "compact_start"})
 		}
 		if compactStrategy, didCompact := s.ManageContextBeforeTurn(ctx); didCompact {
-			tokensAfter := EstimateTokens(s.Persistence().RawMessages())
+			tokensAfter := token.EstimateTokens(s.Persistence().RawMessages())
 			s.Logger().Info("context compacted", map[string]interface{}{
 				"strategy": compactStrategy,
 				"messages": len(s.Persistence().RawMessages()),
@@ -337,7 +342,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		// Dynamic max_tokens based on task type and recent tool patterns
 		taskType := classifyPromptForBudget(s.Persistence().RawMessages())
 		contextSize := s.ContextWindowSize()
-		maxTok := DynamicMaxTokens(s.Persistence().RawMessages(), contextSize, taskType)
+		maxTok := token.DynamicMaxTokens(s.Persistence().RawMessages(), contextSize, taskType)
 
 		// Model cascade: select optimal model for this request
 		activeModel := strings.TrimSpace(s.ChatLLM().Model())
@@ -426,16 +431,16 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		// Count actual input tokens for precise budget tracking
 		inputTokens := 0
 		for _, msg := range s.Persistence().RawMessages() {
-			inputTokens += CountTokensFast(msg.Content)
+			inputTokens += token.CountTokensFast(msg.Content)
 			for _, tr := range msg.ToolResults {
-				inputTokens += CountTokensFast(tr.Content)
+				inputTokens += token.CountTokensFast(tr.Content)
 			}
 		}
-		inputTokens += CountTokensFast(s.Persistence().System())
+		inputTokens += token.CountTokensFast(s.Persistence().System())
 		s.Logger().Info("token count", map[string]interface{}{"input_tokens": inputTokens, "model": s.ChatLLM().Model()})
 
 		// Cost warning for expensive calls
-		inPrice, outPrice := ModelPricing(s.ChatLLM().Model())
+		inPrice, outPrice := cost.ModelPricing(s.ChatLLM().Model())
 		estCost := float64(inputTokens)*inPrice/1_000_000 + float64(maxTok)*outPrice/1_000_000
 		if estCost > 0.50 {
 			emit(StreamEvent{Type: "blast_radius", Content: fmt.Sprintf("%s This request will use ~%d tokens (~$%.2f). Continue? The agent will proceed automatically.", icons.Alert(), inputTokens+maxTok, estCost)})

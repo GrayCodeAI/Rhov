@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/GrayCodeAI/rho/internal/engine/control"
+
 	"github.com/GrayCodeAI/rho/internal/engine/branching"
 )
 
@@ -17,7 +19,7 @@ const gracefulExhaustionEnv = "RHO_GRACEFUL_EXHAUSTION"
 // checkGuardConditions runs all pre-turn guard checks.
 // Returns false when the loop should stop (abort conditions met).
 // On first-stage loop detection, injects a break-loop message and continues.
-func (s *Session) checkGuardConditions(ctx context.Context, ch chan<- StreamEvent, turnCount int, snowball *branching.SnowballDetector, loopDet *LoopDetector) bool {
+func (s *Session) checkGuardConditions(ctx context.Context, ch chan<- StreamEvent, turnCount int, snowball *branching.SnowballDetector, loopDet *control.LoopDetector) bool {
 	if ctx.Err() != nil {
 		msg := "Request cancelled."
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
