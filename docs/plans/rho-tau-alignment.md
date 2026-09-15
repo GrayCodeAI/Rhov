@@ -33,18 +33,21 @@ does the achievable parts:
 Tau's palette is a restrained dark theme: near-black panel, single muted
 accent, generous dim text, no heavy borders.
 
-- [ ] Add a `tau` palette to `internal/theme/theme_palettes.go`
+- [x] Add a `tau` palette to `internal/theme/theme_palettes.go`
       (panel `#0d1117`, ink `#e6edf3`, muted `#8b949e`, accent `#7aa2f7`,
       subtle line `#21262d`).
-- [ ] Register it in `themeRegistry`; make it selectable via `/theme tau`.
-- [ ] Reduce chrome: prefer single-line separators over box borders where the
+- [x] Register it in `themeRegistry`; make it selectable via `/theme tau`.
+- [x] Reduce chrome: prefer single-line separators over box borders where the
       theme is `tau`.
-- [ ] Keep every existing palette intact (no regressions).
+- [x] Keep every existing palette intact (no regressions).
 
 ## Phase 2 — Tau-style layout (visual)
 
 - [ ] Flatten the footer: one status line + one input line (Tau shows a
       minimal bottom bar, not a multi-row panel).
+      NOTE: `renderStatusBar` intentionally renders two rows at width >= 100
+      and `TestRenderStatusBar_TwoLineAtWidth120` asserts it. Flattening is a
+      product/visual decision that needs sign-off before changing that test.
 - [ ] Dim the input border; show the mode as a short prefix rather than a
       separate row.
 - [ ] Tighten the welcome block: wordmark + one hint line.
@@ -52,17 +55,17 @@ accent, generous dim text, no heavy borders.
 
 ## Phase 3 — Architecture tightening (contract)
 
-- [ ] Document the frontend contract in `docs/architecture/frontend-contract.md`:
+- [x] Document the frontend contract in `docs/architecture/frontend-contract.md`:
       `engine.StreamEvent` is the only channel; TUI/daemon/ACP/print are
       consumers and must not reach into engine internals.
-- [ ] Add a testaudit guard asserting `cmd/` TUI files do not import
+- [x] Add a testaudit guard asserting `cmd/` TUI files do not import
       `internal/engine/*` subpackages beyond the public facade types.
 
 ## Phase 4 — Verification (twice)
 
-- [ ] Pass 1: `gofumpt v0.10.0`, `goimports`, `go build ./...`, `go vet ./...`,
+- [x] Pass 1: `gofumpt v0.10.0`, `goimports`, `go build ./...`, `go vet ./...`,
       `golangci-lint`, targeted tests for touched packages, boundary guards.
-- [ ] Pass 2: independent re-run of the same, plus a fresh-eyes grep for
+- [x] Pass 2: independent re-run of the same, plus a fresh-eyes grep for
       stale references and a manual TUI render check.
 
 ## Out of scope (explicitly)
