@@ -151,7 +151,7 @@ services; it is not a claim that those fields have already moved.
 
 ## Dependencies
 
-- **eyrie:** LLM provider engine behind `eyrie/engine` (workspace sibling)
+- **flux:** LLM provider engine behind `flux/engine` (workspace sibling)
 - **harrier:** Graph-based persistent memory (workspace sibling)
 - **shrike:** Tokenizer, compression (workspace sibling)
 - **eagle:** Shared types (workspace sibling)

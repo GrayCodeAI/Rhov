@@ -36,7 +36,7 @@ GORELEASER   := $(GOBIN_DIR)/goreleaser
 # ---------------------------------------------------------------------------
 # Phony declarations (alphabetical).
 # ---------------------------------------------------------------------------
-.PHONY: all bench boundaries build check-replace ci clean ecosystem-guard eyrie-client-guard eyrie-engine-guard manifest-guard peer-guard internal-layers-guard package-boundaries-guard release-parity cover cover-new fmt help install lint lint-fix \
+.PHONY: all bench boundaries build check-replace ci clean ecosystem-guard flux-client-guard flux-engine-guard manifest-guard peer-guard internal-layers-guard package-boundaries-guard release-parity cover cover-new fmt help install lint lint-fix \
         release security setup smoke path sync test test-10x test-live test-new test-race tidy version vet api-docs api-validate workspace
 
 check-replace: ## Fail if go.mod has local replace directives (run before tagging)
@@ -121,11 +121,11 @@ vet: ## Run go vet.
 ecosystem-guard: ## Fail if external ecosystem repos import rho/internal.
 	bash ./scripts/check-ecosystem-boundaries.sh
 
-eyrie-client-guard: ## Fail on any production eyrie/client import.
-	bash ./scripts/check-eyrie-client-imports.sh
+flux-client-guard: ## Fail on any production flux/client import.
+	bash ./scripts/check-flux-client-imports.sh
 
-eyrie-engine-guard: ## Require all production Eyrie imports to use the stable engine facade.
-	bash ./scripts/check-eyrie-engine-boundary.sh
+flux-engine-guard: ## Require all production Flux imports to use the stable engine facade.
+	bash ./scripts/check-flux-engine-boundary.sh
 
 peer-guard: ## Fail if support engines import each other instead of depending only on Rho contracts.
 	bash ./scripts/check-support-repo-coupling.sh
@@ -136,7 +136,7 @@ internal-layers-guard: ## Enforce one-way dependencies across stable Rho interna
 package-boundaries-guard: ## Enforce AST/package-graph boundaries with file/line diagnostics.
 	bash ./scripts/check-package-boundaries.sh
 
-boundaries: manifest-guard check-replace ecosystem-guard eyrie-client-guard eyrie-engine-guard peer-guard internal-layers-guard package-boundaries-guard ## Alias for all boundary guards (matches `make boundaries` in engine repos).
+boundaries: manifest-guard check-replace ecosystem-guard flux-client-guard flux-engine-guard peer-guard internal-layers-guard package-boundaries-guard ## Alias for all boundary guards (matches `make boundaries` in engine repos).
 
 release-parity: ## Verify every go.mod ecosystem version resolves to a reachable remote commit.
 	bash ./scripts/check-module-release-parity.sh

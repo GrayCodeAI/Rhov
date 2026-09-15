@@ -232,7 +232,7 @@ func TestConfigDir_Default(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv(envConfigDir, "")
-	t.Setenv(envEyrieConfigDir, "")
+	t.Setenv(envFluxConfigDir, "")
 	t.Setenv("HAWK_CONFIG_DIR", "")
 
 	got := ConfigDir()
@@ -278,22 +278,22 @@ func TestSettingsPath(t *testing.T) {
 
 // --- ProviderConfigPath tests ---
 
-func TestProviderConfigPath_EyrieOverride(t *testing.T) {
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
-	t.Setenv(envEyrieConfigDir, eyrieDir)
+func TestProviderConfigPath_FluxOverride(t *testing.T) {
+	fluxDir := filepath.Join(t.TempDir(), "flux")
+	t.Setenv(envFluxConfigDir, fluxDir)
 
 	got := ProviderConfigPath()
-	want := filepath.Join(eyrieDir, "provider.json")
+	want := filepath.Join(fluxDir, "provider.json")
 	if got != want {
 		t.Errorf("ProviderConfigPath() = %q, want %q", got, want)
 	}
 }
 
-func TestProviderConfigPath_EyrieWhitespaceIgnored(t *testing.T) {
-	t.Setenv(envEyrieConfigDir, "   ") // whitespace should be treated as empty
+func TestProviderConfigPath_FluxWhitespaceIgnored(t *testing.T) {
+	t.Setenv(envFluxConfigDir, "   ") // whitespace should be treated as empty
 
 	got := ProviderConfigPath()
-	want := filepath.Join(mustUserConfigDir(), "eyrie", "provider.json")
+	want := filepath.Join(mustUserConfigDir(), "flux", "provider.json")
 	if got != want {
 		t.Errorf("ProviderConfigPath() = %q, want %q", got, want)
 	}

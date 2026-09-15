@@ -1,7 +1,7 @@
 # Rho Repo Roles
 
 > **Historical.** This document describes the pre-2026-09 multi-engine
-> ecosystem. Rho now depends only on `eyrie` and embeds its own token engine;
+> ecosystem. Rho now depends only on `flux` and embeds its own token engine;
 > the harrier, kestrel, merlin, shrike, and swift integrations have been
 > removed. Kept for record.
 
@@ -27,11 +27,11 @@ separate end-user products.
 
 ## Support engines
 
-### `eyrie`
-Rho provider engine. Its public host boundary is `eyrie/engine`, which owns
+### `flux`
+Rho provider engine. Its public host boundary is `flux/engine`, which owns
 credentials, provider state, catalog discovery, model/deployment selection,
 transport, resilience, and normalized generation/streaming. Rho production
-code has zero imports of Eyrie's lower-level packages.
+code has zero imports of Flux's lower-level packages.
 
 ### `harrier` (Harrier)
 Rho memory engine.
@@ -50,7 +50,7 @@ Rho verification engine.
 
 All six support engines are peers:
 
-- `eyrie`
+- `flux`
 - `harrier` (Harrier)
 - `shrike` (Shrike)
 - `swift` (Swift)

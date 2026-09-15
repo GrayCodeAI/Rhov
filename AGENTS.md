@@ -7,7 +7,7 @@ alwaysApply: false
 # Extending rho
 
 rho is an open-source code intelligence platform. It lives in the `graycode-eco`
-workspace alongside the ecosystem repos that power it (`eyrie`,
+workspace alongside the ecosystem repos that power it (`flux`,
 `shrike`, `harrier`, `swift`, `kestrel`, `merlin`). This document describes how to extend
 rho with custom tools, skills, hooks, and integrations.
 
@@ -192,8 +192,8 @@ Cross-repo severity and finding contracts now live in rho's `internal/contracts`
 ### Architecture note: provider ownership
 
 Implement provider protocols, adapters, catalog metadata, credential mappings, and
-provider contract tests in `../eyrie` (the eyrie engine's repo) first. Rho consumes providers only
-through Eyrie's stable engine facade; Rho changes should be limited to host UX
+provider contract tests in `../flux` (the flux engine's repo) first. Rho consumes providers only
+through Flux's stable engine facade; Rho changes should be limited to host UX
 and facade integration. Concentrate AI is a pay-as-you-go gateway implemented
 with its native Responses API (`/v1/responses`) under the
 `concentrate-payg` deployment.
@@ -245,7 +245,7 @@ This project is indexed by GitNexus as **rho** (97743 symbols, 322940 relationsh
 
 ### Workspace workflow (sibling repos)
 
-rho depends on ecosystem repos (`eyrie`, etc.) as independent sibling repos in the `graycode-eco` workspace. Rho's `go.work` lists them as `../<repo>`, so local changes in any sibling are automatically picked up by rho. Each sibling is its own git repo, versioned and released independently.
+rho depends on ecosystem repos (`flux`, etc.) as independent sibling repos in the `graycode-eco` workspace. Rho's `go.work` lists them as `../<repo>`, so local changes in any sibling are automatically picked up by rho. Each sibling is its own git repo, versioned and released independently.
 
 1. Edit + test in `../<repo>` — run its tests, run `make test` in rho
 2. Push from the sibling: `git push origin <branch>`

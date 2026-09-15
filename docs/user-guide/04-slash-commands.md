@@ -317,7 +317,7 @@ Quick ready-to-chat check.
 
 ### `/ecosystem`
 
-Show ecosystem component status (Eyrie and the token pipeline).
+Show ecosystem component status (Flux and the token pipeline).
 
 ```
 /ecosystem
@@ -413,7 +413,7 @@ Toggle vim-style keybindings.
 
 ### `/refresh-model-catalog`
 
-Fetch the latest deployment-aware model catalog from Eyrie.
+Fetch the latest deployment-aware model catalog from Flux.
 
 ```
 /refresh-model-catalog

@@ -136,6 +136,6 @@
     ]
   },
   "ecosystem_compatibility": {
-    "rho+eyrie": "full"
+    "rho+flux": "full"
   }
 }

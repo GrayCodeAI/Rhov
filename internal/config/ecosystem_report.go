@@ -11,11 +11,11 @@ import (
 
 // EcosystemReport is the structured view of the ecosystem panel.
 type EcosystemReport struct {
-	Eyrie EcosystemEyrie `json:"eyrie"`
-	Token EngineToken    `json:"token"`
+	Flux  EcosystemFlux `json:"flux"`
+	Token EngineToken   `json:"token"`
 }
 
-type EcosystemEyrie struct {
+type EcosystemFlux struct {
 	CatalogExists bool   `json:"catalog_exists"`
 	ModelCount    int    `json:"model_count,omitempty"`
 	Ready         bool   `json:"ready"`
@@ -33,18 +33,18 @@ type EngineToken struct {
 func BuildEcosystemReport(ctx context.Context, provider, model string) EcosystemReport {
 	var r EcosystemReport
 
-	// eyrie
+	// flux
 	cat := CatalogHealthReport(ctx)
-	r.Eyrie.CatalogExists = cat.Exists
-	r.Eyrie.ModelCount = cat.Models
+	r.Flux.CatalogExists = cat.Exists
+	r.Flux.ModelCount = cat.Models
 	pre := EnginePreflightReport(ctx)
-	r.Eyrie.Ready = pre.Ready
+	r.Flux.Ready = pre.Ready
 	if strings.TrimSpace(provider) != "" && provider != "auto" {
-		r.Eyrie.Provider = provider
+		r.Flux.Provider = provider
 	}
 	if dep, err := EngineDeploymentSummary(ctx, model); err == nil {
-		r.Eyrie.RoutingSource = dep.RoutingSource
-		r.Eyrie.RoutingStages = dep.RoutingStages
+		r.Flux.RoutingSource = dep.RoutingSource
+		r.Flux.RoutingStages = dep.RoutingStages
 	}
 
 	// embedded token engine
@@ -54,36 +54,36 @@ func BuildEcosystemReport(ctx context.Context, provider, model string) Ecosystem
 	return r
 }
 
-// FormatEcosystemPanel summarizes eyrie and token-engine integration for doctor and status output.
+// FormatEcosystemPanel summarizes flux and token-engine integration for doctor and status output.
 func FormatEcosystemPanel(ctx context.Context, provider, model string) string {
 	var b strings.Builder
-	b.WriteString(theme.Tint("Ecosystem (eyrie · token engine):", theme.ReportInfo) + "\n")
+	b.WriteString(theme.Tint("Ecosystem (flux · token engine):", theme.ReportInfo) + "\n")
 
-	// eyrie — LLM provider layer
+	// flux — LLM provider layer
 	cat := CatalogHealthReport(ctx)
-	eyrieLine := "  " + theme.Tint("eyrie:", theme.ReportMuted) + " "
+	fluxLine := "  " + theme.Tint("flux:", theme.ReportMuted) + " "
 	if cat.Exists {
-		eyrieLine += theme.Tint(fmt.Sprintf("catalog %d models", cat.Models), theme.ReportInfo)
+		fluxLine += theme.Tint(fmt.Sprintf("catalog %d models", cat.Models), theme.ReportInfo)
 	} else {
-		eyrieLine += theme.Tint("catalog missing (run rho models refresh)", theme.ReportWarn)
+		fluxLine += theme.Tint("catalog missing (run rho models refresh)", theme.ReportWarn)
 	}
 	pre := EnginePreflightReport(ctx)
 	if pre.Ready {
-		eyrieLine += " · " + theme.Tint("locally ready", theme.ReportSuccess)
+		fluxLine += " · " + theme.Tint("locally ready", theme.ReportSuccess)
 	} else {
-		eyrieLine += " · " + theme.Tint("setup incomplete", theme.ReportWarn)
+		fluxLine += " · " + theme.Tint("setup incomplete", theme.ReportWarn)
 	}
 	if strings.TrimSpace(provider) != "" && provider != "auto" {
-		eyrieLine += " · " + theme.Tint("provider "+provider, theme.ReportInfo)
+		fluxLine += " · " + theme.Tint("provider "+provider, theme.ReportInfo)
 	}
 	if dep, err := EngineDeploymentSummary(ctx, model); err == nil {
 		if dep.RoutingStages > 0 {
-			eyrieLine += " · " + theme.Tint(fmt.Sprintf("routing %s (%d stages)", dep.RoutingSource, dep.RoutingStages), theme.ReportInfo)
+			fluxLine += " · " + theme.Tint(fmt.Sprintf("routing %s (%d stages)", dep.RoutingSource, dep.RoutingStages), theme.ReportInfo)
 		} else {
-			eyrieLine += " · " + theme.Tint("routing "+dep.RoutingSource, theme.ReportInfo)
+			fluxLine += " · " + theme.Tint("routing "+dep.RoutingSource, theme.ReportInfo)
 		}
 	}
-	b.WriteString(eyrieLine + "\n")
+	b.WriteString(fluxLine + "\n")
 
 	// Embedded token engine — token counting and context compression.
 	sample := token.CountTokensFast("rho context compression pipeline")

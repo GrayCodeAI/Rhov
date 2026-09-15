@@ -69,7 +69,7 @@ func doctorOutput(settings rhoconfig.Settings) string {
 	b.WriteString(fmt.Sprintf("  Provider:    %s\n", effectiveProvider))
 	b.WriteString(fmt.Sprintf("  API key:     %s\n", maskedKeyStatus(rhoconfig.ActiveProvider(context.Background()))))
 
-	// Model configured (eyrie provider.json)
+	// Model configured (flux provider.json)
 	effectiveModel := strings.TrimSpace(rhoconfig.ActiveModel(context.Background()))
 	if effectiveModel == "" {
 		effectiveModel = "(not configured)"

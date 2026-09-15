@@ -43,7 +43,7 @@ type SnapshotTracker interface {
 	TrackCtx(ctx context.Context, message string) (string, error)
 }
 
-// Session manages a conversation with an LLM via eyrie.
+// Session manages a conversation with an LLM via flux.
 // The mu RWMutex protects the remaining session metadata for concurrent
 // access. Transcript and system-context state are owned by PersistenceService.
 //
@@ -157,7 +157,7 @@ type Session struct {
 	workMode WorkMode
 }
 
-// NewSession creates a conversation session through Eyrie's engine facade.
+// NewSession creates a conversation session through Flux's engine facade.
 func NewSession(provider, model, systemPrompt string, registry *tool.Registry) *Session {
 	return NewRhoSession(context.Background(), gateway.Selection{
 		Provider: provider,
@@ -661,10 +661,10 @@ func (s *Session) ForkConversation(nodeID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	msgs := make([]types.EyrieMessage, 0, len(history))
+	msgs := make([]types.FluxMessage, 0, len(history))
 	for _, node := range history {
 		if node.Role == "user" || node.Role == "assistant" {
-			msgs = append(msgs, types.EyrieMessage{Role: node.Role, Content: node.Content})
+			msgs = append(msgs, types.FluxMessage{Role: node.Role, Content: node.Content})
 		}
 	}
 	p.SetRawMessages(msgs)
@@ -688,10 +688,10 @@ func (s *Session) SwitchBranch(nodeID string) error {
 	if err != nil {
 		return err
 	}
-	msgs := make([]types.EyrieMessage, 0, len(history))
+	msgs := make([]types.FluxMessage, 0, len(history))
 	for _, node := range history {
 		if node.Role == "user" || node.Role == "assistant" {
-			msgs = append(msgs, types.EyrieMessage{Role: node.Role, Content: node.Content})
+			msgs = append(msgs, types.FluxMessage{Role: node.Role, Content: node.Content})
 		}
 	}
 	p.SetRawMessages(msgs)
@@ -1024,7 +1024,7 @@ func (s *Session) EnsureSkillCatalogStatement() string {
 	if digest != last {
 		msg := plugin.RenderSkillCatalogMessage(invocable, digest)
 		if p := s.Persistence(); p != nil {
-			p.AppendUserJournaled(types.EyrieMessage{Role: "user", Content: msg})
+			p.AppendUserJournaled(types.FluxMessage{Role: "user", Content: msg})
 		}
 		s.mu.Lock()
 		s.lastSkillCatalogDigest = digest
@@ -1041,7 +1041,7 @@ func (s *Session) CostValue() *Cost {
 	return &s.Cost
 }
 
-func (s *Session) LoadMessages(msgs []types.EyrieMessage) {
+func (s *Session) LoadMessages(msgs []types.FluxMessage) {
 	s.Persistence().SetRawMessages(msgs)
 }
 
@@ -1055,7 +1055,7 @@ func (s *Session) MessageCount() int {
 // AddUser/AddAssistant and the agent loop (stream.go) all write through it,
 // and compaction/governor paths read it. Delegating here means TUI/CLI
 // consumers — notably saveSession — see the real, populated transcript.
-func (s *Session) RawMessages() []types.EyrieMessage {
+func (s *Session) RawMessages() []types.FluxMessage {
 	if p := s.Persistence(); p != nil {
 		return p.RawMessages()
 	}
@@ -1064,7 +1064,7 @@ func (s *Session) RawMessages() []types.EyrieMessage {
 
 // Chat implements the LLMClient interface by delegating to the underlying client.
 // This allows Session to be passed to components that need LLM access (e.g. Reflector, SelfReview).
-func (s *Session) Chat(ctx context.Context, msgs []types.EyrieMessage, opts types.ChatOptions) (*types.EyrieResponse, error) {
+func (s *Session) Chat(ctx context.Context, msgs []types.FluxMessage, opts types.ChatOptions) (*types.FluxResponse, error) {
 	if s.ChatLLM() == nil {
 		return nil, fmt.Errorf("session: no LLM client configured")
 	}
@@ -1093,7 +1093,7 @@ func (s *Session) Schedule() *schedule.Manager {
 						Priority: 1,
 					})
 				} else {
-					p.AppendUserJournaled(types.EyrieMessage{
+					p.AppendUserJournaled(types.FluxMessage{
 						Role:    "user",
 						Content: content,
 					})

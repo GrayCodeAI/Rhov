@@ -14,7 +14,7 @@ runtime owners
   verification bridges
   graph observation journal
   Embedded token-pipeline runtime projection
-  Eyrie operations projection
+  Flux operations projection
         |
         v
 internal/executiongraph
@@ -41,7 +41,7 @@ eagle/graph
 | Context compression operations | `internal/token` | Compression statistics are automatically captured during persisted-session context compaction |
 | Response redaction quality | `internal/token` | Aggregate secret matches are automatically captured after persisted-session response redaction |
 | Token usage and budget decisions | `internal/token` | Deduplicated provider usage updates the tracker; usage and next-turn budget decisions are automatically captured |
-| Model routing and generation usage | Eyrie | Route and normalized usage operations are automatically captured after each persisted-session model turn |
+| Model routing and generation usage | Flux | Route and normalized usage operations are automatically captured after each persisted-session model turn |
 | Observation history | `internal/graphjournal` | Append-only, privacy-safe runtime evidence |
 
 The graph package never mutates these owners and never schedules work.
@@ -92,7 +92,7 @@ Nodes:
 - `rho/tool-call/<session>/<tool-use-id>` — tool invocation metadata;
 - `rho/policy/<id>` — permission verdict;
 - `rho/verification/<id>` — neutral verification result;
-- `eyrie/route/<digest>` and `eyrie/generation/<digest>` — model route and
+- `flux/route/<digest>` and `flux/generation/<digest>` — model route and
   normalized generation operations.
 
 Edges:
@@ -202,7 +202,7 @@ The central tool-execution seam automatically records:
 - secret matches removed from persisted-session responses;
 - token usage summaries and budget decisions emitted from the central,
   deduplicated provider-accounting seam;
-- Eyrie model route and usage reported for persisted-session turns.
+- Flux model route and usage reported for persisted-session turns.
 
 Mission execution now also persists a portable graph artifact for local mission
 runs. Plain `rho mission` runs emit mission and feature execution nodes; the

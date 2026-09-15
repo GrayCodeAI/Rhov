@@ -1,9 +1,9 @@
-// Package gateway is Rho's single boundary to Eyrie's provider runtime. It is
-// the only package that imports Eyrie; everything else speaks the rho-owned
+// Package gateway is Rho's single boundary to Flux's provider runtime. It is
+// the only package that imports Flux; everything else speaks the rho-owned
 // Provider interface and the internal/types DTOs.
 //
-// rho = product face (UX/agent/sessions) · eyrie = provider engine
-// One-way dependency only: eyrie never imports rho. See README ecosystems.
+// rho = product face (UX/agent/sessions) · flux = provider engine
+// One-way dependency only: flux never imports rho. See README ecosystems.
 package gateway
 
 import (
@@ -11,21 +11,21 @@ import (
 	"log/slog"
 	"sync"
 
-	eyrieengine "github.com/GrayCodeAI/eyrie/engine"
-	"github.com/GrayCodeAI/eyrie/llm"
+	fluxengine "github.com/GrayCodeAI/flux/engine"
+	"github.com/GrayCodeAI/flux/llm"
 )
 
-// Gateway is Rho's single boundary to the Eyrie provider runtime. It embeds
+// Gateway is Rho's single boundary to the Flux provider runtime. It embeds
 // Provider so every engine method is forwarded, and it is the only type that
 // constructs one (via New). All other Rho packages hold a *Gateway or speak
-// the Provider interface — never an *eyrieengine.Engine.
+// the Provider interface — never an *fluxengine.Engine.
 //
-// Construction is centralized here: New is the only call to eyrieengine.New and
+// Construction is centralized here: New is the only call to fluxengine.New and
 // the place Rho declares its identity to the credential store.
-// Gateway is Rho's single boundary to the Eyrie provider runtime. It embeds the
+// Gateway is Rho's single boundary to the Flux provider runtime. It embeds the
 // Provider roles so every engine method is forwarded, and it is the only type
 // that constructs one (via New). All other Rho packages hold a *Gateway or speak
-// the Provider interface — never an *eyrieengine.Engine. *Gateway satisfies the
+// the Provider interface — never an *fluxengine.Engine. *Gateway satisfies the
 // composite Provider interface.
 type Gateway struct {
 	Generator
@@ -37,27 +37,27 @@ type Gateway struct {
 	CatalogMaintenance
 }
 
-// declareRhoIdentity sets Eyrie's OS keychain service name to "rho" so existing
-// credentials (filed under "rho") stay readable under Eyrie's now host-neutral
+// declareRhoIdentity sets Flux's OS keychain service name to "rho" so existing
+// credentials (filed under "rho") stay readable under Flux's now host-neutral
 // default. It is idempotent and runs exactly once. Called from New so the
 // identity is always declared before any credential read, no matter which New
 // path runs first.
 var declareRhoIdentity = sync.OnceFunc(func() {
-	eyrieengine.SetSecretStoreServiceName("rho")
+	fluxengine.SetSecretStoreServiceName("rho")
 })
 
-// New composes the Eyrie engine for one effective settings snapshot and wraps it
-// as a Provider. It is the single composition root — every eyrieengine.New call
+// New composes the Flux engine for one effective settings snapshot and wraps it
+// as a Provider. It is the single composition root — every fluxengine.New call
 // in Rho flows through here.
 func New(ctx context.Context, providers []CustomProviderConfig) (*Gateway, error) {
 	// Declare rho's identity to the credential store FIRST, before
 	// constructing the engine, so no credential read ever happens under
-	// Eyrie's host-neutral default service name. The OnceFunc makes this
+	// Flux's host-neutral default service name. The OnceFunc makes this
 	// safe to call from every construction path.
 	declareRhoIdentity()
 
 	gateways := customGatewaysFromSettings(providers)
-	eng, err := eyrieengine.New(eyrieengine.Options{CustomGateways: gateways})
+	eng, err := fluxengine.New(fluxengine.Options{CustomGateways: gateways})
 	if err != nil {
 		return nil, err
 	}
@@ -77,16 +77,16 @@ func New(ctx context.Context, providers []CustomProviderConfig) (*Gateway, error
 }
 
 // BuildCustomGateways maps Rho's OpenAI-compatible provider config onto
-// Eyrie's CustomGateway spec. Shared by gateway.New, config.eyrie_engine, and
+// Flux's CustomGateway spec. Shared by gateway.New, config.flux_engine, and
 // engine.session_factory so a new CustomProviderConfig field only needs wiring
 // in one place.
-func BuildCustomGateways(providers []CustomProviderConfig) []eyrieengine.CustomGateway {
-	gateways := make([]eyrieengine.CustomGateway, 0, len(providers))
+func BuildCustomGateways(providers []CustomProviderConfig) []fluxengine.CustomGateway {
+	gateways := make([]fluxengine.CustomGateway, 0, len(providers))
 	for _, provider := range providers {
 		if provider.Name == "" && provider.BaseURL == "" {
 			continue
 		}
-		gateways = append(gateways, eyrieengine.CustomGateway{
+		gateways = append(gateways, fluxengine.CustomGateway{
 			ID: provider.Name, BaseURL: provider.BaseURL,
 			CredentialEnv: provider.APIKeyEnv, DefaultModel: provider.Model,
 		})
@@ -95,7 +95,7 @@ func BuildCustomGateways(providers []CustomProviderConfig) []eyrieengine.CustomG
 }
 
 // customGatewaysFromSettings is the internal alias kept for backward compat.
-func customGatewaysFromSettings(providers []CustomProviderConfig) []eyrieengine.CustomGateway {
+func customGatewaysFromSettings(providers []CustomProviderConfig) []fluxengine.CustomGateway {
 	return BuildCustomGateways(providers)
 }
 
@@ -109,7 +109,7 @@ type CustomProviderConfig struct {
 	Model     string
 }
 
-// ModelInfo is Rho's product-facing view of Eyrie model metadata.
+// ModelInfo is Rho's product-facing view of Flux model metadata.
 type ModelInfo struct {
 	Name        string  `json:"name"`
 	Provider    string  `json:"provider"`
@@ -120,7 +120,7 @@ type ModelInfo struct {
 	Recommended bool    `json:"recommended,omitempty"`
 }
 
-func fromEngineModel(model eyrieengine.Model) ModelInfo {
+func fromEngineModel(model fluxengine.Model) ModelInfo {
 	return ModelInfo{
 		Name: model.ID, Provider: model.ProviderID,
 		ContextSize: model.ContextWindow,
@@ -142,10 +142,10 @@ func (g *Gateway) MustSelectProvider() Provider {
 	return g
 }
 
-// NewFromEngine wraps an existing *eyrieengine.Engine as a Gateway. Tests that
-// inject an Eyrie SecretStore (e.g. compaction-support detection) use it so the
+// NewFromEngine wraps an existing *fluxengine.Engine as a Gateway. Tests that
+// inject an Flux SecretStore (e.g. compaction-support detection) use it so the
 // rest of Rho still speaks the Gateway boundary.
-func NewFromEngine(eng *eyrieengine.Engine) *Gateway {
+func NewFromEngine(eng *fluxengine.Engine) *Gateway {
 	if eng == nil {
 		return nil
 	}
@@ -162,8 +162,8 @@ func NewFromEngine(eng *eyrieengine.Engine) *Gateway {
 }
 
 // --- Stateless package-level lookups -------------------------------------
-// These delegate Eyrie reads to one shared default gateway so rho-owned
-// policy packages (routing, config) never import Eyrie themselves. eyrie's
+// These delegate Flux reads to one shared default gateway so rho-owned
+// policy packages (routing, config) never import Flux themselves. flux's
 // Engine reloads its catalog and provider config from disk on every method
 // call, so a single long-lived gateway returns identical freshness to
 // constructing one per call — this just avoids redundant construction. It
@@ -277,7 +277,7 @@ func ProviderForModel(ctx context.Context, modelName string) string {
 	return g.ProviderForModel(ctx, modelName)
 }
 
-// PreferredModel returns Eyrie's tier-preferred model for a provider.
+// PreferredModel returns Flux's tier-preferred model for a provider.
 func PreferredModel(ctx context.Context, provider string, class ModelClass, fallback string) string {
 	g := defaultGateway(ctx)
 	if g == nil {
@@ -322,46 +322,46 @@ func ModelNames(ctx context.Context) []string {
 	return g.ModelNames(ctx)
 }
 
-// --- rho-owned mirror of Eyrie's ModelClass tier enum -------------------
+// --- rho-owned mirror of Flux's ModelClass tier enum -------------------
 // Kept here (rather than importing neutral constants) so the boundary stays
-// one-way; values match eyrieengine.ModelClass.
-type ModelClass = eyrieengine.ModelClass
+// one-way; values match fluxengine.ModelClass.
+type ModelClass = fluxengine.ModelClass
 
 const (
 	ModelClassEconomical = llm.ModelClassEconomical
 	ModelClassBalanced   = llm.ModelClassBalanced
 	ModelClassPremium    = llm.ModelClassPremium
-	CheckFail            = eyrieengine.CheckFail
+	CheckFail            = fluxengine.CheckFail
 )
 
 // NormalizeProviderID canonicalizes a host-facing provider/gateway id.
 func NormalizeProviderID(id string) string {
-	return eyrieengine.NormalizeProviderID(id)
+	return fluxengine.NormalizeProviderID(id)
 }
 
-// --- Eyrie report/type re-exports config internals consume ----------------
-// These alias Eyrie types that a few config-only report paths return. They
-// live in gateway (the single Eyrie importer) rather than config.
+// --- Flux report/type re-exports config internals consume ----------------
+// These alias Flux types that a few config-only report paths return. They
+// live in gateway (the single Flux importer) rather than config.
 
 type (
-	PreflightReport         = eyrieengine.PreflightReport
-	PreflightOptions        = eyrieengine.PreflightOptions
-	ProviderStateSecurity   = eyrieengine.ProviderStateSecurity
-	DeploymentSummary       = eyrieengine.DeploymentSummary
-	CredentialStorageReport = eyrieengine.CredentialStorageReport
-	CredentialStatus        = eyrieengine.CredentialStatus
-	CredentialResolution    = eyrieengine.CredentialResolution
-	CredentialProvider      = eyrieengine.CredentialProvider
-	GatewayDefs             = eyrieengine.Gateway
-	CatalogSnapshot         = eyrieengine.CatalogSnapshot
-	Model                   = eyrieengine.Model
-	StatePaths              = eyrieengine.StatePaths
-	SelectionOptions        = eyrieengine.SelectionOptions
-	Selection               = eyrieengine.Selection
-	NativeCompactionRequest = eyrieengine.NativeCompactionRequest
+	PreflightReport         = fluxengine.PreflightReport
+	PreflightOptions        = fluxengine.PreflightOptions
+	ProviderStateSecurity   = fluxengine.ProviderStateSecurity
+	DeploymentSummary       = fluxengine.DeploymentSummary
+	CredentialStorageReport = fluxengine.CredentialStorageReport
+	CredentialStatus        = fluxengine.CredentialStatus
+	CredentialResolution    = fluxengine.CredentialResolution
+	CredentialProvider      = fluxengine.CredentialProvider
+	GatewayDefs             = fluxengine.Gateway
+	CatalogSnapshot         = fluxengine.CatalogSnapshot
+	Model                   = fluxengine.Model
+	StatePaths              = fluxengine.StatePaths
+	SelectionOptions        = fluxengine.SelectionOptions
+	Selection               = fluxengine.Selection
+	NativeCompactionRequest = fluxengine.NativeCompactionRequest
 )
 
-// Package-level Eyrie helpers that config delegates to (gateway stays the only importer).
+// Package-level Flux helpers that config delegates to (gateway stays the only importer).
 
 func PreflightReportWithOptions(ctx context.Context, opts PreflightOptions) PreflightReport {
 	return PreflightWithProviders(ctx, nil, opts)
@@ -379,53 +379,53 @@ func PreflightWithProviders(ctx context.Context, providers []CustomProviderConfi
 }
 
 func FormatPreflight(report PreflightReport) string {
-	return eyrieengine.FormatPreflight(report)
+	return fluxengine.FormatPreflight(report)
 }
 
 func IsCatalogCacheRequired(err error) bool {
-	return eyrieengine.IsCatalogCacheRequired(err)
+	return fluxengine.IsCatalogCacheRequired(err)
 }
 
-// RegisteredProviderCount exposes Eyrie's first-class provider count through
-// Rho's single provider-runtime boundary. The count derives from Eyrie's
-// provider registry, so adding a provider in Eyrie never requires a Rho edit.
+// RegisteredProviderCount exposes Flux's first-class provider count through
+// Rho's single provider-runtime boundary. The count derives from Flux's
+// provider registry, so adding a provider in Flux never requires a Rho edit.
 func RegisteredProviderCount() int {
-	return eyrieengine.RegisteredGatewayCount()
+	return fluxengine.RegisteredGatewayCount()
 }
 
-func SecretStoreName() string { return eyrieengine.SecretStoreName() }
+func SecretStoreName() string { return fluxengine.SecretStoreName() }
 
 func CredentialStorage(ctx context.Context) CredentialStorageReport {
-	return eyrieengine.CredentialStorage(ctx)
+	return fluxengine.CredentialStorage(ctx)
 }
 
 func CredentialGuidance(providerID, secret string) string {
-	return eyrieengine.CredentialGuidance(providerID, secret)
+	return fluxengine.CredentialGuidance(providerID, secret)
 }
 
 func FormatSetupError(providerID string, err error) string {
-	return eyrieengine.FormatSetupError(providerID, err)
+	return fluxengine.FormatSetupError(providerID, err)
 }
 
 // ParseInlineToolCalls extracts inline tool-call markup from model output.
-func ParseInlineToolCalls(content string) (string, []eyrieengine.ToolCall) {
-	return eyrieengine.ParseInlineToolCalls(content)
+func ParseInlineToolCalls(content string) (string, []fluxengine.ToolCall) {
+	return fluxengine.ParseInlineToolCalls(content)
 }
 
 func DefaultThinkingDisabled(providerID string) bool {
-	return eyrieengine.DefaultThinkingDisabled(providerID)
+	return fluxengine.DefaultThinkingDisabled(providerID)
 }
 
 func ThinkingToggleSupported(providerID string) bool {
-	return eyrieengine.ThinkingToggleSupported(providerID)
+	return fluxengine.ThinkingToggleSupported(providerID)
 }
 
 func (g *Gateway) DefaultThinkingDisabled(providerID string) bool {
-	return eyrieengine.DefaultThinkingDisabled(providerID)
+	return fluxengine.DefaultThinkingDisabled(providerID)
 }
 
 func (g *Gateway) ThinkingToggleSupported(providerID string) bool {
-	return eyrieengine.ThinkingToggleSupported(providerID)
+	return fluxengine.ThinkingToggleSupported(providerID)
 }
 
 // --- Test fixtures -----------------------------------------------------
@@ -433,18 +433,18 @@ func (g *Gateway) ThinkingToggleSupported(providerID string) bool {
 // single gateway+engine boundary. These are thin aliases only.
 
 // SetDefaultStore replaces the process-wide credential store (for tests).
-var SetDefaultStore = eyrieengine.SetDefaultStore
+var SetDefaultStore = fluxengine.SetDefaultStore
 
 // DefaultStore returns the process-wide credential store (for tests).
-var DefaultStore = eyrieengine.DefaultStore
+var DefaultStore = fluxengine.DefaultStore
 
 // MapStore is the in-memory credential store for tests (alias).
-type MapStore = eyrieengine.MapStore
+type MapStore = fluxengine.MapStore
 
 // AccountForEnv returns the keychain account name for an env var.
-func AccountForEnv(envVar string) string { return eyrieengine.AccountForEnv(envVar) }
+func AccountForEnv(envVar string) string { return fluxengine.AccountForEnv(envVar) }
 
 // HasSecret reports whether a secret exists for an env var (for tests).
 func HasSecret(ctx context.Context, envKey string) bool {
-	return eyrieengine.HasSecret(ctx, envKey)
+	return fluxengine.HasSecret(ctx, envKey)
 }

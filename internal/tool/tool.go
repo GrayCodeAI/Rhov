@@ -36,7 +36,7 @@ type AliasedTool interface {
 // schema. It replaces the error-prone hand-written map[string]interface{}
 // JSON-schema literals that every tool used to embed in Parameters(). A
 // ToolSchema converts to the wire format via ToJSONSchema(), so the external
-// EyrieTool.Parameters contract (map[string]interface{}) is unchanged.
+// FluxTool.Parameters contract (map[string]interface{}) is unchanged.
 //
 // Tools that don't implement SchemaProvider keep working exactly as before —
 // Parameters() is still the source of truth and validation stays permissive.
@@ -70,7 +70,7 @@ type SchemaProvider interface {
 }
 
 // ToJSONSchema converts the typed schema to the wire-format
-// map[string]interface{} expected by EyrieTool.Parameters.
+// map[string]interface{} expected by FluxTool.Parameters.
 func (s ToolSchema) ToJSONSchema() map[string]interface{} {
 	props := make(map[string]interface{}, len(s.Properties))
 	for name, p := range s.Properties {
@@ -285,7 +285,7 @@ type Registry struct {
 	mu      sync.RWMutex
 	tools   map[string]Tool
 	primary []Tool
-	// modelVisible, when non-nil, restricts EyrieTools to the listed primary
+	// modelVisible, when non-nil, restricts FluxTools to the listed primary
 	// names (lazy model surface). Get/Execute still reach every registered tool.
 	modelVisible map[string]bool
 }
@@ -344,17 +344,17 @@ func (r *Registry) Filter(allow []string) *Registry {
 	return NewRegistry(filtered...)
 }
 
-// EyrieTools converts model-visible tools to Rho runtime tool definitions.
+// FluxTools converts model-visible tools to Rho runtime tool definitions.
 // When lazy model surface is enabled, only promoted/essential tools are listed.
-func (r *Registry) EyrieTools() []types.EyrieTool {
+func (r *Registry) FluxTools() []types.FluxTool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	out := make([]types.EyrieTool, 0, len(r.primary))
+	out := make([]types.FluxTool, 0, len(r.primary))
 	for _, t := range r.primary {
 		if r.modelVisible != nil && !r.modelVisible[t.Name()] {
 			continue
 		}
-		out = append(out, types.EyrieTool{
+		out = append(out, types.FluxTool{
 			Name:        t.Name(),
 			Description: t.Description(),
 			Parameters:  t.Parameters(),

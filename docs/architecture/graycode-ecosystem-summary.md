@@ -1,7 +1,7 @@
 # GrayCode Ecosystem Summary
 
 > **Historical.** This document describes the pre-2026-09 multi-engine
-> ecosystem. Rho now depends only on `eyrie` and embeds its own token engine;
+> ecosystem. Rho now depends only on `flux` and embeds its own token engine;
 > the harrier, kestrel, merlin, shrike, and swift integrations have been
 > removed. Kept for record.
 
@@ -19,7 +19,7 @@ API consumers/extensions
              (main CLI and daemon)
                       |
 Support engines
-  eyrie   harrier   shrike   swift   kestrel   merlin
+  flux   harrier   shrike   swift   kestrel   merlin
                       |
 Foundations
                 eagle     falcon
@@ -35,7 +35,7 @@ Product labels map to directories as follows: `harrier`/Harrier, `shrike`/Shrike
 ## Dependency direction
 
 ```text
-rho -> eyrie / harrier / shrike / swift / kestrel / merlin / eagle
+rho -> flux / harrier / shrike / swift / kestrel / merlin / eagle
 engines -> eagle                  # when shared contracts are needed
 harrier / kestrel / merlin -> falcon
 sparrow / robin / wren -> Rho daemon API
@@ -49,7 +49,7 @@ skills-to-engine, and any Go-module dependency on GrayCode Platform.
 
 ```text
 Rho main CLI
-  ├── Eyrie provider execution
+  ├── Flux provider execution
   ├── Harrier memory
   ├── Shrike token/context management
   ├── Swift swift/provenance
@@ -70,7 +70,7 @@ Rho's cloud usage path is fail-open; graph synchronization is explicit.
 | Repository | Role | Direct dependency rule |
 |---|---|---|
 | `rho` | Main CLI, daemon, orchestration, policy | Integrates engines and contracts |
-| `eyrie` | Provider runtime | Uses Eagle contracts; exposes `engine` |
+| `flux` | Provider runtime | Uses Eagle contracts; exposes `engine` |
 | `harrier` | Harrier memory | Uses Eagle/Falcon where required |
 | `shrike` | Shrike context engine | Uses Eagle where required |
 | `swift` | Swift/provenance | Uses Eagle where required |
@@ -90,6 +90,6 @@ Rho's cloud usage path is fail-open; graph synchronization is explicit.
 The repository-level target is implemented: independent Git repositories,
 canonical manifest, generated Owl inventory, sibling Go workspace, Eagle parity,
 and dependency boundary checks are all present. Remaining work is to publish
-the Eagle-compatible Eyrie revision, remove the transitional
+the Eagle-compatible Flux revision, remove the transitional
 `rho-core-contracts` dependency from the standalone graph, and decide whether
 Rho's graph/projection packages need additional engine-owned facades.

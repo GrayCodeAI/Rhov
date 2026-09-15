@@ -15,7 +15,7 @@ SDKs (Sparrow / Robin / Wren)
    +----------+----------+
    |          |          |
    v          v          v
-Eyrie     Harrier     Shrike
+Flux     Harrier     Shrike
 models    memory      tokens
    |          |          |
    +----------+----------+
@@ -65,7 +65,7 @@ bash owl/scripts/sync-ecosystem.sh
 
 - Keep Eagle imports in Rho and engines limited to shared contracts.
 - Keep Falcon imports limited to MCP-serving components.
-- Keep Rho's Eyrie integration behind `eyrie/engine`.
+- Keep Rho's Flux integration behind `flux/engine`.
 - Keep Rho's SDKs outside the Go workspace and outside engine dependencies.
 - Keep platform integration at the HTTP/Service Binding boundary.
 - Keep graph and quality projections as explicit, reviewed Rho integration
@@ -76,20 +76,20 @@ Acceptance checks:
 ```text
 bash rho/scripts/check-ecosystem-boundaries.sh
 bash rho/scripts/check-support-repo-coupling.sh
-bash rho/scripts/check-eyrie-engine-boundary.sh
-bash rho/scripts/check-eyrie-client-imports.sh
+bash rho/scripts/check-flux-engine-boundary.sh
+bash rho/scripts/check-flux-client-imports.sh
 bash rho/scripts/check-no-replace-directives.sh
 ```
 
 ## Phase 3: Published-module cutover — pending external release
 
-The local Eyrie source already uses Eagle contracts. Rho's current published
-Eyrie pseudo-version still declares the retired compatibility contract
-transitively, so this phase requires publishing the compatible Eyrie revision.
+The local Flux source already uses Eagle contracts. Rho's current published
+Flux pseudo-version still declares the retired compatibility contract
+transitively, so this phase requires publishing the compatible Flux revision.
 
-1. Publish the current Eagle-compatible Eyrie revision.
+1. Publish the current Eagle-compatible Flux revision.
 2. Resolve its canonical Go pseudo-version from the published commit.
-3. Update Rho's Eyrie requirement to that version.
+3. Update Rho's Flux requirement to that version.
 4. Run `GOWORK=off go mod tidy` in Rho.
 5. Confirm the retired compatibility module is absent from Rho's module graph.
 6. Remove any obsolete transition excludes.
@@ -148,7 +148,7 @@ The architecture is complete when:
 - all repositories match the canonical manifest;
 - Rho builds and tests with `GOWORK=off`;
 - SDK and platform contract checks pass; and
-- the published Eyrie revision no longer brings the retired compatibility
+- the published Flux revision no longer brings the retired compatibility
   contract into Rho's standalone module graph.
 
 Current state: Phases 1, 2, and the local portion of Phase 4 are complete.

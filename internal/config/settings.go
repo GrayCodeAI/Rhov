@@ -27,13 +27,13 @@ func fetchModelsViaRuntime(ctx context.Context, provider string) ([]EngineModel,
 }
 
 // Settings holds rho configuration.
-// Rho: no API keys stored here. Secrets come from the OS secret store via eyrie.
+// Rho: no API keys stored here. Secrets come from the OS secret store via flux.
 type Settings struct {
 	// PolicySchemaVersion versions permission/autonomy/sandbox fields. Zero is
 	// the legacy format and is migrated to CurrentPolicySchemaVersion on load.
 	PolicySchemaVersion int `json:"policy_schema_version,omitempty"`
 	// Model and Provider carry runtime host overrides only (e.g. --settings).
-	// Eyrie owns the stored selection (SetActiveModel / SetActiveProvider);
+	// Flux owns the stored selection (SetActiveModel / SetActiveProvider);
 	// values found in settings.json are dropped on load and on save.
 	Model           string   `json:"model,omitempty"`
 	Provider        string   `json:"provider,omitempty"`
@@ -221,7 +221,7 @@ func LoadGlobalSettings() Settings {
 			slog.Warn("failed to parse settings", "path", path, "error", err)
 		}
 	}
-	// Eyrie owns the stored model/provider selection. Stale values left in
+	// Flux owns the stored model/provider selection. Stale values left in
 	// settings.json must not act as a host override.
 	s = stripHostModelSelection(s)
 	if s.PolicySchemaVersion == 0 {
@@ -700,7 +700,7 @@ func ProviderAPIKeyEnv(provider string) string {
 
 // EnvKeyStatus returns set, empty, or local from the OS credential store.
 func EnvKeyStatus(provider string) string {
-	engine, err := newEyrieEngine()
+	engine, err := newFluxEngine()
 	if err != nil {
 		return "empty"
 	}
@@ -736,7 +736,7 @@ func providerCredentialEnvAliases(provider string) []string {
 	primary := strings.TrimSpace(ProviderAPIKeyEnv(provider))
 	seen := map[string]bool{}
 	var out []string
-	engine, _ := newEyrieEngine()
+	engine, _ := newFluxEngine()
 	var aliases []string
 	if engine != nil {
 		aliases = engine.CredentialEnvKeys(provider)
@@ -753,10 +753,10 @@ func providerCredentialEnvAliases(provider string) []string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Live model catalog fetch from eyrie
+// Live model catalog fetch from flux
 // ─────────────────────────────────────────────────────────────
 
-// FetchModelsForProvider returns models from the eyrie catalog (dynamic; no rho hardcoded lists).
+// FetchModelsForProvider returns models from the flux catalog (dynamic; no rho hardcoded lists).
 // RefreshModelCatalogV1 is the explicit network refresh boundary.
 func FetchModelsForProvider(provider string) ([]EngineModel, error) {
 	provider = gateway.NormalizeProviderID(provider)
@@ -786,7 +786,7 @@ func FetchModelsForProvider(provider string) ([]EngineModel, error) {
 			}}, nil
 		}
 	}
-	return nil, fmt.Errorf("no models found for provider %s in eyrie catalog (check API keys; rho will refresh automatically on next start)", provider)
+	return nil, fmt.Errorf("no models found for provider %s in flux catalog (check API keys; rho will refresh automatically on next start)", provider)
 }
 
 // FetchModelsForProviderWithSettings resolves cached models using one
@@ -796,7 +796,7 @@ func FetchModelsForProviderWithSettings(ctx context.Context, settings Settings, 
 	if provider == "" {
 		return nil, fmt.Errorf("no provider specified")
 	}
-	engine, engineErr := NewEyrieEngineForSettings(settings)
+	engine, engineErr := NewFluxEngineForSettings(settings)
 	if engineErr != nil {
 		return nil, engineErr
 	}
@@ -810,18 +810,18 @@ func FetchModelsForProviderWithSettings(ctx context.Context, settings Settings, 
 	if err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("no models found for provider %s in eyrie catalog", provider)
+	return nil, fmt.Errorf("no models found for provider %s in flux catalog", provider)
 }
 
 func refreshModelCatalog(ctx context.Context, _ bool) (gateway.CatalogSnapshot, error) {
-	engine, err := newEyrieEngine()
+	engine, err := newFluxEngine()
 	if err != nil {
 		return gateway.CatalogSnapshot{}, err
 	}
 	return engine.RefreshCatalog(ctx, "")
 }
 
-// RefreshModelCatalogV1 asks eyrie to refresh the remote catalog and provider APIs using env API keys.
+// RefreshModelCatalogV1 asks flux to refresh the remote catalog and provider APIs using env API keys.
 func RefreshModelCatalogV1(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
@@ -838,7 +838,7 @@ func RefreshModelCatalogV1(ctx context.Context) (string, error) {
 func RefreshModelCatalogV1WithSettings(ctx context.Context, settings Settings) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	engine, err := NewEyrieEngineForSettings(settings)
+	engine, err := NewFluxEngineForSettings(settings)
 	if err != nil {
 		return "", err
 	}

@@ -28,7 +28,7 @@ func TestReadRequires(t *testing.T) {
 go 1.26
 
 require (
-	github.com/GrayCodeAI/eyrie v1.0.0
+	github.com/GrayCodeAI/flux v1.0.0
 	github.com/spf13/cobra v1.8.0
 )
 
@@ -40,7 +40,7 @@ require github.com/GrayCodeAI/other v1.9.0 // indirect
 		t.Fatalf("readRequires: %v", err)
 	}
 	tests := map[string]string{
-		"github.com/GrayCodeAI/eyrie": "v1.0.0",
+		"github.com/GrayCodeAI/flux":  "v1.0.0",
 		"github.com/spf13/cobra":      "v1.8.0",
 		"github.com/GrayCodeAI/other": "v1.9.0",
 	}
@@ -75,14 +75,14 @@ func TestCheckDrift_DetectsDrift(t *testing.T) {
 
 go 1.26
 
-require github.com/GrayCodeAI/eyrie v1.5.0
+require github.com/GrayCodeAI/flux v1.5.0
 `)
 	// Consumer sibling pins an older version of the shared dependency.
 	writeMod(t, filepath.Join(ws, "consumer", "go.mod"), `module github.com/GrayCodeAI/consumer
 
 go 1.26
 
-require github.com/GrayCodeAI/eyrie v1.2.0
+require github.com/GrayCodeAI/flux v1.2.0
 `)
 
 	var buf bytes.Buffer
@@ -110,13 +110,13 @@ func TestCheckDrift_NoDriftWhenVersionsMatch(t *testing.T) {
 
 go 1.26
 
-require github.com/GrayCodeAI/eyrie v1.5.0
+require github.com/GrayCodeAI/flux v1.5.0
 `)
 	writeMod(t, filepath.Join(ws, "consumer", "go.mod"), `module github.com/GrayCodeAI/consumer
 
 go 1.26
 
-require github.com/GrayCodeAI/eyrie v1.5.0
+require github.com/GrayCodeAI/flux v1.5.0
 `)
 
 	var buf bytes.Buffer
@@ -144,7 +144,7 @@ func TestCheckDrift_SkipsMissingSiblings(t *testing.T) {
 
 go 1.26
 
-require github.com/GrayCodeAI/eyrie v1.5.0
+require github.com/GrayCodeAI/flux v1.5.0
 `)
 	// Directory present but no go.mod — must be skipped silently.
 	if err := os.MkdirAll(filepath.Join(ws, "not-checked-out"), 0o755); err != nil {

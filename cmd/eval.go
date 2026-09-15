@@ -101,7 +101,7 @@ func runEvalLoop(cmd *cobra.Command, _ []string) error {
 	settings := rhoconfig.LoadGlobalSettings()
 	ctx := context.Background()
 
-	gw, err := rhoconfig.NewEyrieEngineForSettings(settings)
+	gw, err := rhoconfig.NewFluxEngineForSettings(settings)
 	if err != nil {
 		return fmt.Errorf("eval loop: build engine client: %w", err)
 	}

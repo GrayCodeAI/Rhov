@@ -33,7 +33,7 @@ func TestDoctorReport(t *testing.T) {
 	if !strings.Contains(report, "Version") {
 		t.Error("report should mention version")
 	}
-	if !strings.Contains(report, "Ecosystem (eyrie · token engine)") {
+	if !strings.Contains(report, "Ecosystem (flux · token engine)") {
 		t.Error("report should include ecosystem panel")
 	}
 }
@@ -74,7 +74,7 @@ func TestDoctorReportUsesResolvedProviderForChecks(t *testing.T) {
 
 func TestProviderCredentialHealthCheckerResolvesAuto(t *testing.T) {
 	isolateCredentialHome(t)
-	t.Setenv("EYRIE_CONFIG_DIR", t.TempDir())
+	t.Setenv("FLUX_CONFIG_DIR", t.TempDir())
 	rhoconfig.InvalidateConfigUICache()
 	store := &contextRecordingCredentialStore{}
 	gateway.SetDefaultStore(store)
@@ -117,7 +117,7 @@ func TestProviderCredentialHealthCheckerResolvesAuto(t *testing.T) {
 
 func TestProviderCredentialHealthCheckerMissingIsUnhealthy(t *testing.T) {
 	isolateCredentialHome(t)
-	t.Setenv("EYRIE_CONFIG_DIR", t.TempDir())
+	t.Setenv("FLUX_CONFIG_DIR", t.TempDir())
 	rhoconfig.InvalidateConfigUICache()
 	gateway.SetDefaultStore(&gateway.MapStore{})
 	t.Cleanup(func() {

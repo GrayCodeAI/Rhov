@@ -1,6 +1,6 @@
 # Custom Models
 
-Rho connects to custom model endpoints through Eyrie for alternative providers, self-hosted models, and overriding built-in settings.
+Rho connects to custom model endpoints through Flux for alternative providers, self-hosted models, and overriding built-in settings.
 
 ---
 
@@ -127,7 +127,7 @@ ollama pull llama-3.1-70b
 
 ## Deployment-Aware Routing
 
-Enable deployment-aware routing to use Eyrie's model catalog:
+Enable deployment-aware routing to use Flux's model catalog:
 
 ```bash
 export RHO_DEPLOYMENT_ROUTING=true

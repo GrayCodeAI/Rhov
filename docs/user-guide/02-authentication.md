@@ -1,6 +1,6 @@
 # Authentication
 
-Rho supports several authentication methods, including API key configuration through the TUI and multi-provider support via Eyrie.
+Rho supports several authentication methods, including API key configuration through the TUI and multi-provider support via Flux.
 
 ---
 
@@ -49,7 +49,7 @@ base URL is `https://api.fireworks.ai/inference/v1`. See the official
 
 ## Provider Configuration
 
-Rho uses Eyrie for provider routing, health checks, and retry logic. To configure providers:
+Rho uses Flux for provider routing, health checks, and retry logic. To configure providers:
 
 ```bash
 # In the TUI, press /config to open provider settings
@@ -75,7 +75,7 @@ Or export:
 export RHO_DEPLOYMENT_ROUTING=true
 ```
 
-Rho will route canonical model IDs through Eyrie's deployment catalog. Refresh the catalog with:
+Rho will route canonical model IDs through Flux's deployment catalog. Refresh the catalog with:
 
 ```
 /refresh-model-catalog
@@ -185,7 +185,7 @@ Check credential status at any time:
 rho credentials status
 ```
 
-This verifies keychain entries and validates Eyrie's provider status.
+This verifies keychain entries and validates Flux's provider status.
 
 ---
 
@@ -203,7 +203,7 @@ During a session, the active method handles all refreshes.
 
 ## Multi-Provider Support
 
-Rho works with any LLM provider through Eyrie's adapter system:
+Rho works with any LLM provider through Flux's adapter system:
 
 | Provider | Status |
 |----------|--------|

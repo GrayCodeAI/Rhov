@@ -106,7 +106,7 @@ list in sync with the code (it is the inventory the dependency rules assume).
 - Rho session persistence has started migrating to provider-neutral tool contracts
 - Rho review storage and merlin/review bridge paths now consume neutral review/verify contracts
 - Rho runtime conversation DTOs and the `ChatClient` port are Rho-owned and
-  translated to the stable `eyrie/engine` contract at the integration edge
+  translated to the stable `flux/engine` contract at the integration edge
 
 ## Versioning rule
 

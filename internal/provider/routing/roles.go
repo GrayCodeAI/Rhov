@@ -26,7 +26,7 @@ type ModelRoles struct {
 	Commit   string `json:"commit,omitempty"`
 }
 
-// DefaultRoles keeps Rho's workflow policy while asking Eyrie for the
+// DefaultRoles keeps Rho's workflow policy while asking Flux for the
 // economical same-provider model used for commit/summarization work.
 func DefaultRoles(primaryModel string) ModelRoles {
 	primaryModel = strings.TrimSpace(primaryModel)

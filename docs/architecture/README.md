@@ -32,7 +32,7 @@ to it through the boundaries documented here.
 Final target shape:
 
 - `rho` is the orchestrator and only primary product surface
-- `eyrie` sits below Rho as the provider engine, consumed through its stable
+- `flux` sits below Rho as the provider engine, consumed through its stable
   engine facade
 - Rho's token/context engine is embedded (`internal/token`), not a peer repo
 - shared vocabulary lives in Rho's vendored `internal/contracts`

@@ -28,7 +28,7 @@ layout:
 |-----------|---------|
 | `cmd/` | CLI entry point (Cobra) and TUI (Bubble Tea) |
 | `internal/` | Private Go packages (not importable by external repos) |
-| Parent `go.work` | Resolves the nine local Go siblings: rho, eagle, falcon, eyrie, harrier (Harrier), shrike (Shrike), swift (Swift), kestrel (Kestrel), and merlin (Merlin) |
+| Parent `go.work` | Resolves the nine local Go siblings: rho, eagle, falcon, flux, harrier (Harrier), shrike (Shrike), swift (Swift), kestrel (Kestrel), and merlin (Merlin) |
 | `spec/` | OpenSpec schema consumed by `internal/spec` |
 | `docs/` | Architecture docs, design docs, plans |
 | `rules/` | User-defined rules |
@@ -45,7 +45,7 @@ The `internal/` directory SHALL contain the following packages:
 | `tool/` | 40+ built-in tools (file edit, git, codegen, spec tools, etc.) |
 | `permissions/` | Guardian, rules DSL, boundary checker |
 | `plugin/` | Skills loader, registry, auto-skill, marketplace install |
-| `config/` | Product settings, Eyrie composition, state migration |
+| `config/` | Product settings, Flux composition, state migration |
 | `session/` | SQLite persistence, search, export, replay |
 | `hooks/` | Event-driven plugin system |
 | `mcp/` | Model Context Protocol client/server |
@@ -99,12 +99,12 @@ Rho CLI/TUI + conversation + tools
         Rho-owned ports/DTOs
                   |
                   v
-            eyrie/engine
+            flux/engine
  credentials -> catalog -> routing -> generate/stream
 ```
 
-No production Rho package may import a lower Eyrie package. Custom gateways
-are supplied per Engine instance, and Eyrie DTOs are not Rho persistence or
+No production Rho package may import a lower Flux package. Custom gateways
+are supplied per Engine instance, and Flux DTOs are not Rho persistence or
 CLI output schemas.
 
 ### REQ-4: Agent Loop Lifecycle
@@ -129,7 +129,7 @@ The agent loop in `stream.go` SHALL execute the following phases:
 6. Refresh Harrier memories
 7. Build LLM ChatOptions (system prompt, tools, model)
 8. Inject ephemeral context (beliefs, matched skills, spec stage)
-9. Execute the LLM call via `ChatService.Stream()` and the `eyrie/engine` adapter
+9. Execute the LLM call via `ChatService.Stream()` and the `flux/engine` adapter
 10. Process response (tool calls, messages, cost tracking)
 11. Check termination conditions
 

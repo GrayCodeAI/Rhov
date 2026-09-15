@@ -9,8 +9,8 @@ import (
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
-func segTestMessages() []types.EyrieMessage {
-	return []types.EyrieMessage{
+func segTestMessages() []types.FluxMessage {
+	return []types.FluxMessage{
 		{Role: "user", Content: "fix the flaky test in pkg/foo"},
 		{
 			Role: "assistant", Content: "Looking into it.",

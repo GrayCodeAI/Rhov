@@ -11,7 +11,7 @@ The repository directory and product-name distinction is intentional:
 | Directory/repository | Product or role |
 |---|---|
 | `rho` | Rho product and orchestration root |
-| `eyrie` | Eyrie provider runtime |
+| `flux` | Flux provider runtime |
 | `harrier` | Harrier memory engine |
 | `shrike` | Shrike token/context engine |
 | `swift` | Swift provenance engine |
@@ -38,7 +38,7 @@ graycode-eco/
 ├── rho                 # product / composition root
 ├── eagle                # neutral contracts foundation
 ├── falcon               # MCP foundation
-├── eyrie                # Eyrie provider engine
+├── flux                # Flux provider engine
 ├── harrier              # Harrier memory engine
 ├── shrike               # Shrike context engine
 ├── swift                # Swift engine
@@ -61,7 +61,7 @@ published versions pinned in each `go.mod`.
 ```text
 sparrow / robin / wren ── HTTP/OpenAPI ──> rho <── skill surface ── starling
                                              │
-                                             ├── eyrie/engine
+                                             ├── flux/engine
                                              ├── harrier       (Harrier)
                                              ├── shrike        (Shrike)
                                              ├── swift/cli     (Swift)
@@ -98,7 +98,7 @@ contract parity checks, and Rho-centered dependency direction all exist.
 The remaining proposed work is boundary refinement rather than repository
 reorganization:
 
-1. publish the Eagle-migrated Eyrie revision and update Rho's standalone pin;
+1. publish the Eagle-migrated Flux revision and update Rho's standalone pin;
 2. remove the transitional `rho-core-contracts` dependency from the published
    module graph;
 3. decide whether graph/projection packages should remain explicit Rho
@@ -109,7 +109,7 @@ reorganization:
 ## Allowed dependency edges
 
 ```text
-rho -> eyrie / harrier / shrike / swift / kestrel / merlin / eagle
+rho -> flux / harrier / shrike / swift / kestrel / merlin / eagle
 engines -> eagle                  # only for shared contracts
 harrier / kestrel / merlin -> falcon
 sparrow / robin / wren -> Rho public HTTP/OpenAPI surface

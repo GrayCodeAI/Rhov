@@ -14,8 +14,8 @@ while IFS= read -r repo; do
 done < <("${ROOT_DIR}/scripts/ecosystem-manifest.sh" list workspace)
 failed=0
 
-# Directory and module path differ when a repo is renamed (e.g. eyrie
-# hosts module github.com/GrayCodeAI/eyrie), so resolve via the manifest.
+# Directory and module path differ when a repo is renamed (e.g. flux
+# hosts module github.com/GrayCodeAI/flux), so resolve via the manifest.
 module_for_repo() {
   awk -v dir="$1" '
     /^  - directory:/ { cur=$0; sub(/^  - directory:[[:space:]]*/, "", cur); next }

@@ -11,7 +11,7 @@
 
 Grok Build (`grok-eco/grok-build`) is a large Rust monorepo for a terminal AI
 coding agent. Rho is a multi-repo Go platform: product (`rho`) plus peer
-engines (`eyrie`, `harrier`, `shrike`, `swift`, `kestrel`, `merlin`), foundation
+engines (`flux`, `harrier`, `shrike`, `swift`, `kestrel`, `merlin`), foundation
 contracts (`eagle`, `falcon`), SDKs, cloud, and skills.
 
 The product goal is Grok-class **agent control-plane quality** (typed
@@ -26,7 +26,7 @@ peer-engine advantages.
 2. **Rho remains multi-repo.** Map Grok capabilities onto existing owners:
    - product surface → `rho`
    - shared DTOs → `eagle`
-   - LLM routing/stream → `eyrie`
+   - LLM routing/stream → `flux`
    - memory → `harrier`
    - tokens/secrets/compress → `shrike`
    - session capture/import → `swift`

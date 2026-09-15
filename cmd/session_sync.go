@@ -35,7 +35,7 @@ func explicitSelection(ctx context.Context) (provider, model string) {
 	return strings.TrimSpace(rhoconfig.ActiveGateway(ctx)), strings.TrimSpace(rhoconfig.ActiveModel(ctx))
 }
 
-// syncSessionFromPersistedSelection copies explicit eyrie provider.json
+// syncSessionFromPersistedSelection copies explicit flux provider.json
 // selection into the live session when the session fields are empty.
 // It intentionally avoids runtime defaults so Rho can preserve the
 // "gateway selected, model still missing" setup state.

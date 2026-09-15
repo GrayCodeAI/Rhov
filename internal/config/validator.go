@@ -43,9 +43,9 @@ func (r ValidationResult) Error() string {
 func ValidateSettings(s Settings) ValidationResult {
 	var errors []ValidationError
 
-	// Provider names are delegated to Eyrie. Do not hardcode/validate here.
+	// Provider names are delegated to Flux. Do not hardcode/validate here.
 
-	// Validate model selection (stored in eyrie provider.json)
+	// Validate model selection (stored in flux provider.json)
 	activeModel := strings.TrimSpace(s.Model)
 	if activeModel == "" {
 		activeModel = ActiveModel(context.Background())

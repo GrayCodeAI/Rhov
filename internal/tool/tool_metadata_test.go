@@ -118,17 +118,17 @@ func TestRegistry_WithTools(t *testing.T) {
 	}
 }
 
-func TestRegistry_EyrieTools_WithTools(t *testing.T) {
+func TestRegistry_FluxTools_WithTools(t *testing.T) {
 	t.Parallel()
 	registry := NewRegistry(&BashTool{}, &FileReadTool{})
-	eyrieTools := registry.EyrieTools()
+	fluxTools := registry.FluxTools()
 
-	if len(eyrieTools) != 2 {
-		t.Errorf("EyrieTools() returned %d, want 2", len(eyrieTools))
+	if len(fluxTools) != 2 {
+		t.Errorf("FluxTools() returned %d, want 2", len(fluxTools))
 	}
-	for _, et := range eyrieTools {
+	for _, et := range fluxTools {
 		if et.Name == "" {
-			t.Error("EyrieTool.Name should not be empty")
+			t.Error("FluxTool.Name should not be empty")
 		}
 	}
 }

@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	rhoModule   = "github.com/GrayCodeAI/rho"
-	eyrieModule = "github.com/GrayCodeAI/eyrie"
+	rhoModule  = "github.com/GrayCodeAI/rho"
+	fluxModule = "github.com/GrayCodeAI/flux"
 )
 
 // supportEngines lists the sibling repos checked for boundary violations.
-// Rho now depends only on eyrie.
-var supportEngines = []string{"eyrie"}
+// Rho now depends only on flux.
+var supportEngines = []string{"flux"}
 
 type packageImport struct {
 	file string
@@ -34,34 +34,34 @@ type packageImport struct {
 func TestPackageDependencyGraph(t *testing.T) {
 	root := repoRoot(t)
 
-	checkRhoEyrieFacade(t, root)
+	checkRhoFluxFacade(t, root)
 	checkRhoInternalLayers(t, root)
 	checkSupportRepositoryBoundaries(t, root)
 }
 
-func checkRhoEyrieFacade(t *testing.T, root string) {
+func checkRhoFluxFacade(t *testing.T, root string) {
 	paths := []string{filepath.Join(root, "internal"), filepath.Join(root, "cmd")}
 	var violations []string
 
 	for _, path := range paths {
 		for _, imp := range productionImports(t, root, path) {
-			if !strings.HasPrefix(imp.path, eyrieModule+"/") {
+			if !strings.HasPrefix(imp.path, fluxModule+"/") {
 				continue
 			}
-			if imp.path == eyrieModule+"/engine" || strings.HasPrefix(imp.path, eyrieModule+"/engine/") {
+			if imp.path == fluxModule+"/engine" || strings.HasPrefix(imp.path, fluxModule+"/engine/") {
 				continue
 			}
-			// Rho uses the full vendored Eyrie API surface for provider, graph,
+			// Rho uses the full vendored Flux API surface for provider, graph,
 			// and tooling contracts that the engine facade does not re-export.
 			switch imp.path {
-			case eyrieModule + "/llm", eyrieModule + "/graph", eyrieModule + "/tools":
+			case fluxModule + "/llm", fluxModule + "/graph", fluxModule + "/tools":
 				continue
 			}
-			violations = append(violations, formatImportViolation(root, imp, "use the eyrie/engine facade"))
+			violations = append(violations, formatImportViolation(root, imp, "use the flux/engine facade"))
 		}
 	}
 
-	assertNoPackageViolations(t, "Rho Eyrie facade", violations)
+	assertNoPackageViolations(t, "Rho Flux facade", violations)
 }
 
 func checkRhoInternalLayers(t *testing.T, root string) {

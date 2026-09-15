@@ -94,10 +94,10 @@ func registeredProviderCount() int {
 
 var rootCmd = &cobra.Command{
 	Use:   "rho [prompt]",
-	Short: "AI coding agent powered by eyrie",
+	Short: "AI coding agent powered by flux",
 	Long: fmt.Sprintf(`rho is an AI coding agent that reads, writes, and runs code in your terminal.
 
-It connects to %d first-class LLM providers through eyrie, executes tools (file I/O, shell,
+It connects to %d first-class LLM providers through flux, executes tools (file I/O, shell,
 git, web search), and manages sessions — all from a keyboard-driven TUI or
 headless mode for scripts and CI.
 
@@ -212,13 +212,13 @@ Run rho and use /config to set up your first provider.`, registeredProviderCount
 			return fmt.Errorf("cannot start CLI: folder not trusted (%s)\nProject-scoped hooks, MCP servers, and custom specialists are blocked.\nRun 'rho trust add' to trust this folder before starting rho", tr.Path)
 		}
 
-		// Launch TUI — use /config to set API keys; eyrie supplies providers and models
+		// Launch TUI — use /config to set API keys; flux supplies providers and models
 		return runChat()
 	},
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&model, "model", "m", "", "model to use (from eyrie catalog; see /models)")
+	rootCmd.Flags().StringVarP(&model, "model", "m", "", "model to use (from flux catalog; see /models)")
 	rootCmd.Flags().BoolVarP(&printMode, "print", "p", false, "print response and exit")
 	rootCmd.Flags().StringVar(&promptFlag, "prompt", "", "send a single prompt and exit (legacy alias for --print)")
 	rootCmd.Flags().StringVar(&outputFormat, "output-format", "text", `output format for --print: "text", "json", "stream-json", or "transcript"`)
@@ -259,7 +259,7 @@ func init() {
 	rootCmd.Flags().IntVar(&teachDepth, "teach-depth", 2, "explanation depth: 1=what, 2=why, 3=how")
 	rootCmd.Flags().BoolVar(&autoSkillFlag, "auto-skill", false, "auto-detect project and install matching skills")
 	rootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "output the version number")
-	rootCmd.Flags().BoolVar(&refreshCatalogFlag, "refresh-catalog", false, "refresh the eyrie model catalog before starting")
+	rootCmd.Flags().BoolVar(&refreshCatalogFlag, "refresh-catalog", false, "refresh the flux model catalog before starting")
 	rootCmd.Flags().BoolVar(&skipCatalogRefreshFlag, "no-auto-catalog-refresh", false, "disable automatic catalog refresh when cache is missing, empty, or stale")
 	rootCmd.Flags().BoolVar(&recoverFlag, "recover", false, "scan for interrupted sessions and offer to resume")
 	rootCmd.Flags().BoolVar(&startupProfileFlag, "startup-profile", false, "print startup performance profile")

@@ -23,7 +23,7 @@ type RelevancePruneStrategy struct {
 
 func (s *RelevancePruneStrategy) Name() string { return "relevance" }
 
-func (s *RelevancePruneStrategy) ShouldTrigger(msgs []types.EyrieMessage, tokenCount, threshold int) bool {
+func (s *RelevancePruneStrategy) ShouldTrigger(msgs []types.FluxMessage, tokenCount, threshold int) bool {
 	return tokenCount >= threshold && len(msgs) >= 20
 }
 
@@ -43,7 +43,7 @@ func (s *RelevancePruneStrategy) Compact(ctx context.Context, sess *Session) (*C
 		},
 	)
 
-	out := toEyrieMessages(pruned)
+	out := toFluxMessages(pruned)
 	sess.Persistence().SetMessages(out)
 	tokensAfter := EstimateTokens(sess.Persistence().RawMessages())
 	return &CompactResult{
@@ -55,7 +55,7 @@ func (s *RelevancePruneStrategy) Compact(ctx context.Context, sess *Session) (*C
 }
 
 // toPruneMessages adapts raw session messages to the relevance-prune shape.
-func toPruneMessages(raw []types.EyrieMessage, now time.Time) []relevanceprune.Message {
+func toPruneMessages(raw []types.FluxMessage, now time.Time) []relevanceprune.Message {
 	out := make([]relevanceprune.Message, len(raw))
 	for i, m := range raw {
 		out[i] = relevanceprune.Message{
@@ -69,15 +69,15 @@ func toPruneMessages(raw []types.EyrieMessage, now time.Time) []relevanceprune.M
 	return out
 }
 
-func toEyrieMessages(msgs []relevanceprune.Message) []types.EyrieMessage {
-	out := make([]types.EyrieMessage, len(msgs))
+func toFluxMessages(msgs []relevanceprune.Message) []types.FluxMessage {
+	out := make([]types.FluxMessage, len(msgs))
 	for i, m := range msgs {
-		out[i] = types.EyrieMessage{Role: m.Role, Content: m.Content}
+		out[i] = types.FluxMessage{Role: m.Role, Content: m.Content}
 	}
 	return out
 }
 
-func hasErrorResult(m types.EyrieMessage) bool {
+func hasErrorResult(m types.FluxMessage) bool {
 	for _, tr := range m.ToolResults {
 		if tr.IsError {
 			return true
@@ -86,7 +86,7 @@ func hasErrorResult(m types.EyrieMessage) bool {
 	return false
 }
 
-func lastUserText(raw []types.EyrieMessage) string {
+func lastUserText(raw []types.FluxMessage) string {
 	for i := len(raw) - 1; i >= 0; i-- {
 		if raw[i].Role == "user" {
 			return raw[i].Content

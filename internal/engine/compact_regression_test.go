@@ -24,18 +24,18 @@ func testSession(t *testing.T, window int) *Session {
 
 // toolPairMessages returns a transcript where an assistant tool_use is followed
 // by a user tool_result, embedded among filler messages.
-func toolPairMessages(total int, toolUseAt int) []types.EyrieMessage {
-	msgs := make([]types.EyrieMessage, total)
+func toolPairMessages(total int, toolUseAt int) []types.FluxMessage {
+	msgs := make([]types.FluxMessage, total)
 	for i := range msgs {
-		msgs[i] = types.EyrieMessage{Role: "user", Content: "filler"}
+		msgs[i] = types.FluxMessage{Role: "user", Content: "filler"}
 	}
-	msgs[toolUseAt] = types.EyrieMessage{
+	msgs[toolUseAt] = types.FluxMessage{
 		Role:    "assistant",
 		Content: "calling tool",
 		ToolUse: []types.ToolCall{{ID: "tu-1", Name: "read_file", Arguments: map[string]any{"path": "a.go"}}},
 	}
 	if toolUseAt+1 < total {
-		msgs[toolUseAt+1] = types.EyrieMessage{
+		msgs[toolUseAt+1] = types.FluxMessage{
 			Role:    "user",
 			Content: "tool responded",
 			ToolResults: []types.ToolResult{
@@ -100,8 +100,8 @@ func TestSmartCompactAvoidsAdjacentAssistantRoles(t *testing.T) {
 	// Build a long transcript whose kept tail starts with an assistant message
 	// (conversation ended on a final assistant turn).
 	msgs := makeMessages(40)
-	msgs[30] = types.EyrieMessage{Role: "assistant", Content: "tail starts with assistant"}
-	msgs[31] = types.EyrieMessage{Role: "user", Content: "next user turn"}
+	msgs[30] = types.FluxMessage{Role: "assistant", Content: "tail starts with assistant"}
+	msgs[31] = types.FluxMessage{Role: "user", Content: "next user turn"}
 	s := testSession(t, 128000)
 	s.Persistence().SetRawMessages(msgs)
 
@@ -121,7 +121,7 @@ func TestSplitTurnCompactTruncatesOversizedMessageToSecondHalf(t *testing.T) {
 	// and the retained message must contain exactly its second half.
 	msgs := makeMessages(40)
 	big := strings.Repeat("x", 20000)
-	msgs[35] = types.EyrieMessage{Role: "user", Content: big}
+	msgs[35] = types.FluxMessage{Role: "user", Content: big}
 	s := testSession(t, 128000)
 	s.Persistence().SetRawMessages(msgs)
 
@@ -156,11 +156,11 @@ func TestApplyCompactionPreservesConcurrentAppends(t *testing.T) {
 	raw := s.Persistence().RawMessages() // snapshot (len 30)
 	// Concurrent AddUser between snapshot and apply:
 	concurrent := s.Persistence().RawMessages()
-	concurrent = append(concurrent, types.EyrieMessage{Role: "user", Content: "concurrent user turn"})
+	concurrent = append(concurrent, types.FluxMessage{Role: "user", Content: "concurrent user turn"})
 	s.Persistence().SetRawMessages(concurrent)
 
 	// Compaction result computed from the stale snapshot (keeps only 20):
-	keep := append([]types.EyrieMessage(nil), raw[:20]...)
+	keep := append([]types.FluxMessage(nil), raw[:20]...)
 	s.Persistence().ApplyCompaction(keep, len(raw))
 
 	kept := s.Persistence().RawMessages()
@@ -176,12 +176,12 @@ func TestShouldAutoCompactCountsToolTokens(t *testing.T) {
 	// Content alone stays under the threshold; adding tool_result payloads
 	// crosses it. ShouldAutoCompact must count the tool tokens.
 	s := testSession(t, 2000) // threshold = 85% of 2000 = 1700
-	msgs := make([]types.EyrieMessage, 40)
+	msgs := make([]types.FluxMessage, 40)
 	for i := range msgs {
 		if i%2 == 0 {
-			msgs[i] = types.EyrieMessage{Role: "user", Content: "short"}
+			msgs[i] = types.FluxMessage{Role: "user", Content: "short"}
 		} else {
-			msgs[i] = types.EyrieMessage{Role: "assistant", Content: "short reply"}
+			msgs[i] = types.FluxMessage{Role: "assistant", Content: "short reply"}
 		}
 	}
 	s.Persistence().SetRawMessages(msgs)
@@ -204,9 +204,9 @@ func TestShouldAutoCompactCountsToolTokens(t *testing.T) {
 func TestGenerateSummaryInputCapped(t *testing.T) {
 	// generateSummary must not feed an unbounded prompt even if the transcript
 	// is huge (summaryInputRuneCap applies).
-	msgs := make([]types.EyrieMessage, 0, 500)
+	msgs := make([]types.FluxMessage, 0, 500)
 	for i := 0; i < 500; i++ {
-		msgs = append(msgs, types.EyrieMessage{Role: "user", Content: strings.Repeat("content ", 100)})
+		msgs = append(msgs, types.FluxMessage{Role: "user", Content: strings.Repeat("content ", 100)})
 	}
 	s := testSession(t, 128000)
 	summary := s.generateSummary(context.Background(), msgs)

@@ -10,8 +10,8 @@ repositories. It is not a monorepo or a runtime product.
 Rho is the only primary product surface in the graycode-eco ecosystem. The support repos exist to power Rho, not to compete with it as standalone products.
 
 For model execution specifically: **Rho is the face and composition layer;
-Eyrie is the engine.** Rho owns the conversation and product experience while
-the `eyrie/engine` facade owns the complete provider path from credential and
+Flux is the engine.** Rho owns the conversation and product experience while
+the `flux/engine` facade owns the complete provider path from credential and
 catalog state through model selection and normalized generation/streaming.
 
 ## Goals
@@ -26,11 +26,11 @@ catalog state through model selection and normalized generation/streaming.
 ## Target repo set
 
 - `rho`
-- `eyrie`
+- `flux`
 - `owl`
 - `graycode-platform` (outside the Rho runtime module graph)
 
-Directory names are authoritative for dependencies: `eyrie` is Eyrie. The
+Directory names are authoritative for dependencies: `flux` is Flux. The
 product label remains useful in CLI and user-facing documentation.
 
 ## Runtime architecture
@@ -45,7 +45,7 @@ Users / SDKs / Skills
         |                      |
         v                      v
  core execution          embedded token engine
- eyrie/engine            internal/token
+ flux/engine            internal/token
         |                      |
         +----------+-----------+
                    |
@@ -59,7 +59,7 @@ Current implementation in the workspace:
 
 ```text
 rho
-  -> eyrie/engine
+  -> flux/engine
   -> internal/token (embedded)
   -> internal/contracts
 
@@ -77,7 +77,7 @@ SDKs / Skills / future integrations
    +------------+------------+
    |                         |
    v                         v
- Eyrie/engine          internal/token
+ Flux/engine          internal/token
    |                         |
    +------------+------------+
                 |
@@ -116,8 +116,8 @@ Rho does not own:
 
 ## Engine responsibilities
 
-### `eyrie`
-- stable host control and generation facade (`eyrie/engine`)
+### `flux`
+- stable host control and generation facade (`flux/engine`)
 - credential storage and safe credential status
 - catalog discovery and model metadata
 - concrete provider/deployment selection
@@ -137,18 +137,18 @@ Rho does not own:
 
 1. User invokes `rho`.
 2. Rho loads product settings, policy, and workspace state, then creates an
-   Eyrie Engine with effective per-instance custom gateway settings.
+   Flux Engine with effective per-instance custom gateway settings.
 3. Rho creates or resumes a session.
 4. Rho assembles context through the embedded token engine.
 5. Rho recalls relevant local memories.
-6. Rho routes provider execution through `eyrie`.
+6. Rho routes provider execution through `flux`.
 7. Rho invokes tools and records graph observations.
 8. Rho persists results and returns output to the user.
 
 At step 6, Rho passes intent and Rho-owned conversation DTOs through its
-adapter. Eyrie loads provider/catalog/credential state, resolves the gateway,
+adapter. Flux loads provider/catalog/credential state, resolves the gateway,
 and returns normalized events. No production Rho package imports a lower
-Eyrie package, and no Eyrie engine DTO is used as Rho's persistent or CLI
+Flux package, and no Flux engine DTO is used as Rho's persistent or CLI
 schema.
 
 ## Implementation phases
@@ -181,8 +181,8 @@ Status:
 Status:
 - completed for the local runtime boundary
 - Rho owns runtime DTOs and review/verify product-boundary contracts
-- Rho's `ChatClient` anti-corruption port translates only to `eyrie/engine`
-- all lower-level Eyrie production imports are forbidden by shell guards and meta-audit tests
+- Rho's `ChatClient` anti-corruption port translates only to `flux/engine`
+- all lower-level Flux production imports are forbidden by shell guards and meta-audit tests
 
 ### Phase 5
 - align SDKs and skills to Rho public interfaces only

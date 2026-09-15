@@ -24,7 +24,7 @@ func InstallHermeticStorage() (func(), error) {
 	if err != nil {
 		return nil, err
 	}
-	keys := []string{"HOME", "RHO_CONFIG_DIR", "RHO_STATE_DIR", "RHO_CACHE_DIR", "EYRIE_CONFIG_DIR"}
+	keys := []string{"HOME", "RHO_CONFIG_DIR", "RHO_STATE_DIR", "RHO_CACHE_DIR", "FLUX_CONFIG_DIR"}
 	previous := make(map[string]string, len(keys))
 	wasSet := make(map[string]bool, len(keys))
 	for _, key := range keys {
@@ -37,10 +37,10 @@ func InstallHermeticStorage() (func(), error) {
 		return nil, err
 	}
 	for key, suffix := range map[string]string{
-		"RHO_CONFIG_DIR":   "config",
-		"RHO_STATE_DIR":    "state",
-		"RHO_CACHE_DIR":    "cache",
-		"EYRIE_CONFIG_DIR": "eyrie-config",
+		"RHO_CONFIG_DIR":  "config",
+		"RHO_STATE_DIR":   "state",
+		"RHO_CACHE_DIR":   "cache",
+		"FLUX_CONFIG_DIR": "flux-config",
 	} {
 		if _, ok := os.LookupEnv(key); !ok {
 			if err := os.Setenv(key, filepath.Join(root, suffix)); err != nil {

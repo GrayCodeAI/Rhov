@@ -5,13 +5,13 @@
   "updated": "2026-09-14",
   "components": [
     "rho",
-    "eyrie"
+    "flux"
   ],
   "dependencies": {
     "rho": [
-      "eyrie"
+      "flux"
     ],
-    "eyrie": []
+    "flux": []
   },
   "matrices": [
     {
@@ -19,7 +19,7 @@
       "description": "Latest tested-together stable combination across the eco. This is what new users get when installing.",
       "components": {
         "rho": "0.0.1",
-        "eyrie": "0.0.1"
+        "flux": "0.0.1"
       }
     },
     {
@@ -27,7 +27,7 @@
       "description": "Combination that the upcoming release will ship — kept up to date by release-please as components advance. Tested in CI on every PR.",
       "components": {
         "rho": "main",
-        "eyrie": "main"
+        "flux": "main"
       }
     }
   ]

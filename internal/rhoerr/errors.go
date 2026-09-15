@@ -6,7 +6,7 @@ import "fmt"
 // It captures which bridge failed, the operation attempted, and the
 // underlying reason or wrapped error.
 type BridgeError struct {
-	Bridge string // e.g., "eyrie", "memory", "token"
+	Bridge string // e.g., "flux", "memory", "token"
 	Op     string // e.g., "Remember", "Recall", "Enable"
 	Reason string // human-readable reason
 	Err    error  // underlying error, if any

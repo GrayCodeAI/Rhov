@@ -82,7 +82,7 @@ func (s *Session) generateTitleLLM(ctx context.Context) (string, error) {
 	}
 
 	// Fast streaming call for title generation
-	reqMsgs := []types.EyrieMessage{
+	reqMsgs := []types.FluxMessage{
 		{
 			Role:    "user",
 			Content: titlePrompt,

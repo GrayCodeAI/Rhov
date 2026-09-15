@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	contracts "github.com/GrayCodeAI/eyrie/tools"
+	contracts "github.com/GrayCodeAI/flux/tools"
 	"github.com/GrayCodeAI/rho/internal/session"
 	"github.com/GrayCodeAI/rho/internal/testutil"
 )

@@ -26,26 +26,26 @@ func TestStorageDirsRespectOverrides(t *testing.T) {
 	}
 }
 
-func TestProviderConfigPathUsesEyrieOverrideWithoutMovingRhoSettings(t *testing.T) {
+func TestProviderConfigPathUsesFluxOverrideWithoutMovingRhoSettings(t *testing.T) {
 	rhoDir := filepath.Join(t.TempDir(), "rho")
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
+	fluxDir := filepath.Join(t.TempDir(), "flux")
 	t.Setenv(envConfigDir, rhoDir)
-	t.Setenv(envEyrieConfigDir, eyrieDir)
+	t.Setenv(envFluxConfigDir, fluxDir)
 
-	if got, want := ProviderConfigPath(), filepath.Join(eyrieDir, "provider.json"); got != want {
-		t.Fatalf("ProviderConfigPath() = %q, want EYRIE_CONFIG_DIR path %q", got, want)
+	if got, want := ProviderConfigPath(), filepath.Join(fluxDir, "provider.json"); got != want {
+		t.Fatalf("ProviderConfigPath() = %q, want FLUX_CONFIG_DIR path %q", got, want)
 	}
 	if got, want := SettingsPath(), filepath.Join(rhoDir, "settings.json"); got != want {
 		t.Fatalf("SettingsPath() = %q, want RHO_CONFIG_DIR path %q", got, want)
 	}
 }
 
-func TestProviderConfigPathDefaultsToEyrieDir(t *testing.T) {
+func TestProviderConfigPathDefaultsToFluxDir(t *testing.T) {
 	t.Setenv(envConfigDir, filepath.Join(t.TempDir(), "rho"))
-	t.Setenv(envEyrieConfigDir, "  ")
+	t.Setenv(envFluxConfigDir, "  ")
 
-	if got, want := ProviderConfigPath(), filepath.Join(mustUserConfigDir(), "eyrie", "provider.json"); got != want {
-		t.Fatalf("ProviderConfigPath() = %q, want Eyrie default %q", got, want)
+	if got, want := ProviderConfigPath(), filepath.Join(mustUserConfigDir(), "flux", "provider.json"); got != want {
+		t.Fatalf("ProviderConfigPath() = %q, want Flux default %q", got, want)
 	}
 }
 

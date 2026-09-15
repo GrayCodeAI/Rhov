@@ -8,8 +8,8 @@ import (
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
-func bloatedTools() []types.EyrieTool {
-	return []types.EyrieTool{
+func bloatedTools() []types.FluxTool {
+	return []types.FluxTool{
 		{
 			Name: "read_file",
 			Description: strings.Repeat("Reads a file from disk quickly and safely. ", 30) +
@@ -32,20 +32,20 @@ func bloatedTools() []types.EyrieTool {
 	}
 }
 
-func TestShrinkEyrieToolsDisabledByDefault(t *testing.T) {
+func TestShrinkFluxToolsDisabledByDefault(t *testing.T) {
 	t.Setenv("RHO_TOOL_SHRINK", "")
 	in := bloatedTools()
-	out := shrinkEyrieTools(in)
+	out := shrinkFluxTools(in)
 	if len(out) != len(in) || out[0].Description != in[0].Description {
 		t.Fatal("shrink must be a no-op when disabled")
 	}
 }
 
-func TestShrinkEyrieToolsEnabledReducesAndPreservesNames(t *testing.T) {
+func TestShrinkFluxToolsEnabledReducesAndPreservesNames(t *testing.T) {
 	t.Setenv("RHO_TOOL_SHRINK", "1")
 	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	in := bloatedTools()
-	out := shrinkEyrieTools(in)
+	out := shrinkFluxTools(in)
 	if len(out) != 2 {
 		t.Fatalf("tool count changed: %d", len(out))
 	}
@@ -82,7 +82,7 @@ func TestOriginalCatalogPersistedForRecovery(t *testing.T) {
 	t.Setenv("RHO_TOOL_SHRINK", "1")
 	t.Setenv("RHO_STATE_DIR", stateDir)
 	in := bloatedTools()
-	_ = shrinkEyrieTools(in)
+	_ = shrinkFluxTools(in)
 	matches, err := filepath.Glob(stateDir + "/tool-catalog-originals/*.json")
 	if err != nil || len(matches) == 0 {
 		t.Fatalf("original catalog not persisted: %v %v", matches, err)

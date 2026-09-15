@@ -8,8 +8,8 @@ That means Rho should support multiple providers without leaking provider-specif
 
 ## Design principle
 
-Provider-specific code lives behind Eyrie's stable `eyrie/engine` host facade.
-Rho is the face and composition root; Eyrie is the engine.
+Provider-specific code lives behind Flux's stable `flux/engine` host facade.
+Rho is the face and composition root; Flux is the engine.
 
 Rho decides:
 
@@ -17,7 +17,7 @@ Rho decides:
 - the semantic intent (`fast`, `balanced`, `reasoning`, `economical`)
 - whether an exact user-selected model may fall back
 
-`eyrie` handles:
+`flux` handles:
 
 - capability-to-model resolution
 - provider and deployment selection
@@ -43,7 +43,7 @@ Rho decides:
 ## Rho-facing abstraction
 
 Rho depends on its small `ChatClient` product port and adapts it only to
-`eyrie/engine`, never to a vendor-specific or lower-level Eyrie client.
+`flux/engine`, never to a vendor-specific or lower-level Flux client.
 
 Example concerns:
 
@@ -60,9 +60,9 @@ Example concerns:
 - no provider-specific branches inside review/verify logic
 - no model-specific assumptions inside session persistence
 - keep task-semantic policy inside Rho orchestration
-- keep provider/deployment routing, health, retry, and fallback inside Eyrie
-- Rho production integrations use `github.com/GrayCodeAI/eyrie/engine`
-- direct imports of lower Eyrie packages are forbidden and CI-enforced
+- keep provider/deployment routing, health, retry, and fallback inside Flux
+- Rho production integrations use `github.com/GrayCodeAI/flux/engine`
+- direct imports of lower Flux packages are forbidden and CI-enforced
 - custom gateway settings enter as `engine.Options.CustomGateways` and are
   isolated per Engine instance
 - Rho-owned JSON, session, and conversation schemas are explicit projections;

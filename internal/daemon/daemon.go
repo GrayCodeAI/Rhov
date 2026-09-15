@@ -92,10 +92,10 @@ type Server struct {
 	apiKey       string
 	gateways     *gatewayManager
 
-	// readyFn reports whether Eyrie's preflight/readiness dependencies are
+	// readyFn reports whether Flux's preflight/readiness dependencies are
 	// initialized and the server can serve real traffic. It is consulted by
 	// GET /v1/ready. A nil probe fails closed: a session factory alone does not
-	// prove that Eyrie's catalog, credentials, and model selection are ready.
+	// prove that Flux's catalog, credentials, and model selection are ready.
 	readyMu sync.RWMutex
 	readyFn func() (bool, string)
 
@@ -454,7 +454,7 @@ func (s *Server) SetGraphFactory(factory GraphFactory) {
 	s.graphMu.Unlock()
 }
 
-// ready evaluates readiness using the installed Eyrie probe. It fails closed
+// ready evaluates readiness using the installed Flux probe. It fails closed
 // when the engine is absent or the composition root did not install a probe;
 // merely having a factory does not prove provider readiness.
 func (s *Server) ready() (bool, string) {
@@ -467,7 +467,7 @@ func (s *Server) ready() (bool, string) {
 	if s.newSession == nil {
 		return false, "engine not configured"
 	}
-	return false, "Eyrie readiness probe not configured"
+	return false, "Flux readiness probe not configured"
 }
 
 func (s *Server) routes() {

@@ -14,7 +14,7 @@ func TestChatWithReplayDisabledPassesThrough(t *testing.T) {
 	calls := 0
 	client := &countingClient{n: &calls, resp: "live"}
 	resp, err := chatWithReplay(context.Background(), client,
-		[]types.EyrieMessage{{Role: "user", Content: "hi"}}, types.ChatOptions{Model: "m"})
+		[]types.FluxMessage{{Role: "user", Content: "hi"}}, types.ChatOptions{Model: "m"})
 	if err != nil || resp.Content != "live" {
 		t.Fatalf("resp=%v err=%v", resp, err)
 	}
@@ -29,7 +29,7 @@ func TestChatWithReplayCachesAndHits(t *testing.T) {
 
 	calls := 0
 	client := &countingClient{n: &calls, resp: "live"}
-	msgs := []types.EyrieMessage{{Role: "user", Content: "deterministic"}}
+	msgs := []types.FluxMessage{{Role: "user", Content: "deterministic"}}
 	opts := types.ChatOptions{Provider: "p", Model: "m", MaxTokens: 10}
 
 	first, err := chatWithReplay(context.Background(), client, msgs, opts)
@@ -57,7 +57,7 @@ func TestChatWithReplayFingerprintInvalidates(t *testing.T) {
 
 	calls := 0
 	client := &countingClient{n: &calls, resp: "live"}
-	msgs := []types.EyrieMessage{{Role: "user", Content: "x"}}
+	msgs := []types.FluxMessage{{Role: "user", Content: "x"}}
 	opts := types.ChatOptions{Provider: "p", Model: "m"}
 
 	if _, err := chatWithReplay(context.Background(), client, msgs, opts); err != nil {
@@ -80,7 +80,7 @@ func TestChatWithReplayDoesNotCacheErrors(t *testing.T) {
 	client := &countingClient{n: &calls, err: errors.New("boom")}
 	for i := 0; i < 2; i++ {
 		if _, err := chatWithReplay(context.Background(), client,
-			[]types.EyrieMessage{{Role: "user", Content: "e"}}, types.ChatOptions{}); err == nil {
+			[]types.FluxMessage{{Role: "user", Content: "e"}}, types.ChatOptions{}); err == nil {
 			t.Fatal("expected error to pass through")
 		}
 	}
@@ -99,20 +99,20 @@ type countingClient struct {
 	err  error
 }
 
-func (c *countingClient) Chat(context.Context, []types.EyrieMessage, types.ChatOptions) (*types.EyrieResponse, error) {
+func (c *countingClient) Chat(context.Context, []types.FluxMessage, types.ChatOptions) (*types.FluxResponse, error) {
 	*c.n++
 	if c.err != nil {
 		return nil, c.err
 	}
-	return &types.EyrieResponse{Content: c.resp}, nil
+	return &types.FluxResponse{Content: c.resp}, nil
 }
 
-func (c *countingClient) StreamChatContinue(context.Context, []types.EyrieMessage, types.ChatOptions, types.ContinuationConfig) (*types.StreamResult, error) {
+func (c *countingClient) StreamChatContinue(context.Context, []types.FluxMessage, types.ChatOptions, types.ContinuationConfig) (*types.StreamResult, error) {
 	*c.n++
 	if c.err != nil {
 		return nil, c.err
 	}
-	ch := make(chan types.EyrieStreamEvent, 1)
-	ch <- types.EyrieStreamEvent{Type: "done"}
+	ch := make(chan types.FluxStreamEvent, 1)
+	ch <- types.FluxStreamEvent{Type: "done"}
 	return &types.StreamResult{Events: ch}, nil
 }

@@ -38,7 +38,7 @@ Tau offers a documented feature Rho does not.
 3. **`transcript` output format** — add to `--output-format`; render the turn
    as a plain, timestamped transcript.
 4. **User catalog `~/.rho/catalog.toml`** — let users add providers/models
-   without code changes, merged over the eyrie catalog.
+   without code changes, merged over the flux catalog.
 5. **`.agents/` instruction resources** — load `AGENTS.md`-style instructions
    from `.agents/` in addition to the existing skill/provider/recipe dirs.
 

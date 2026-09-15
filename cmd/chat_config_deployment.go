@@ -78,10 +78,10 @@ func saveCredentialAsync(inference rhoconfig.CredentialInference, secret string)
 		}
 		rhoconfig.InvalidateConfigUICache()
 		rhoconfig.RefreshConfigCredSnapshot(ctx)
-		result, err := rhoconfig.ApplyEyrieCredentialsForProvider(ctx, inference.ProviderID)
+		result, err := rhoconfig.ApplyFluxCredentialsForProvider(ctx, inference.ProviderID)
 		if err != nil && rhoconfig.IsCatalogCacheRequired(err) {
 			if refreshErr := rhoconfig.RefreshCatalogAfterCredentials(ctx, nil); refreshErr == nil {
-				result, err = rhoconfig.ApplyEyrieCredentialsForProvider(ctx, inference.ProviderID)
+				result, err = rhoconfig.ApplyFluxCredentialsForProvider(ctx, inference.ProviderID)
 			} else {
 				err = fmt.Errorf("%w; automatic catalog refresh failed: %w", err, refreshErr)
 			}
@@ -102,7 +102,7 @@ func saveCredentialAsync(inference rhoconfig.CredentialInference, secret string)
 				deploymentID: inference.DeploymentID,
 			}
 		}
-		opts := configModelOptionsFromEyrie(entries)
+		opts := configModelOptionsFromFlux(entries)
 		return configApplyCredentialsMsg{
 			summary:      rhoconfig.FormatApplyCredentialsSummary(result),
 			providerID:   inference.ProviderID,

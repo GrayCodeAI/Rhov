@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/eyrie/catalog"
-	eyriecfg "github.com/GrayCodeAI/eyrie/config"
-	"github.com/GrayCodeAI/eyrie/credentials"
+	"github.com/GrayCodeAI/flux/catalog"
+	fluxcfg "github.com/GrayCodeAI/flux/config"
+	"github.com/GrayCodeAI/flux/credentials"
 )
 
 // isolateMilestoneTest uses a temp HOME and RHO_CONFIG_DIR so verification does not touch the user machine.
@@ -23,7 +23,7 @@ func isolateMilestoneTest(t *testing.T) string {
 	}
 	t.Setenv("HOME", home)
 	t.Setenv("RHO_CONFIG_DIR", rhoDir)
-	t.Setenv("EYRIE_CONFIG_DIR", rhoDir)
+	t.Setenv("FLUX_CONFIG_DIR", rhoDir)
 	return rhoDir
 }
 
@@ -34,12 +34,12 @@ func TestVerify_ProviderJSONOnDiskHasNoSecrets(t *testing.T) {
 		t.Fatal("compiled catalog required")
 	}
 	env := map[string]string{"ANTHROPIC_API_KEY": "sk-ant-verify-test-key-1234567890"}
-	cfg := eyriecfg.SyncProviderConfigFromCatalog(compiled, env)
-	path, err := eyriecfg.GetProviderConfigPath()
+	cfg := fluxcfg.SyncProviderConfigFromCatalog(compiled, env)
+	path, err := fluxcfg.GetProviderConfigPath()
 	if err != nil {
 		t.Fatalf("GetProviderConfigPath: %v", err)
 	}
-	if err := eyriecfg.SaveProviderConfig(cfg, path); err != nil {
+	if err := fluxcfg.SaveProviderConfig(cfg, path); err != nil {
 		t.Fatal(err)
 	}
 	assertProviderJSONFileHasNoSecrets(t, path)
@@ -100,12 +100,12 @@ func TestVerify_EvaluateSetupFlow(t *testing.T) {
 	}
 
 	providerPath := filepath.Join(os.Getenv("HOME"), ".rho", "provider.json")
-	cfg := &eyriecfg.ProviderConfig{
+	cfg := &fluxcfg.ProviderConfig{
 		ActiveProvider: "anthropic",
 		ActiveModel:    "claude-sonnet-4-20250514",
 		AnthropicModel: "claude-sonnet-4-20250514",
 	}
-	if err := eyriecfg.SaveProviderConfig(cfg, providerPath); err != nil {
+	if err := fluxcfg.SaveProviderConfig(cfg, providerPath); err != nil {
 		t.Fatal(err)
 	}
 	st = EvaluateSetup(ctx)
@@ -133,7 +133,7 @@ func assertProviderJSONFileHasNoSecrets(t *testing.T, path string) {
 			t.Fatalf("provider.json at %s contains non-empty %s", path, needle)
 		}
 	}
-	var cfg eyriecfg.ProviderConfig
+	var cfg fluxcfg.ProviderConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		t.Fatal(err)
 	}

@@ -5,26 +5,26 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 if command -v rg >/dev/null 2>&1; then
-  eyrie_imports="$(
-    rg -n '"github\.com/GrayCodeAI/eyrie/[^\"]+"' \
+  flux_imports="$(
+    rg -n '"github\.com/GrayCodeAI/flux/[^\"]+"' \
       --glob '*.go' --glob '!*_test.go' . || true
   )"
 else
-  eyrie_imports="$(
+  flux_imports="$(
     grep -RInE --include='*.go' --exclude='*_test.go' \
-      '"github\.com/GrayCodeAI/eyrie/[^\"]+"' . || true
+      '"github\.com/GrayCodeAI/flux/[^\"]+"' . || true
   )"
 fi
 # Host contract surface is exactly four packages: engine (facade), llm (DTOs
 # and the Provider port), graph (portable graph vocabulary), tools (tool-call
-# contracts). See eyrie/README.md "Ecosystem Boundaries".
-violations="$(printf '%s\n' "$eyrie_imports" | grep -vE '"github\.com/GrayCodeAI/eyrie/(engine|llm|graph|tools)(/|\")' || true)"
+# contracts). See flux/README.md "Ecosystem Boundaries".
+violations="$(printf '%s\n' "$flux_imports" | grep -vE '"github\.com/GrayCodeAI/flux/(engine|llm|graph|tools)(/|\")' || true)"
 
 if [[ -n "$violations" ]]; then
-  echo "direct production imports below the eyrie/engine facade found:"
+  echo "direct production imports below the flux/engine facade found:"
   echo "$violations"
   echo
-  echo "route every Rho production integration through github.com/GrayCodeAI/eyrie/engine"
+  echo "route every Rho production integration through github.com/GrayCodeAI/flux/engine"
   exit 1
 fi
 
@@ -40,4 +40,4 @@ if [[ -n "$credential_symbols" ]]; then
   exit 1
 fi
 
-echo "eyrie engine boundary passed (zero lower-level production imports)"
+echo "flux engine boundary passed (zero lower-level production imports)"

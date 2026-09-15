@@ -12,9 +12,9 @@ import (
 // a sibling repo can pin an older version than what rho's own go.mod requires,
 // and Go's minimal version selection will silently pull in rho's newer version
 // at build time without the consumer's own CI ever having tested it. Rho's
-// only external GrayCodeAI dependency is eyrie. See docs/compatibility.md.
+// only external GrayCodeAI dependency is flux. See docs/compatibility.md.
 var trackedPins = []string{
-	"github.com/GrayCodeAI/eyrie",
+	"github.com/GrayCodeAI/flux",
 }
 
 // checkDrift compares rho's own go.mod requirements for trackedPins against

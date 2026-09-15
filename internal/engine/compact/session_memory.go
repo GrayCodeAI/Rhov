@@ -25,7 +25,7 @@ func DefaultSessionMemoryConfig() SessionMemoryConfig {
 	}
 }
 
-func CalculateMessagesToKeepIndex(msgs []types.EyrieMessage, cfg SessionMemoryConfig) int {
+func CalculateMessagesToKeepIndex(msgs []types.FluxMessage, cfg SessionMemoryConfig) int {
 	if len(msgs) == 0 {
 		return 0
 	}
@@ -55,8 +55,8 @@ func CalculateMessagesToKeepIndex(msgs []types.EyrieMessage, cfg SessionMemoryCo
 	return idx
 }
 
-func FilterCompactBoundaries(msgs []types.EyrieMessage) []types.EyrieMessage {
-	result := make([]types.EyrieMessage, 0, len(msgs))
+func FilterCompactBoundaries(msgs []types.FluxMessage) []types.FluxMessage {
+	result := make([]types.FluxMessage, 0, len(msgs))
 	for _, m := range msgs {
 		if IsCompactBoundary(m) {
 			continue
@@ -66,7 +66,7 @@ func FilterCompactBoundaries(msgs []types.EyrieMessage) []types.EyrieMessage {
 	return result
 }
 
-func IsCompactBoundary(m types.EyrieMessage) bool {
+func IsCompactBoundary(m types.FluxMessage) bool {
 	if m.Role != "user" {
 		return false
 	}

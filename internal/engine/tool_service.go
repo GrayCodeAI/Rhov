@@ -461,7 +461,7 @@ func (s *ToolService) ExecuteOne(ctx context.Context, tc types.ToolCall, overrid
 	var commitChat func(context.Context, string) (string, error)
 	if s.deps.chat != nil {
 		commitChat = func(chatCtx context.Context, prompt string) (string, error) {
-			resp, err := s.deps.chat.Chat(chatCtx, []types.EyrieMessage{{Role: "user", Content: prompt}}, types.ChatOptions{Provider: s.deps.chat.Provider(), Model: s.deps.chat.Model(), MaxTokens: 256})
+			resp, err := s.deps.chat.Chat(chatCtx, []types.FluxMessage{{Role: "user", Content: prompt}}, types.ChatOptions{Provider: s.deps.chat.Provider(), Model: s.deps.chat.Model(), MaxTokens: 256})
 			if err != nil {
 				return "", err
 			}

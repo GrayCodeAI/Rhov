@@ -316,7 +316,7 @@ func toolListSummary(registry *tool.Registry) string {
 	if registry == nil {
 		return "No tools enabled."
 	}
-	tools := registry.EyrieTools()
+	tools := registry.FluxTools()
 	registered := len(registry.PrimaryTools())
 	if len(tools) == 0 {
 		return "No tools enabled."
@@ -381,8 +381,8 @@ func configCommandSummary(settings rhoconfig.Settings) string {
   %s %s
   %s %s
 
-Model catalog and routing live in eyrie — rho is the UI only.`,
-		auditTint("Setup (eyrie)", textPrimary),
+Model catalog and routing live in flux — rho is the UI only.`,
+		auditTint("Setup (flux)", textPrimary),
 		auditTint("Current", textPrimary),
 		auditTint("provider:", textMuted), auditTint(providerName, infoSky),
 		auditTint("model:", textMuted), auditTint(modelName, infoSky),

@@ -106,9 +106,9 @@ func (s *Session) compact(ctx context.Context) {
 		return // nothing to compact
 	}
 
-	keep := make([]types.EyrieMessage, 0, len(raw)-(cutEnd-cutStart)+1)
+	keep := make([]types.FluxMessage, 0, len(raw)-(cutEnd-cutStart)+1)
 	keep = append(keep, raw[:cutStart]...)
-	keep = append(keep, types.EyrieMessage{
+	keep = append(keep, types.FluxMessage{
 		Role:    "user",
 		Content: "[Earlier conversation compacted to save context.]",
 	})

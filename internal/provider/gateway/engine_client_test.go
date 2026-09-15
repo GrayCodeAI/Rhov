@@ -3,7 +3,7 @@ package gateway
 import (
 	"testing"
 
-	eyrieengine "github.com/GrayCodeAI/eyrie/engine"
+	fluxengine "github.com/GrayCodeAI/flux/engine"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -11,14 +11,14 @@ func TestEngineAdapterPreservesRhoRequestOptions(t *testing.T) {
 	topP := 0.75
 	thinking := true
 	request := toEngineRequest(
-		[]types.EyrieMessage{{
+		[]types.FluxMessage{{
 			Role:         "user",
 			Content:      "inspect",
 			ContentParts: []types.ContentPart{{Type: "image_url", ImageURL: &types.ImageURLPart{URL: "data:image/png;base64,abc"}}},
 		}},
 		types.ChatOptions{
 			Provider: "openrouter", Model: "openrouter/auto", MaxTokens: 2048,
-			Tools:  []types.EyrieTool{{Name: "read_file", Description: "read", Parameters: map[string]interface{}{"type": "object"}}},
+			Tools:  []types.FluxTool{{Name: "read_file", Description: "read", Parameters: map[string]interface{}{"type": "object"}}},
 			System: "system", EnableCaching: true, ReasoningEffort: "high",
 			GLMThinkingEnabled: &thinking, TopP: &topP, ServiceTier: "priority",
 			MetadataUserID: "rho-user-1",
@@ -63,29 +63,29 @@ func TestEngineAdapterOnlyRequiresGLMReasoningWhenEnabled(t *testing.T) {
 
 func TestEngineAdapterNormalizesEventsForRhoLoop(t *testing.T) {
 	tests := []struct {
-		in       eyrieengine.Event
+		in       fluxengine.Event
 		wantType string
 		emit     bool
 		provider string
 		model    string
 	}{
 		{
-			in: eyrieengine.Event{Type: eyrieengine.EventRouteSelected, Route: &eyrieengine.Route{
+			in: fluxengine.Event{Type: fluxengine.EventRouteSelected, Route: &fluxengine.Route{
 				Provider: "openai", Model: "openai/gpt-5", DeploymentRouting: true,
 			}},
 			wantType: "route_selected", emit: true, provider: "openai", model: "openai/gpt-5",
 		},
 		{
-			in: eyrieengine.Event{Type: eyrieengine.EventRouteChanged, Route: &eyrieengine.Route{
+			in: fluxengine.Event{Type: fluxengine.EventRouteChanged, Route: &fluxengine.Route{
 				Provider: "anthropic", Model: "anthropic/claude-sonnet-4-6", DeploymentRouting: true,
 			}},
 			wantType: "route_changed", emit: true, provider: "anthropic", model: "anthropic/claude-sonnet-4-6",
 		},
-		{in: eyrieengine.Event{Type: eyrieengine.EventContentDelta, Content: "x"}, wantType: "content", emit: true},
-		{in: eyrieengine.Event{Type: eyrieengine.EventThinkingDelta}, wantType: "thinking", emit: true},
-		{in: eyrieengine.Event{Type: eyrieengine.EventToolCallDone, ToolCall: &eyrieengine.ToolCall{Name: "read"}}, wantType: "tool_call", emit: true},
-		{in: eyrieengine.Event{Type: eyrieengine.EventUsage, Usage: &eyrieengine.Usage{TotalTokens: 8}}, wantType: "usage", emit: true},
-		{in: eyrieengine.Event{Type: eyrieengine.EventDone, StopReason: "end_turn", Usage: &eyrieengine.Usage{PromptTokens: 5, CompletionTokens: 3, TotalTokens: 8}}, wantType: "done", emit: true},
+		{in: fluxengine.Event{Type: fluxengine.EventContentDelta, Content: "x"}, wantType: "content", emit: true},
+		{in: fluxengine.Event{Type: fluxengine.EventThinkingDelta}, wantType: "thinking", emit: true},
+		{in: fluxengine.Event{Type: fluxengine.EventToolCallDone, ToolCall: &fluxengine.ToolCall{Name: "read"}}, wantType: "tool_call", emit: true},
+		{in: fluxengine.Event{Type: fluxengine.EventUsage, Usage: &fluxengine.Usage{TotalTokens: 8}}, wantType: "usage", emit: true},
+		{in: fluxengine.Event{Type: fluxengine.EventDone, StopReason: "end_turn", Usage: &fluxengine.Usage{PromptTokens: 5, CompletionTokens: 3, TotalTokens: 8}}, wantType: "done", emit: true},
 	}
 	for _, tt := range tests {
 		got, emit := fromEngineEvent(tt.in)
@@ -95,16 +95,16 @@ func TestEngineAdapterNormalizesEventsForRhoLoop(t *testing.T) {
 		if tt.provider != "" && (got.Route == nil || got.Route.Provider != tt.provider || got.Route.Model != tt.model || !got.Route.DeploymentRouting) {
 			t.Fatalf("event %q lost resolved route: %+v", tt.in.Type, got.Route)
 		}
-		if tt.in.Type == eyrieengine.EventDone && (got.Usage == nil || got.Usage.PromptTokens != 5 || got.Usage.CompletionTokens != 3 || got.Usage.TotalTokens != 8) {
+		if tt.in.Type == fluxengine.EventDone && (got.Usage == nil || got.Usage.PromptTokens != 5 || got.Usage.CompletionTokens != 3 || got.Usage.TotalTokens != 8) {
 			t.Fatalf("terminal usage lost: %+v", got.Usage)
 		}
 	}
 }
 
 func TestEngineAdapterPreservesResolvedRouteInBlockingResponse(t *testing.T) {
-	got := fromEngineResponse(&eyrieengine.GenerateResponse{
+	got := fromEngineResponse(&fluxengine.GenerateResponse{
 		Content: "ok",
-		Route: &eyrieengine.Route{
+		Route: &fluxengine.Route{
 			Provider: "openai", Model: "openai/gpt-5", DeploymentRouting: true,
 		},
 	})

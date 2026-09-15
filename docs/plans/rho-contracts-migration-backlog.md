@@ -39,7 +39,7 @@ These items are already completed in the current workspace.
   cmd/session restore paths
 - replaced the provider-owned message alias with a Rho-owned runtime DTO
 - added explicit Rho-owned runtime DTOs; the final boundary translates them
-  through `eyrie/engine`
+  through `flux/engine`
 
 ### Event contract migration
 - added `eagle/events`
@@ -56,14 +56,14 @@ These items are already completed in the current workspace.
 ### Governance
 - added `check-shared-types-imports.sh`
 - added `check-ecosystem-boundaries.sh`
-- added `check-eyrie-client-imports.sh`
+- added `check-flux-client-imports.sh`
 - wired both guards into `Makefile` and CI
-- wired the Eyrie engine-boundary guards into `Makefile` and CI
+- wired the Flux engine-boundary guards into `Makefile` and CI
 - added a legacy import guard so the removed `shared/types` path cannot return
 - extended the ecosystem boundary guard to scan sibling engine repos when present locally
 - updated docs across Rho, kestrel, merlin, and external workspace copies
 - added standalone boundary guards in `kestrel` and `merlin`
-- added standalone boundary guards in `shrike`, `eyrie`, `harrier`, and `swift`
+- added standalone boundary guards in `shrike`, `flux`, `harrier`, and `swift`
 - updated support repo READMEs with ecosystem boundary rules
 
 ### Review and verification contract migration
@@ -96,21 +96,21 @@ Local state:
 Still external:
 - confirm released module versions used by Rho match the merged contract changes
 
-### 3. Remove Rho production dependency on lower Eyrie packages
+### 3. Remove Rho production dependency on lower Flux packages
 Current state:
 - session persistence uses neutral tool contracts
-- Rho now owns the runtime message DTO in `internal/types.EyrieMessage`
+- Rho now owns the runtime message DTO in `internal/types.FluxMessage`
 - Rho now owns runtime tool call/result DTOs in `internal/types`
 - Rho now owns runtime response/usage/stream DTOs in `internal/types`
 - Rho now owns runtime chat options, response format, tool choice, continuation config, and tool definition DTOs in `internal/types`
 - Rho now owns the transport-provider seam in `internal/types.ChatProvider`
 - Rho session, review, setup, catalog, diagnostics, and custom-provider paths
-  now enter through `eyrie/engine`
-- production imports of every lower Eyrie package are zero
+  now enter through `flux/engine`
+- production imports of every lower Flux package are zero
 - cmd/session restore paths now go through centralized `session.ToRuntimeMessages` and `session.FromRuntimeMessages`
 
 Decision:
-- completed: Rho owns the product DTO/port seam and Eyrie owns the engine,
+- completed: Rho owns the product DTO/port seam and Flux owns the engine,
   provider, credential, catalog, routing, resilience, and normalization layers
 - keep the zero-exception boundary enforced; lower packages are test-fixture-only
 
@@ -178,7 +178,7 @@ Do not do these without a separate decision:
 - completed: moved provider/config interfaces behind Rho-owned transport adapters
 
 ### PR 3
-- completed: removed all lower-level Eyrie imports from Rho production code and
+- completed: removed all lower-level Flux imports from Rho production code and
   replaced the compatibility allowlist with a zero-exception guard
 
 ### PR 4

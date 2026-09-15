@@ -48,14 +48,14 @@ flowchart TB
 
   subgraph Local[Local-first runtime]
     User[CLI / daemon user] --> Rho[Rho composition root]
-    Rho --> Eyrie[Eyrie facade]
+    Rho --> Flux[Flux facade]
     Rho --> Harrier[Harrier / Harrier facade]
     Rho --> Shrike[Shrike / Shrike facade]
     Rho --> Swift[Swift / Swift facade]
     Rho --> Kestrel[Kestrel / Kestrel facade]
     Rho --> Merlin[Merlin / Merlin facade]
     Rho --> Eagle[Eagle neutral contracts]
-    Eyrie --> Eagle
+    Flux --> Eagle
     Harrier --> Eagle
     Shrike --> Eagle
     Swift --> Eagle
@@ -88,7 +88,7 @@ flowchart TB
 | Boundary | Owner | Rule |
 |---|---|---|
 | Product orchestration | Rho | Engines never orchestrate Rho or one another. |
-| Provider runtime | Eyrie | Rho imports its supported `engine` facade. |
+| Provider runtime | Flux | Rho imports its supported `engine` facade. |
 | Shared data contracts | Eagle | Neutral types only; no product behavior. |
 | Portable local graph | Source engine/Rho | Emit bounded `rho.graph/v1` facts without raw secrets or prompts. |
 | Daemon HTTP API | Rho | `rho/api/openapi.yaml` is authoritative. |
@@ -101,7 +101,7 @@ flowchart TB
 ## Repository identity
 
 Repository directories are repository and Go module identities. Product names
-remain the user-facing labels. In particular, `eyrie` is Eyrie. Scripts and CI
+remain the user-facing labels. In particular, `flux` is Flux. Scripts and CI
 must use `directory`/`github_repo`; UI copy may use `product_name`.
 
 ## Contract and event flow
@@ -136,15 +136,15 @@ must use `directory`/`github_repo`; UI copy may use `product_name`.
 
 ### Coordinated Go publication gate
 
-The compatible Eagle-migrated Eyrie source is currently ahead of Eyrie's
-published `origin/main`. Do not merge or release Rho against the older Eyrie
+The compatible Eagle-migrated Flux source is currently ahead of Flux's
+published `origin/main`. Do not merge or release Rho against the older Flux
 pseudo-version: it still exposes the retired `rho-core-contracts` types and is
 not type-compatible with Rho's Eagle boundary.
 
-1. Merge and publish the Eyrie ecosystem-wiring branch first.
+1. Merge and publish the Flux ecosystem-wiring branch first.
 2. Resolve that final remote commit to its canonical Go pseudo-version with
-   `go list -m github.com/GrayCodeAI/eyrie@<commit>`.
-3. Update Rho's Eyrie requirement, run `GOWORK=off go mod tidy`, and remove any
+   `go list -m github.com/GrayCodeAI/flux@<commit>`.
+3. Update Rho's Flux requirement, run `GOWORK=off go mod tidy`, and remove any
    transition excludes no longer required by the published engine graphs.
 4. Require Rho's `public-modules` and `release-parity` CI jobs to pass before
    merging or tagging Rho.

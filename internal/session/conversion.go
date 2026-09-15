@@ -3,7 +3,7 @@ package session
 import "github.com/GrayCodeAI/rho/internal/types"
 
 // FromRuntimeMessages converts Rho runtime messages into persisted session messages.
-func FromRuntimeMessages(in []types.EyrieMessage) []Message {
+func FromRuntimeMessages(in []types.FluxMessage) []Message {
 	if len(in) == 0 {
 		return nil
 	}
@@ -34,13 +34,13 @@ func FromRuntimeToolResults(in []types.ToolResult) []ToolResult {
 }
 
 // ToRuntimeMessages converts persisted session messages back into Rho runtime messages.
-func ToRuntimeMessages(in []Message) []types.EyrieMessage {
+func ToRuntimeMessages(in []Message) []types.FluxMessage {
 	if len(in) == 0 {
 		return nil
 	}
-	out := make([]types.EyrieMessage, len(in))
+	out := make([]types.FluxMessage, len(in))
 	for i, msg := range in {
-		out[i] = types.EyrieMessage{
+		out[i] = types.FluxMessage{
 			Role:         msg.Role,
 			Content:      msg.Content,
 			Thinking:     msg.Thinking,

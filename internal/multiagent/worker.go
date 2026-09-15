@@ -103,7 +103,7 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 		defer func() { _ = writer.Close() }()
 
 		// Persist the initial user prompt.
-		_ = writer.Write(types.EyrieMessage{Role: "user", Content: workerPrompt})
+		_ = writer.Write(types.FluxMessage{Role: "user", Content: workerPrompt})
 		sess.AddUser(workerPrompt)
 
 		events, err := sess.Stream(ctx)
@@ -117,9 +117,9 @@ func EngineWorker(provider, model, systemPrompt string) WorkerFunc {
 			switch ev.Type {
 			case "content":
 				response.WriteString(ev.Content)
-				_ = writer.Write(types.EyrieMessage{Role: "assistant", Content: ev.Content})
+				_ = writer.Write(types.FluxMessage{Role: "assistant", Content: ev.Content})
 			case "tool_use":
-				_ = writer.Write(types.EyrieMessage{
+				_ = writer.Write(types.FluxMessage{
 					Role: "assistant", Content: "",
 					ToolUse: []types.ToolCall{{Name: ev.ToolName, ID: ev.ToolID}},
 				})
@@ -166,7 +166,7 @@ func checkExistingTranscript(path string) *Handoff {
 // incompleteTranscriptMessages returns the messages from an incomplete
 // transcript (one without a completion marker). Returns false if the transcript
 // is missing or complete.
-func incompleteTranscriptMessages(path string) ([]types.EyrieMessage, bool) {
+func incompleteTranscriptMessages(path string) ([]types.FluxMessage, bool) {
 	exists, complete, err := IsTranscriptComplete(path)
 	if err != nil || !exists || complete {
 		return nil, false

@@ -1,7 +1,7 @@
 # GrayCode Ecosystem Architecture
 
 > **Historical.** This document describes the pre-2026-09 multi-engine
-> ecosystem. Rho now depends only on `eyrie` and embeds its own token engine;
+> ecosystem. Rho now depends only on `flux` and embeds its own token engine;
 > the harrier, kestrel, merlin, shrike, and swift integrations have been
 > removed. Kept for record.
 
@@ -16,7 +16,7 @@ repository, product, or runtime module.
 | `rho` | Main CLI, daemon, orchestration, policy, and public API | Main product and integration root |
 | `eagle` | Neutral cross-repository contracts | Go dependency of Rho and selected engines |
 | `falcon` | Shared MCP transport and handler scaffolding | Go dependency of MCP-serving engines |
-| `eyrie` | Provider credentials, catalog, routing, transport, streaming | Rho consumes `eyrie/engine` |
+| `flux` | Provider credentials, catalog, routing, transport, streaming | Rho consumes `flux/engine` |
 | `harrier` | Harrier memory and retrieval engine | Rho integration |
 | `shrike` | Shrike token budgeting and context compression | Rho integration |
 | `swift` | Swift provenance and replay engine | Rho consumes `swift/cli` |
@@ -37,7 +37,7 @@ Shrike, `swift` is Swift, `kestrel` is Kestrel, and `merlin` is Merlin.
 ```text
 sparrow / robin / wren ── HTTP/OpenAPI ──> rho <── skill surface ── starling
                                              │
-                                             ├── eyrie/engine
+                                             ├── flux/engine
                                              ├── harrier       (Harrier)
                                              ├── shrike        (Shrike)
                                              ├── swift/cli     (Swift)
@@ -83,7 +83,7 @@ use published module versions with `GOWORK=off`.
 ## Current versus proposed
 
 The proposed repository shape is already present locally. Remaining work is
-release and boundary refinement: publish the Eagle-compatible Eyrie revision,
+release and boundary refinement: publish the Eagle-compatible Flux revision,
 remove its transitional legacy contract dependency from the standalone graph,
 and decide whether Rho's graph/projection integrations should be hidden behind
 engine-owned facades.

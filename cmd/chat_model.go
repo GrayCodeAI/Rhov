@@ -249,7 +249,7 @@ type chatModel struct {
 	configNotice               string
 	configEntry                string              // configEntryNone, configEntryAPIKeyPaste, configEntryOllamaURL
 	configProvider             string              // e.g. configProviderOllama while entry overlay is open
-	configModelOptions         []configModelOption // labels + ids from eyrie catalog
+	configModelOptions         []configModelOption // labels + ids from flux catalog
 	configModelProvider        string              // filter models after API key paste
 	configModelSearch          string              // active model filter query
 	configModelSearchActive    bool                // typing into model search input

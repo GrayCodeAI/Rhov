@@ -40,19 +40,19 @@ func TestWorkModePlanFiltersToolsAndBash(t *testing.T) {
 	}
 }
 
-func TestLazyEyrieToolsAndPromote(t *testing.T) {
+func TestLazyFluxToolsAndPromote(t *testing.T) {
 	reg := tool.NewRegistry(tool.FileReadTool{}, tool.ImpactTool{})
 	reg.EnableLazyModelSurface([]string{"Read"})
-	eyrie := reg.EyrieTools()
-	if len(eyrie) != 1 || eyrie[0].Name != "Read" {
-		t.Fatalf("EyrieTools = %#v, want only Read", eyrie)
+	flux := reg.FluxTools()
+	if len(flux) != 1 || flux[0].Name != "Read" {
+		t.Fatalf("FluxTools = %#v, want only Read", flux)
 	}
 	if !reg.PromoteModelTool("Impact") {
 		t.Fatal("promote Impact failed")
 	}
-	eyrie = reg.EyrieTools()
-	if len(eyrie) != 2 {
-		t.Fatalf("after promote EyrieTools len = %d", len(eyrie))
+	flux = reg.FluxTools()
+	if len(flux) != 2 {
+		t.Fatalf("after promote FluxTools len = %d", len(flux))
 	}
 }
 

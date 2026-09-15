@@ -124,7 +124,7 @@ func (s *Session) buildTurnOptions(tc turnContext) types.ChatOptions {
 			s.Tools().Registry().PromoteForIntent(lastUserMsg)
 		}
 		if !smallTalk {
-			opts.Tools = s.Tools().Registry().EyrieTools()
+			opts.Tools = s.Tools().Registry().FluxTools()
 		}
 	}
 	return opts
@@ -291,7 +291,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 				// Cache hit: short-circuit the LLM call
 				if preResult.CacheHit && preResult.CachedResponse != "" {
 					emit(StreamEvent{Type: "content", Content: preResult.CachedResponse})
-					s.Persistence().AppendAssistantJournaled(types.EyrieMessage{Role: "assistant", Content: preResult.CachedResponse})
+					s.Persistence().AppendAssistantJournaled(types.FluxMessage{Role: "assistant", Content: preResult.CachedResponse})
 					emit(StreamEvent{Type: "done"})
 					return
 				}
@@ -451,7 +451,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		// rate limit, retry, and emergency compact internally; the
 		// api.requests counter is incremented inside ChatService.Stream.
 		// Rho records product-level latency; provider health and circuit
-		// breaking are owned by Eyrie's routed transport.
+		// breaking are owned by Flux's routed transport.
 		apiStart := time.Now()
 		managesResilience := clientManagesResilience(s.ChatLLM().Client())
 		result, err := s.ChatLLM().Stream(ctx, s.Persistence().RawMessages(), opts)
@@ -474,13 +474,13 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		var textContent strings.Builder
 		var toolCalls []types.ToolCall
 		var stopReason string
-		var lastUsage *types.EyrieUsage
+		var lastUsage *types.FluxUsage
 		var usageLedger streamUsageLedger
 		resolvedProvider := strings.TrimSpace(s.ChatLLM().Provider())
 		resolvedModel := strings.TrimSpace(activeModel)
 
 		// Compatibility clients retain Rho's historical stream retry and
-		// reasoning-only recovery. Eyrie facade clients already normalize and
+		// reasoning-only recovery. Flux facade clients already normalize and
 		// recover provider streams, so Rho must consume their result exactly once.
 		const maxStreamRetries = 2
 		var streamErr error
@@ -663,7 +663,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			completionEst := estimateStreamCompletionTokens(textContent.String(), toolCalls)
 			if inputTokens > 0 || completionEst > 0 {
 				s.recordStreamUsage(ch, inputTokens, completionEst, resolvedProvider, resolvedModel, taskType, apiStart)
-				lastUsage = &types.EyrieUsage{
+				lastUsage = &types.FluxUsage{
 					PromptTokens:     inputTokens,
 					CompletionTokens: completionEst,
 				}
@@ -682,7 +682,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			if j := s.Persistence().Journal(); j != nil {
 				j.AppendRequestContext(resolvedProvider, resolvedModel, s.ContextWindowSize())
 			}
-			s.recordEyrieOperationObservation(
+			s.recordFluxOperationObservation(
 				resolvedProvider,
 				resolvedModel,
 				stopReason,
@@ -744,14 +744,14 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			oteltrace.EndSpanWithError(loopSpan, nil)
 		}
 
-		// Compatibility-only max_tokens recovery. Eyrie's engine facade owns
+		// Compatibility-only max_tokens recovery. Flux's engine facade owns
 		// continuation and exposes one normalized stream to Rho. Legacy clients
 		// retain the historical synthetic turn so injected integrations do not
 		// change behavior while they migrate to the facade.
 		if !managesResilience && stopReason == "max_tokens" && len(toolCalls) == 0 && recoveryCount < maxRecoveryRetries {
 			recoveryCount++
-			s.Persistence().AppendAssistantJournaled(types.EyrieMessage{Role: "assistant", Content: textContent.String()})
-			s.Persistence().AppendUserJournaled(types.EyrieMessage{Role: "user", Content: "Continue from where you left off."})
+			s.Persistence().AppendAssistantJournaled(types.FluxMessage{Role: "assistant", Content: textContent.String()})
+			s.Persistence().AppendUserJournaled(types.FluxMessage{Role: "user", Content: "Continue from where you left off."})
 			continue
 		}
 
@@ -774,7 +774,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 				}
 			}
 			if textContent.Len() > 0 {
-				s.Persistence().AppendAssistantJournaled(types.EyrieMessage{Role: "assistant", Content: textContent.String()})
+				s.Persistence().AppendAssistantJournaled(types.FluxMessage{Role: "assistant", Content: textContent.String()})
 				// Auto-remember corrections and learnings. Best-effort
 				// fire-and-forget, bounded so a hung backend cannot leak.
 				if s.MemorySvc().Memory() != nil && shouldRemember(textContent.String()) {
@@ -931,7 +931,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		if assistContent == "" && len(toolCalls) > 0 {
 			assistContent = " " // non-empty to satisfy APIs that reject empty content
 		}
-		s.Persistence().AppendAssistantJournaled(types.EyrieMessage{
+		s.Persistence().AppendAssistantJournaled(types.FluxMessage{
 			Role:    "assistant",
 			Content: assistContent,
 			ToolUse: toolCalls,
@@ -948,7 +948,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 			// Network-facing tool output is untrusted: wrap it with an explicit
 			// boundary so prompt-injection text is treated as data.
 			resultContent = wrapExternalToolResult(r.tc.Name, resultContent)
-			msg := types.EyrieMessage{
+			msg := types.FluxMessage{
 				Role:    "user",
 				Content: resultContent,
 				ToolResults: []types.ToolResult{{
@@ -970,7 +970,7 @@ func (s *Session) agentLoop(ctx context.Context, ch chan<- StreamEvent) {
 		steerCount := 0
 		if s.Persistence().Steering() != nil && s.Persistence().Steering().HasPending() {
 			for _, steer := range s.Persistence().Steering().Drain() {
-				s.Persistence().AppendUserJournaled(types.EyrieMessage{
+				s.Persistence().AppendUserJournaled(types.FluxMessage{
 					Role:    "user",
 					Content: "[User guidance during execution]: " + steer.Content,
 				})
@@ -1084,7 +1084,7 @@ var smallTalkPhrases = []string{
 // executed a tool. Once tools are in play, later turns keep the full prompt
 // and tool surface even if they read like small talk ("thanks"), so the
 // follow-up context is not lost.
-func sessionHasToolUse(msgs []types.EyrieMessage) bool {
+func sessionHasToolUse(msgs []types.FluxMessage) bool {
 	for _, m := range msgs {
 		if len(m.ToolResults) > 0 {
 			return true

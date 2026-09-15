@@ -121,7 +121,7 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	// Resolve the provider through Rho's Eyrie engine boundary.
+	// Resolve the provider through Rho's Flux engine boundary.
 	ctx := context.Background()
 	selection := rhoconfig.EffectiveSelection(ctx, rhoconfig.SelectionOptions{
 		ProviderOverride: strings.TrimSpace(provider),
@@ -169,7 +169,7 @@ func runReviewRun(_ *cobra.Command, args []string) error {
 		model = reviewRunModel
 	}
 	chatFn := func(chatCtx context.Context, prompt string) (string, error) {
-		resp, chatErr := chatProvider.Chat(chatCtx, []types.EyrieMessage{{Role: "user", Content: prompt}}, types.ChatOptions{
+		resp, chatErr := chatProvider.Chat(chatCtx, []types.FluxMessage{{Role: "user", Content: prompt}}, types.ChatOptions{
 			Provider: providerID,
 			Model:    model,
 		})

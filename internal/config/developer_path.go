@@ -155,7 +155,7 @@ func EvaluateDeveloperPath(ctx context.Context) DeveloperPathReport {
 	pre := EnginePreflightReport(ctx)
 	if pre.Ready {
 		checks = append(checks, PathCheck{
-			Section: "Ecosystem", Name: "eyrie", Status: PathPass,
+			Section: "Ecosystem", Name: "flux", Status: PathPass,
 			Detail:   "Preflight ready to chat",
 			Blocking: true,
 		})
@@ -168,7 +168,7 @@ func EvaluateDeveloperPath(ctx context.Context) DeveloperPathReport {
 			}
 		}
 		checks = append(checks, PathCheck{
-			Section: "Ecosystem", Name: "eyrie", Status: status,
+			Section: "Ecosystem", Name: "flux", Status: status,
 			Detail:   "Preflight not ready — see rho preflight",
 			FixHint:  "Complete /config (credentials + model)",
 			Blocking: true,
@@ -232,7 +232,7 @@ func pathStatusColor(s PathCheckStatus) color.Color {
 func FormatDeveloperPathReport(ctx context.Context) string {
 	r := EvaluateDeveloperPath(ctx)
 	var b strings.Builder
-	b.WriteString(theme.Tint("Developer path (rho · eyrie · token engine)", theme.ReportInfo) + "\n\n")
+	b.WriteString(theme.Tint("Developer path (rho · flux · token engine)", theme.ReportInfo) + "\n\n")
 
 	status := "NEEDS SETUP"
 	statusColor := theme.ReportWarn

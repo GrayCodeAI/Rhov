@@ -215,19 +215,19 @@ func TestDrainAlertsSurfacesHourlyWarning(t *testing.T) {
 	}
 }
 
-func TestEyrieOperationObservationIsPrivacySafe(t *testing.T) {
+func TestFluxOperationObservationIsPrivacySafe(t *testing.T) {
 	t.Setenv("RHO_STATE_DIR", t.TempDir())
 	sess := NewSession("test", "test", "system", tool.NewRegistry())
-	sess.SetPersistID("eyrie-runtime-session")
-	sess.recordEyrieOperationObservation(
+	sess.SetPersistID("flux-runtime-session")
+	sess.recordFluxOperationObservation(
 		"private-provider",
 		"private/model",
 		"stop",
 		"private generated content",
 		2,
-		&types.EyrieUsage{PromptTokens: 100, CompletionTokens: 20, TotalTokens: 120},
+		&types.FluxUsage{PromptTokens: 100, CompletionTokens: 20, TotalTokens: 120},
 	)
-	entries, err := graphjournal.Load("eyrie-runtime-session")
+	entries, err := graphjournal.Load("flux-runtime-session")
 	if err != nil {
 		t.Fatalf("graphjournal.Load() error = %v", err)
 	}
@@ -240,7 +240,7 @@ func TestEyrieOperationObservationIsPrivacySafe(t *testing.T) {
 	}
 	for _, secret := range []string{"private-provider", "private/model", "private generated content"} {
 		if strings.Contains(string(payload), secret) {
-			t.Fatalf("Eyrie graph observation leaked %q", secret)
+			t.Fatalf("Flux graph observation leaked %q", secret)
 		}
 	}
 }

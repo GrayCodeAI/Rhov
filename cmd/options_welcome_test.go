@@ -18,7 +18,7 @@ func isolateCredentialHome(t *testing.T) {
 	_ = os.MkdirAll(rhoDir, 0o700)
 	t.Setenv("HOME", home)
 	t.Setenv("RHO_CONFIG_DIR", rhoDir)
-	t.Setenv("EYRIE_CONFIG_DIR", filepath.Join(home, "eyrie"))
+	t.Setenv("FLUX_CONFIG_DIR", filepath.Join(home, "flux"))
 }
 
 func TestEffectiveModelAndProvider_ClearsWithoutCredentials(t *testing.T) {

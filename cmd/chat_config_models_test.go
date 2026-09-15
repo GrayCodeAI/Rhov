@@ -45,7 +45,7 @@ func TestModelOptionIsActive(t *testing.T) {
 }
 
 func TestConfigModelOptionsCarryResolvedEngineIdentity(t *testing.T) {
-	opts := configModelOptionsFromEyrie([]rhoconfig.EngineModel{{
+	opts := configModelOptionsFromFlux([]rhoconfig.EngineModel{{
 		ID: "models/gemini-pro", CanonicalID: "google/gemini-pro",
 		ProviderID: "google", GatewayID: "gemini", Capabilities: []string{"tools", "vision"},
 	}})

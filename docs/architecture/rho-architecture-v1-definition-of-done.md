@@ -36,7 +36,7 @@ Status note:
 
 - [x] no support repo imports `rho/internal/*`
 - [x] no SDK/skills repo references support engines as primary dependencies
-- [x] Rho production code imports Eyrie only through `eyrie/engine`
+- [x] Rho production code imports Flux only through `flux/engine`
 - [x] Rho's graph/projection imports are documented as explicit integration
       surfaces and do not create engine-to-engine dependencies
 
@@ -55,18 +55,18 @@ Adoption bar:
 
 - [x] `kestrel` and `merlin` import contracts for shared severity/findings and expose boundary adapters
 - [x] `shrike/types` compatibility shim removed from the local ecosystem
-- [x] `eyrie`, `harrier`, and `swift` remain contract-free unless they gain a true cross-repo type
+- [x] `flux`, `harrier`, and `swift` remain contract-free unless they gain a true cross-repo type
 
 ### Rho integration seams
 
 - [x] session persistence uses `eagle/tools`, not lower-level provider tool types
 - [x] review persistence and merlin/review bridge paths use neutral `review` / `verify` contracts
-- [x] Rho owns runtime DTOs in `internal/types` and translates them to `eyrie/engine` in `internal/engine`
+- [x] Rho owns runtime DTOs in `internal/types` and translates them to `flux/engine` in `internal/engine`
 - [x] `rho swift ...` remains a Rho-mounted subcommand, not a competing product surface
 
 ### Enforcement
 
-- [x] Rho CI runs ecosystem, eyrie-client, and peer-coupling guards
+- [x] Rho CI runs ecosystem, flux-client, and peer-coupling guards
 - [x] each support repo runs `check-ecosystem-boundaries.sh` in CI
 - [x] Go SDK runs consumer boundary guard in CI
 - [x] Python SDK and community skills run consumer boundary guards in CI
@@ -110,7 +110,7 @@ Remove compatibility shims only when:
 From `rho`:
 
 ```bash
-make ecosystem-guard eyrie-client-guard eyrie-engine-guard peer-guard
+make ecosystem-guard flux-client-guard flux-engine-guard peer-guard
 go test ./internal/testaudit/... -count=1
 go test ./... -count=1
 ```

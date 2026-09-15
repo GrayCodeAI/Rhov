@@ -1,7 +1,7 @@
 # Rho Review and Verify Lifecycle
 
 > **Historical.** This document describes the pre-2026-09 multi-engine
-> ecosystem. Rho now depends only on `eyrie` and embeds its own token engine;
+> ecosystem. Rho now depends only on `flux` and embeds its own token engine;
 > the harrier, kestrel, merlin, shrike, and swift integrations have been
 > removed. Kept for record.
 

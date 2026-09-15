@@ -54,7 +54,7 @@ func doctorReport(settings rhoconfig.Settings) string {
 	// Ecosystem versions
 	b.WriteString("\nEcosystem versions:\n")
 	for _, component := range []struct{ directory, product string }{
-		{directory: "eyrie", product: "Eyrie"},
+		{directory: "flux", product: "Flux"},
 	} {
 		versionFile := filepath.Join(filepath.Dir(cwd), component.directory, "VERSION")
 		// #nosec G304 -- versionFile is built from a fixed sibling-repo list

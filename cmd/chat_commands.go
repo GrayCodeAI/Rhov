@@ -256,7 +256,7 @@ var slashDescriptions = map[string]string{
 	"/version":               "Show rho version",
 	"/vim":                   "Toggle vim mode",
 	"/welcome":               "Re-print the welcome header",
-	"/ecosystem":             "Show eyrie and token-engine integration status",
+	"/ecosystem":             "Show flux and token-engine integration status",
 	"/path":                  "Developer path readiness (setup, security)",
 	"/cron":                  "Show scheduled jobs",
 	"/keybindings":           "Show keyboard shortcuts",

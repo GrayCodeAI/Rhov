@@ -268,24 +268,24 @@ func TestIsSensitivePath_RhoConfigDir(t *testing.T) {
 	}
 }
 
-func TestIsSensitivePath_EyrieConfigDir(t *testing.T) {
+func TestIsSensitivePath_FluxConfigDir(t *testing.T) {
 	rhoDir := filepath.Join(t.TempDir(), "rho")
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
+	fluxDir := filepath.Join(t.TempDir(), "flux")
 	t.Setenv("RHO_CONFIG_DIR", rhoDir)
-	t.Setenv("EYRIE_CONFIG_DIR", eyrieDir)
+	t.Setenv("FLUX_CONFIG_DIR", fluxDir)
 
-	if reason := IsSensitivePath(filepath.Join(eyrieDir, "provider.json")); reason == "" {
-		t.Fatal("expected EYRIE_CONFIG_DIR/provider.json to be blocked")
+	if reason := IsSensitivePath(filepath.Join(fluxDir, "provider.json")); reason == "" {
+		t.Fatal("expected FLUX_CONFIG_DIR/provider.json to be blocked")
 	}
 	if reason := IsSensitivePath(filepath.Join(rhoDir, "settings.json")); reason != "" {
 		t.Fatalf("expected Rho settings path to remain allowed, got %q", reason)
 	}
 }
 
-func TestFileToolsBlockEyrieProviderConfig(t *testing.T) {
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
-	t.Setenv("EYRIE_CONFIG_DIR", eyrieDir)
-	providerPath := filepath.Join(eyrieDir, "provider.json")
+func TestFileToolsBlockFluxProviderConfig(t *testing.T) {
+	fluxDir := filepath.Join(t.TempDir(), "flux")
+	t.Setenv("FLUX_CONFIG_DIR", fluxDir)
+	providerPath := filepath.Join(fluxDir, "provider.json")
 
 	readInput, _ := json.Marshal(map[string]string{"path": providerPath})
 	editInput, _ := json.Marshal(map[string]string{
@@ -341,12 +341,12 @@ func TestIsSensitivePath_RhoConfigDirEnv(t *testing.T) {
 // symlinks before opening (M13): reading through a symlink that points at a
 // sensitive target is blocked, while a symlink to an ordinary file works.
 func TestFileRead_BlocksSymlinkToSensitiveFile(t *testing.T) {
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie")
-	if err := os.MkdirAll(eyrieDir, 0o755); err != nil {
+	fluxDir := filepath.Join(t.TempDir(), "flux")
+	if err := os.MkdirAll(fluxDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("EYRIE_CONFIG_DIR", eyrieDir)
-	providerPath := filepath.Join(eyrieDir, "provider.json")
+	t.Setenv("FLUX_CONFIG_DIR", fluxDir)
+	providerPath := filepath.Join(fluxDir, "provider.json")
 	if err := os.WriteFile(providerPath, []byte(`{"key":"x"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -861,17 +861,17 @@ func TestCommandReferencesSensitivePath(t *testing.T) {
 	}
 }
 
-func TestCommandReferencesSensitivePath_EyrieConfigDir(t *testing.T) {
-	eyrieDir := filepath.Join(t.TempDir(), "eyrie config with spaces")
-	t.Setenv("EYRIE_CONFIG_DIR", eyrieDir)
+func TestCommandReferencesSensitivePath_FluxConfigDir(t *testing.T) {
+	fluxDir := filepath.Join(t.TempDir(), "flux config with spaces")
+	t.Setenv("FLUX_CONFIG_DIR", fluxDir)
 
 	commands := []string{
-		`cat "` + filepath.Join(eyrieDir, "provider.json") + `"`,
-		`cat "$EYRIE_CONFIG_DIR/provider.json"`,
-		`cat "${EYRIE_CONFIG_DIR}/provider.json"`,
-		`cat "${EYRIE_CONFIG_DIR%/}/provider.json"`,
-		`printf '%s\n' "$EYRIE_CONFIG_DIR"`,
-		"cat " + strings.ReplaceAll(filepath.Join(eyrieDir, "provider.json"), " ", `\ `),
+		`cat "` + filepath.Join(fluxDir, "provider.json") + `"`,
+		`cat "$FLUX_CONFIG_DIR/provider.json"`,
+		`cat "${FLUX_CONFIG_DIR}/provider.json"`,
+		`cat "${FLUX_CONFIG_DIR%/}/provider.json"`,
+		`printf '%s\n' "$FLUX_CONFIG_DIR"`,
+		"cat " + strings.ReplaceAll(filepath.Join(fluxDir, "provider.json"), " ", `\ `),
 	}
 	for _, command := range commands {
 		if reason := CommandReferencesSensitivePath(command); reason == "" {

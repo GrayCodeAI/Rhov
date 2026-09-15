@@ -1,7 +1,7 @@
 # GrayCode Ecosystem Roadmap (2026)
 
 **Status:** Active · **Last updated:** 2026-09-09
-**Scope:** the 4 in-workspace repos — `rho`, `eyrie`,
+**Scope:** the 4 in-workspace repos — `rho`, `flux`,
 `graycode-skills`, `graycode-platform` — plus the 5 external engine repos they
 depend on.
 **Evidence base:** `docs/RESEARCH.md`, `docs/COMPETITIVE.md`, `docs/plans/competitive-gap-*.md`
@@ -29,7 +29,7 @@ load-bearing bets:
 3. **Portable execution graph** — every agent run is exported as a verifiable,
    hash-addressed graph (provenance for replay/audit).
 4. **Router-facade-only provider access** — the CLI never talks to an LLM API
-   directly; `eyrie/engine` is the sole boundary.
+   directly; `flux/engine` is the sole boundary.
 
 The roadmap is organized around making those bets *true and honest* end-to-end,
 then extending the surface where the field (Codex, OpenCode, Gemini CLI, Goose,
@@ -56,7 +56,7 @@ dropped.
 | Repo | Role | Build | Tests | Health |
 |---|---|---|---|---|
 | `rho` | Product face (Go, Bubble Tea v2) | ✅ `go build ./...` | ✅ 179 pkgs green | Engines restored; memory/token/review/audit/correlation live |
-| `eyrie` | Provider runtime (Go) | ✅ | ✅ 37 pkgs green | Healthy; 28 providers; gRPC ChatService wired |
+| `flux` | Provider runtime (Go) | ✅ | ✅ 37 pkgs green | Healthy; 28 providers; gRPC ChatService wired |
 | `graycode-skills` | Skill marketplace (Python) | ✅ | ✅ 382/382 | Healthy; single parsed schema |
 | `graycode-platform` | Web + Cloud control plane (TS) | ✅ | ✅ 320 worker / 33 web | Healthy; worker+bff routes added; migration deduped |
 
@@ -83,7 +83,7 @@ dropped.
   `shrike: embedded · token/compress pipeline OK (sample=0 tokens)` — sample 0
   should be a red flag, not OK.
 
-### 2.2 eyrie
+### 2.2 flux
 
 - Healthy and self-contained. 28 `ProviderSpec`s, ~25 adapters, weighted/strategy
   LB, retries, semantic cache, circuit breakers, deployment router, OpenAI-compat
@@ -241,7 +241,7 @@ green with real engines. **Effort:** 4-8 weeks total across the 5 repos.
 
 - IDE integration (VS Code extension) — only after engines restored.
 - Hosted share links / multi-session grid (herdr-style) — Gap-02 follow-through.
-- Provider-count messaging: expose `eyrie` catalog count dynamically.
+- Provider-count messaging: expose `flux` catalog count dynamically.
 - OpenTelemetry/metrics consolidation across engines (per `OTEL-CONVENTIONS.md`).
 
 ---

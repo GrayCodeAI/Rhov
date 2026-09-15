@@ -1,6 +1,6 @@
 rho is an AI coding agent that reads, writes, and runs code in your terminal.
 
-It connects to 28 first-class LLM providers through eyrie, executes tools (file I/O, shell,
+It connects to 28 first-class LLM providers through flux, executes tools (file I/O, shell,
 git, web search), and manages sessions — all from a keyboard-driven TUI or
 headless mode for scripts and CI.
 
@@ -66,7 +66,7 @@ Configure:
   features    List and manage feature flags
   governance  Inspect and validate the governance policy ceiling
   mcp         Show MCP configuration; run or register rho as an MCP server
-  models      Deployment-aware model catalog (via eyrie)
+  models      Deployment-aware model catalog (via flux)
   permissions List and manage exact permission rules
   plugin      Manage plugins
   rules       Detect, import, and export AI coding rules between tool formats
@@ -80,7 +80,7 @@ Diagnose:
   bug-report  Print a redacted diagnostic report for bug reports
   cost        [Experimental] Analyze and optimize LLM API spend
   doctor      Run local diagnostics
-  ecosystem   Show eyrie and token-pipeline integration status
+  ecosystem   Show flux and token-pipeline integration status
   path        Developer path readiness (setup, security, ecosystem)
   preflight   Check local readiness; use --live to verify the selected provider
   securitylog Inspect the tamper-evident security event log
@@ -123,7 +123,7 @@ Flags:
       --max-budget-usd float               maximum estimated API spend in USD
       --max-turns int                      maximum number of agentic turns in non-interactive mode
       --mcp stringArray                    MCP server command
-  -m, --model string                       model to use (from eyrie catalog; see /models)
+  -m, --model string                       model to use (from flux catalog; see /models)
       --no-auto-catalog-refresh            disable automatic catalog refresh when cache is missing, empty, or stale
       --no-session-persistence             disable session persistence in print mode
       --output-fields string               comma-separated field whitelist for --output-format json (e.g. "result,session_id")
@@ -135,7 +135,7 @@ Flags:
   -q, --quiet                              suppress non-essential output (spinners, progress, decoration); machine-parseable output only
       --record string                      record interactive REPL output to an fxtape file (fx --record parity)
       --recover                            scan for interrupted sessions and offer to resume
-      --refresh-catalog                    refresh the eyrie model catalog before starting
+      --refresh-catalog                    refresh the flux model catalog before starting
       --repl                               start interactive REPL mode (like aider) for multi-turn conversation without TUI
       --repo-map                           inject an AST-ranked repository map (Aider-style) into the system prompt
   -r, --resume string                      resume a saved session by ID

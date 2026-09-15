@@ -93,7 +93,7 @@ func TestPersistenceService_RemoveLastExchangeAndCount(t *testing.T) {
 	t.Parallel()
 
 	ps := NewPersistenceService(nil)
-	ps.LoadMessages([]types.EyrieMessage{
+	ps.LoadMessages([]types.FluxMessage{
 		{Role: "user", Content: "u1"},
 		{Role: "assistant", Content: "a1"},
 		{Role: "user", Content: "u2"},

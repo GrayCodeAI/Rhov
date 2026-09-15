@@ -77,8 +77,8 @@ These were documented in the original plan as out-of-scope-for-this-PR. They rem
 
 ## Context
 
-A deep code review of `eyrie` and `rho` (companion plan at
-`../eyrie/docs/plans/fix-critical-and-high-review.md`) surfaced 7 critical
+A deep code review of `flux` and `rho` (companion plan at
+`../flux/docs/plans/fix-critical-and-high-review.md`) surfaced 7 critical
 and 9 high items. This plan covers **all rho items** (C3, C4, C5, H5,
 H6, H7, H8, H9) broken into a sequence of small, reviewable PRs.
 
@@ -97,7 +97,7 @@ H6, H7, H8, H9) broken into a sequence of small, reviewable PRs.
 
 ## Out of scope (deferred to next plan)
 
-- H10 from eyrie: `//nolint:errcheck` on type-assertion that can panic.
+- H10 from flux: `//nolint:errcheck` on type-assertion that can panic.
 - M1–M20 medium items.
 - L-tier quick wins (e.g. `cosmenticFlags` typo, `cmd/.rho/` leaked state).
 - `internal/intelligence/repomap/` documentation (large, separate effort).
@@ -492,10 +492,10 @@ Coverage target: maintained at 60%+ (CI gate).
 
 ## Cross-repo coordination
 
-- **eyrie PR 4 (C2 — Vertex fix)** and **rho PR 4 (H6 — Session
+- **flux PR 4 (C2 — Vertex fix)** and **rho PR 4 (H6 — Session
   decomposition)** are independent.
-- **eyrie PR 8 (H4 — EyrieError)** is a prerequisite for any future
-  rho-side `errors.As(err, &eyrieErr)` use (currently none). No
+- **flux PR 8 (H4 — FluxError)** is a prerequisite for any future
+  rho-side `errors.As(err, &fluxErr)` use (currently none). No
   ordering dependency.
 - The two repos' branches are independent and can be merged in any
   order.

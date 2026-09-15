@@ -33,7 +33,7 @@ func runSkillsCreate(_ *cobra.Command, args []string) error {
 	sess := newRhoSession(settings, provider, model, "You are a skill author.", tool.NewRegistry())
 
 	prompt := plugin.BuildNewSkillPrompt(desc)
-	resp, err := sess.Chat(context.Background(), []types.EyrieMessage{
+	resp, err := sess.Chat(context.Background(), []types.FluxMessage{
 		{Role: "user", Content: prompt},
 	}, types.ChatOptions{Model: model, MaxTokens: 4096})
 	if err != nil {

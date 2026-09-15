@@ -31,7 +31,7 @@ rho is an AI-powered coding agent that lives in your terminal. It reads your cod
 
 **Developer path:** one machine, keychain credentials, local memory. Run `rho path` to check readiness.
 
-- **Model-agnostic** — supports many first-class providers through [eyrie](https://github.com/GrayCodeAI/eyrie) (the exact count is dynamic — see `rho --help`), including Anthropic, OpenAI, Gemini, Fireworks AI, Concentrate AI (pay-as-you-go), DeepSeek, and Ollama
+- **Model-agnostic** — supports many first-class providers through [flux](https://github.com/GrayCodeAI/flux) (the exact count is dynamic — see `rho --help`), including Anthropic, OpenAI, Gemini, Fireworks AI, Concentrate AI (pay-as-you-go), DeepSeek, and Ollama
 - **Zero CGO** — single static binary, cross-compiled for linux/darwin/windows on amd64/arm64
 - **Privacy-first** — your code never leaves your machine except to the LLM API you choose
 - **Runs anywhere** — host execution on any machine with a shell, including over SSH
@@ -267,8 +267,8 @@ Features adopted from open-source agent projects. All are off by default unless 
 | Structural code match | `CodeMatch` tool | Tree-sitter query search over Go/Python/TS/TSX |
 | Composable toolsets | `rho toolset [name]` + `Toolset` tool | Named tool groups (research, dev, ops, full_stack) |
 | App verification | `AppVerify` tool | Boot-smoke check with readiness polling and evidence artifacts |
-| Media generation | `GenerateMedia` tool | Image/video generation with local persistence. Backend via `tool.SetMediaEngine`; an OpenAI-compatible client ships in `eyrie/client` (`ImageClient`), wired by the host (boundary-guarded — rho routes through the eyrie facade) |
-| Voice transcription | Telegram voice notes + `stt` package | Transcribe Telegram voice/audio into the prompt. Backend via `stt.SetTranscriber`; an OpenAI-compatible client ships in `eyrie/client` (`AudioClient`), wired by the host |
+| Media generation | `GenerateMedia` tool | Image/video generation with local persistence. Backend via `tool.SetMediaEngine`; an OpenAI-compatible client ships in `flux/client` (`ImageClient`), wired by the host (boundary-guarded — rho routes through the flux facade) |
+| Voice transcription | Telegram voice notes + `stt` package | Transcribe Telegram voice/audio into the prompt. Backend via `stt.SetTranscriber`; an OpenAI-compatible client ships in `flux/client` (`AudioClient`), wired by the host |
 | Bounded autonomous budgets | `internal/engine` (`AutonomousBudget`) | Track turns/tokens/time/continuations; report why a run stopped (budget vs gate-passed vs error) |
 | Agent family messaging | `internal/multiagent` (`FamilyMessenger`) | Direct parent/sibling/child messages with pending caps + rate limits |
 | Path reservations | `internal/multiagent` ledger | Detect overlapping-file changes between parallel branches |
@@ -327,7 +327,7 @@ rho exec --agent reviewer "review last commit" # Custom persona
 
 ```bash
 rho path                   # Developer path readiness (setup + security)
-rho doctor                  # Full health report (eyrie + token pipeline panel)
+rho doctor                  # Full health report (flux + token pipeline panel)
 rho ecosystem               # Ecosystem panel only
 rho preflight               # Quick ready-to-chat check
 make path                    # Developer path verification
@@ -336,7 +336,7 @@ make smoke                   # Build + quick verification script
 
 See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md).
 
-See [docs/ecosystem-message-flow.md](docs/ecosystem-message-flow.md) for how eyrie connects during a chat session, and [docs/ECOSYSTEM-WIRING.md](docs/ECOSYSTEM-WIRING.md) for the current-to-proposed architecture and repository boundaries.
+See [docs/ecosystem-message-flow.md](docs/ecosystem-message-flow.md) for how flux connects during a chat session, and [docs/ECOSYSTEM-WIRING.md](docs/ECOSYSTEM-WIRING.md) for the current-to-proposed architecture and repository boundaries.
 
 In the TUI: `/path`, `/ecosystem`, `/memory` (AGENTS.md).
 
@@ -379,12 +379,12 @@ rho works with any LLM provider. **Developer path:** paste keys in `/config` (st
 | Xiaomi (MiMo) Token Plan | `xiaomi_mimo_token_plan` | `XIAOMI_MIMO_TOKEN_PLAN_API_KEY` (pick region in `/config`) |
 | Ollama (local) | `ollama` | `OLLAMA_BASE_URL` (no API key) |
 
-Provider routing, model resolution, and retries are handled by [eyrie](https://github.com/GrayCodeAI/eyrie).
+Provider routing, model resolution, and retries are handled by [flux](https://github.com/GrayCodeAI/flux).
 For deployment-aware routing, set `"deployment_routing": true` in `.rho/settings.json`
 or export `RHO_DEPLOYMENT_ROUTING=true`. Rho will route canonical model IDs through
-Eyrie's deployment catalog, so new models can be exposed by refreshing the catalog
+Flux's deployment catalog, so new models can be exposed by refreshing the catalog
 instead of changing Rho. In chat, run `/refresh-model-catalog` to fetch the latest
-deployment-aware catalog into `~/.eyrie/model_catalog.json`.
+deployment-aware catalog into `~/.flux/model_catalog.json`.
 
 ## Architecture
 
@@ -420,7 +420,7 @@ rho/
 
 Ecosystem sibling repos (independent Git repos in the `graycode-eco` parent
 folder):
-├── eyrie/              # LLM provider runtime
+├── flux/              # LLM provider runtime
 ```
 
 ### Ecosystem
@@ -429,7 +429,7 @@ rho is the main CLI/product and integrates these GrayCodeAI repositories in
 three runtime layers plus optional tooling/platform services:
 
 - **Primary product:** **rho** is the only end-user product surface in this ecosystem.
-- **Provider engine mounted by Rho:** **eyrie** is the LLM provider runtime, consumed through its stable engine facade.
+- **Provider engine mounted by Rho:** **flux** is the LLM provider runtime, consumed through its stable engine facade.
 - **API consumers/extensions:** **graycode-skills** provides Rho skills
   installed on demand (`rho skills install`).
 - **Tooling/platform:** **graycode-platform** contains the optional web/BFF/Rho
@@ -437,7 +437,7 @@ three runtime layers plus optional tooling/platform services:
 
 Local development uses:
 
-- **`go.mod` modules:** pinned requirements for `eyrie`
+- **`go.mod` modules:** pinned requirements for `flux`
 - **Workspace + `go.work`:** sibling support repos are cloned in the `graycode-eco` workspace (as `../<repo>`); `go.work` resolves the module paths to those local checkouts
 - **Module-mode builds:** standalone builds resolve the pinned `go.mod` versions from the module proxy (no workspace)
 
@@ -462,13 +462,13 @@ You may keep a **personal** parent **`go.work`** that lists alternate clones on 
 | Component | Repository | Purpose |
 |---|---|---|
 | **rho** | This repo | AI coding agent |
-| **eyrie** | [GrayCodeAI/eyrie](https://github.com/GrayCodeAI/eyrie) | LLM provider runtime |
+| **flux** | [GrayCodeAI/flux](https://github.com/GrayCodeAI/flux) | LLM provider runtime |
 | **graycode-skills** | [GrayCodeAI/graycode-skills](https://github.com/GrayCodeAI/graycode-skills) | Community skill registry |
 | **graycode-platform** | [GrayCodeAI/graycode-platform](https://github.com/GrayCodeAI/graycode-platform) | Web, BFF, and Rho Cloud |
 
 `ecosystem.yaml` is the canonical inventory of repositories cloned as
 siblings in this local workspace; tooling reads it rather than carrying its
-own repo-name list. `eyrie` is the only Go module dependency outside this
+own repo-name list. `flux` is the only Go module dependency outside this
 repo; it is consumed through its stable engine facade.
 
 For the consolidated repo map and the current-vs-proposed architecture diagrams, see [docs/architecture/rho-current-vs-proposed.md](docs/architecture/rho-current-vs-proposed.md).

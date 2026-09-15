@@ -7,7 +7,7 @@ import (
 	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 )
 
-func TestEnvKeyStatusUsesEyrieCredentialStatus(t *testing.T) {
+func TestEnvKeyStatusUsesFluxCredentialStatus(t *testing.T) {
 	store := &gateway.MapStore{}
 	gateway.SetDefaultStore(store)
 	t.Cleanup(func() { gateway.SetDefaultStore(nil) })

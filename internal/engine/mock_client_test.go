@@ -10,29 +10,29 @@ import (
 // mockClient implements ChatClient for testing without real LLM calls.
 type mockClient struct {
 	mu        sync.Mutex
-	responses []*types.EyrieResponse
+	responses []*types.FluxResponse
 	idx       int
 	calls     []mockCall
 }
 
 type mockCall struct {
 	method   string
-	messages []types.EyrieMessage
+	messages []types.FluxMessage
 }
 
-func newMockClient(responses ...*types.EyrieResponse) *mockClient {
+func newMockClient(responses ...*types.FluxResponse) *mockClient {
 	return &mockClient{responses: responses}
 }
 
-func mockTextResponse(text string) *types.EyrieResponse {
-	return &types.EyrieResponse{
+func mockTextResponse(text string) *types.FluxResponse {
+	return &types.FluxResponse{
 		Content:      text,
 		FinishReason: "end_turn",
-		Usage:        &types.EyrieUsage{PromptTokens: 50, CompletionTokens: 20, TotalTokens: 70},
+		Usage:        &types.FluxUsage{PromptTokens: 50, CompletionTokens: 20, TotalTokens: 70},
 	}
 }
 
-func (m *mockClient) Chat(ctx context.Context, messages []types.EyrieMessage, opts types.ChatOptions) (*types.EyrieResponse, error) {
+func (m *mockClient) Chat(ctx context.Context, messages []types.FluxMessage, opts types.ChatOptions) (*types.FluxResponse, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -46,13 +46,13 @@ func (m *mockClient) Chat(ctx context.Context, messages []types.EyrieMessage, op
 	return resp, nil
 }
 
-func (m *mockClient) StreamChatContinue(ctx context.Context, messages []types.EyrieMessage, opts types.ChatOptions, cfg types.ContinuationConfig) (*types.StreamResult, error) {
+func (m *mockClient) StreamChatContinue(ctx context.Context, messages []types.FluxMessage, opts types.ChatOptions, cfg types.ContinuationConfig) (*types.StreamResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.calls = append(m.calls, mockCall{method: "StreamChatContinue", messages: messages})
 
-	ch := make(chan types.EyrieStreamEvent, 10)
+	ch := make(chan types.FluxStreamEvent, 10)
 
 	var content string
 	var finishReason string
@@ -66,11 +66,11 @@ func (m *mockClient) StreamChatContinue(ctx context.Context, messages []types.Ey
 		finishReason = "end_turn"
 	}
 
-	ch <- types.EyrieStreamEvent{Type: "content", Content: content}
-	ch <- types.EyrieStreamEvent{
+	ch <- types.FluxStreamEvent{Type: "content", Content: content}
+	ch <- types.FluxStreamEvent{
 		Type:       "done",
 		StopReason: finishReason,
-		Usage:      &types.EyrieUsage{PromptTokens: 50, CompletionTokens: 20, TotalTokens: 70},
+		Usage:      &types.FluxUsage{PromptTokens: 50, CompletionTokens: 20, TotalTokens: 70},
 	}
 	close(ch)
 

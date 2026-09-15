@@ -9,7 +9,7 @@ product labels are shown in parentheses where they differ.
 ```text
 sparrow / robin / wren ── Rho daemon API ──> rho <── skill API ── starling
                                              │
-                                             ├── eyrie/engine
+                                             ├── flux/engine
                                              ├── harrier       (Harrier)
                                              ├── shrike        (Shrike)
                                              ├── swift/cli     (Swift)
@@ -58,16 +58,16 @@ Engines may share concepts through Eagle contracts, but may not import each
 other. Product names do not change this rule: `harrier` is Harrier, `shrike` is
 Shrike, `swift` is Swift, `kestrel` is Kestrel, and `merlin` is Merlin.
 
-### 3. Provider logic stays behind Eyrie
+### 3. Provider logic stays behind Flux
 
 Rho production code reaches provider credentials, catalogs, routing, and
-transport only through `github.com/GrayCodeAI/eyrie/engine`. This is enforced
+transport only through `github.com/GrayCodeAI/flux/engine`. This is enforced
 by shell and AST/package-graph guards.
 
 ### 4. Rho schemas stay Rho-owned
 
 Rho conversation persistence and CLI/JSON output are explicit projections,
-not aliases or direct serialization of Eyrie DTOs.
+not aliases or direct serialization of Flux DTOs.
 
 ### 5. Graph integrations are explicit surfaces
 
@@ -86,13 +86,13 @@ execution.
 
 ### 7. Engine configuration is instance-scoped
 
-Rho supplies effective gateway settings while constructing an Eyrie Engine.
-Product code must not mutate Eyrie process-global gateway state.
+Rho supplies effective gateway settings while constructing an Flux Engine.
+Product code must not mutate Flux process-global gateway state.
 
 ## Enforcement
 
 Rho CI runs manifest validation, no-local-replace checks, Eagle parity,
-support-repository coupling, Eyrie facade checks, internal-layer checks, and
+support-repository coupling, Flux facade checks, internal-layer checks, and
 the AST package-boundary audit. Support repositories run their own boundary
 guards. SDK contract tests compare their OpenAPI snapshots with Rho's public
 daemon contract.

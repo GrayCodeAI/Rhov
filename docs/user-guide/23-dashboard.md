@@ -9,7 +9,7 @@ The Rho dashboard provides system status and monitoring information.
 In the TUI:
 
 ```
-/ecosystem         # Ecosystem status (Eyrie and token pipeline)
+/ecosystem         # Ecosystem status (Flux and token pipeline)
 /path              # Developer path readiness
 /preflight         # Quick health check
 ```
@@ -22,7 +22,7 @@ Shows the status of all Rho components:
 
 | Component | Status |
 |-----------|--------|
-| Eyrie (providers) | Ready / Error |
+| Flux (providers) | Ready / Error |
 | token pipeline | Available |
 | memory | Ready |
 

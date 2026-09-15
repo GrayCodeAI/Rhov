@@ -19,7 +19,7 @@ var pathCmd = &cobra.Command{
 	Short: "Developer path readiness (setup, security, ecosystem)",
 	Long: `Check whether rho is configured on the developer path:
 API keys in OS secret store, model selected, no secrets on disk,
-and eyrie integration.
+and flux integration.
 
 Built for individual developers first — teams and enterprise later.
 

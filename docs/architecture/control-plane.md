@@ -19,7 +19,7 @@ Faces (TUI / headless / ACP / daemon)
               Session kernel
            (agentLoop · tools)
                     │
-     eyrie · embedded token engine
+     flux · embedded token engine
 ```
 
 ## Pieces
@@ -36,7 +36,7 @@ Single entry for subagents + background tasks:
 ### 2. Lazy model surface (`tool.Registry`)
 
 - Essential tools registered and **model-visible**
-- Optional tools registered for **execution + ToolSearch**, hidden from `EyrieTools`
+- Optional tools registered for **execution + ToolSearch**, hidden from `FluxTools`
 - `ToolSearch` `select:Name` **promotes** tool onto the model surface
 - APIs: `EnableLazyModelSurface`, `SetModelVisibility`, `PromoteModelTool`
 

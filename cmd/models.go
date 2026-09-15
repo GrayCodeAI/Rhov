@@ -19,10 +19,10 @@ var (
 
 var modelsCmd = &cobra.Command{
 	Use:   "models",
-	Short: "Deployment-aware model catalog (via eyrie)",
-	Long: `Manage the eyrie model catalog used by rho for models, pricing, and deployment routing.
+	Short: "Deployment-aware model catalog (via flux)",
+	Long: `Manage the flux model catalog used by rho for models, pricing, and deployment routing.
 
-The catalog is stored at ~/.eyrie/model_catalog.json (override with EYRIE_MODEL_CATALOG_PATH).
+The catalog is stored at ~/.flux/model_catalog.json (override with FLUX_MODEL_CATALOG_PATH).
 Rho refreshes the catalog automatically on startup when the cache is missing, empty, or stale (disable with --no-auto-catalog-refresh or RHO_AUTO_REFRESH_CATALOG=0).
 Use 'rho models refresh' for a manual refresh or full discover report.`,
 }
@@ -30,7 +30,7 @@ Use 'rho models refresh' for a manual refresh or full discover report.`,
 var modelsRefreshCmd = &cobra.Command{
 	Use:     "refresh",
 	Aliases: []string{"update"},
-	Short:   "Discover model catalog (eyrie remote + live provider APIs) into ~/.eyrie/model_catalog.json",
+	Short:   "Discover model catalog (flux remote + live provider APIs) into ~/.flux/model_catalog.json",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		settings, err := loadEffectiveSettings()
 		if err != nil {
@@ -98,7 +98,7 @@ var modelsRoutingPreviewCmd = &cobra.Command{
 
 var modelsListCmd = &cobra.Command{
 	Use:   "list [provider]",
-	Short: "List models from the eyrie catalog cache (or live provider API)",
+	Short: "List models from the flux catalog cache (or live provider API)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		settings, err := loadEffectiveSettings()
 		if err != nil {
@@ -160,7 +160,7 @@ var modelsListCmd = &cobra.Command{
 }
 
 // modelListJSONEntry is Rho's versioned command-output contract. Keep this
-// separate from Eyrie's host-facing Model DTO so engine-only fields can evolve
+// separate from Flux's host-facing Model DTO so engine-only fields can evolve
 // without breaking users that consume `rho models list --json`.
 type modelListJSONEntry struct {
 	ID               string          `json:"id"`

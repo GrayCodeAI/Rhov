@@ -8,8 +8,8 @@ For Rho, the developer path is the minimum local setup required to chat, edit co
 
 - A provider credential stored in the OS secret store
 - A model selected in Rho settings
-- A local model catalog available through eyrie
-- No plaintext API keys left in Eyrie's configured `provider.json` or legacy env files
+- A local model catalog available through flux
+- No plaintext API keys left in Flux's configured `provider.json` or legacy env files
 - Safe defaults for Bash execution and filesystem access
 - Optional but healthy local memory and token-pipeline state
 
@@ -33,7 +33,7 @@ workspace; they are not nested under Rho:
 ```bash
 mkdir graycode-eco && cd graycode-eco
 git clone https://github.com/GrayCodeAI/rho
-git clone https://github.com/GrayCodeAI/eyrie
+git clone https://github.com/GrayCodeAI/flux
 cd rho
 make setup
 go build -o rho ./cmd/rho
@@ -64,7 +64,7 @@ validation or `rho models list <provider> --live`.
 
 ### 3. Select a model
 
-Pick a model in `/config`. Rho stores the selected model in settings and uses eyrie for provider routing and catalog resolution.
+Pick a model in `/config`. Rho stores the selected model in settings and uses flux for provider routing and catalog resolution.
 
 If the catalog is missing or empty:
 
@@ -76,10 +76,10 @@ rho models refresh
 
 `rho path` treats these as important security conditions:
 
-- Eyrie's resolved `provider.json` must not contain secret fields
+- Flux's resolved `provider.json` must not contain secret fields
 - sensitive files like provider config and SSH paths should be blocked from agent reads
 
-Eyrie resolves provider state from `EYRIE_CONFIG_DIR` first, then the
+Flux resolves provider state from `FLUX_CONFIG_DIR` first, then the
 platform user-config directory.
 Rho protects that resolved path even when it is customized or symlinked.
 
@@ -96,7 +96,7 @@ container runtime is required, and there is no container fallback to configure.
 
 `rho path` also verifies the provider layer behind Rho:
 
-- `eyrie` for provider routing and local preflight readiness
+- `flux` for provider routing and local preflight readiness
 - the embedded token pipeline for estimation and compression
 
 If you want the broader status summary:

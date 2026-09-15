@@ -12,11 +12,11 @@ Platform/provider capability metadata is separate: [`platform-capabilities.json`
 
 ```jsonc
 {
-  "components":   ["rho", "eyrie", ...],   // canonical eco roster
-  "dependencies": { "rho": ["eyrie", ...] }, // who depends on who
+  "components":   ["rho", "flux", ...],   // canonical eco roster
+  "dependencies": { "rho": ["flux", ...] }, // who depends on who
   "matrices": [
-    { "name": "stable", "components": { "rho": "0.1.0", "eyrie": "0.1.0", ... } },
-    { "name": "next",   "components": { "rho": "main",  "eyrie": "main",  ... } }
+    { "name": "stable", "components": { "rho": "0.1.0", "flux": "0.1.0", ... } },
+    { "name": "next",   "components": { "rho": "main",  "flux": "main",  ... } }
   ]
 }
 ```
@@ -59,7 +59,7 @@ It runs on:
 
 ## Why bother
 
-- **Bug reports become triageable.** "I ran rho 0.4 with eyrie 0.2" — you
+- **Bug reports become triageable.** "I ran rho 0.4 with flux 0.2" — you
   immediately know whether that combination was ever tested.
 - **Consumers can pin reliably.** Downstream projects that vendor multiple
   eco packages can pin to a known-good stable matrix instead of guessing.

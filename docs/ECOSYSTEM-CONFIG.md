@@ -3,7 +3,7 @@
 Status: Draft / historical spec (aspirational; not implemented)
 Applies to: the wider graycode-eco ecosystem
 
-> Note: Rho now depends only on eyrie and embeds its own token engine.
+> Note: Rho now depends only on flux and embeds its own token engine.
 > References below to harrier, shrike, and swift describe a proposed
 > ecosystem-wide schema, not Rho's current runtime.
 
@@ -15,7 +15,7 @@ file is the source of truth, version-controlled alongside a project, and each
 repo reads the slice of the schema it owns.
 
 Today each repo configures itself independently through its own env vars,
-flags, and config files (rho: `config.json` + `RHO_*`/`RHO_*` env; eyrie:
+flags, and config files (rho: `config.json` + `RHO_*`/`RHO_*` env; flux:
 provider env vars; harrier: `~/.harrier/config.toml`; shrike: `TOK_*` env; swift:
 `SWIFT_*` env). This spec does **not** replace those mechanisms — it defines a
 superset schema and maps every setting back to the repo + existing env
@@ -31,7 +31,7 @@ any runtime behavior.
    `graycode-eco.yaml` value > repo default. This preserves current behavior where
    env/flags are authoritative.
 3. **Repo-owned sections.** Each top-level section is owned by one repo (with
-   `model`/`providers` shared by rho + eyrie). A repo only reads its sections.
+   `model`/`providers` shared by rho + flux). A repo only reads its sections.
 4. **Two encodings, one schema.** YAML is canonical for humans; the identical
    structure is valid JSON for machine generation. (harrier's on-disk format is
    TOML; its section maps 1:1 to `~/.harrier/config.toml`.)
@@ -53,7 +53,7 @@ runtime precedence above):
 ```yaml
 version: 1
 
-# ─── Shared: model + providers (rho + eyrie) ───────────────────────────────
+# ─── Shared: model + providers (rho + flux) ───────────────────────────────
 model:
   default: anthropic/claude-sonnet-4-5   # provider/model the agent uses
   small_fast: anthropic/claude-haiku     # cheap model for trivial steps
@@ -70,16 +70,16 @@ providers:
     api_key_env: GEMINI_API_KEY
     model: gemini-2.0-flash
 
-# ─── eyrie: gateway / runtime ───────────────────────────────────────────────
+# ─── flux: gateway / runtime ───────────────────────────────────────────────
 gateway:
-  base_url: http://localhost:8080        # eyrie endpoint rho talks to
-  api_key_env: EYRIE_API_KEY
+  base_url: http://localhost:8080        # flux endpoint rho talks to
+  api_key_env: FLUX_API_KEY
   allow_insecure_public_api: false
-  deployment_routing: ""                 # EYRIE_DEPLOYMENT_ROUTING
+  deployment_routing: ""                 # FLUX_DEPLOYMENT_ROUTING
   model_catalog:
-    path_env: EYRIE_MODEL_CATALOG_PATH
-    url_env: EYRIE_MODEL_CATALOG_URL
-    refresh: EYRIE_MODEL_CATALOG_REFRESH
+    path_env: FLUX_MODEL_CATALOG_PATH
+    url_env: FLUX_MODEL_CATALOG_URL
+    refresh: FLUX_MODEL_CATALOG_REFRESH
 
 # ─── harrier: memory ───────────────────────────────────────────────────────────
 memory:
@@ -133,30 +133,30 @@ telemetry:
 The authoritative mapping. "Mechanism today" is what already implements the
 setting; the unified key is rendered down to it.
 
-### Shared: model / providers (rho + eyrie)
+### Shared: model / providers (rho + flux)
 
 | Unified key                     | Repo        | Mechanism today                                  |
 |---------------------------------|-------------|--------------------------------------------------|
 | `model.default`                 | rho        | `RHO_MODEL` env / `config.json`                 |
 | `model.small_fast`              | rho        | `RHO_SMALL_FAST_MODEL` env                  |
-| `providers[].api_key_env`       | eyrie/rho  | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `XAI_API_KEY`, `ZAI_API_KEY`, `CANOPYWAVE_API_KEY`, `FIREWORKS_API_KEY` |
-| `providers[].base_url_env`      | eyrie       | `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL` / `OPENAI_API_BASE`, `OLLAMA_BASE_URL`, `FIREWORKS_BASE_URL` |
-| `providers[].model` (openai)    | eyrie       | `OPENAI_MODEL` env                               |
-| `providers[].model` (gemini)    | eyrie       | `GEMINI_MODEL` env                               |
-| `providers[].model` (anthropic) | eyrie       | `ANTHROPIC_MODEL` env                            |
+| `providers[].api_key_env`       | flux/rho  | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `XAI_API_KEY`, `ZAI_API_KEY`, `CANOPYWAVE_API_KEY`, `FIREWORKS_API_KEY` |
+| `providers[].base_url_env`      | flux       | `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL` / `OPENAI_API_BASE`, `OLLAMA_BASE_URL`, `FIREWORKS_BASE_URL` |
+| `providers[].model` (openai)    | flux       | `OPENAI_MODEL` env                               |
+| `providers[].model` (gemini)    | flux       | `GEMINI_MODEL` env                               |
+| `providers[].model` (anthropic) | flux       | `ANTHROPIC_MODEL` env                            |
 
-### eyrie: gateway / runtime
+### flux: gateway / runtime
 
-| Unified key                          | Mechanism today (eyrie)              |
+| Unified key                          | Mechanism today (flux)              |
 |--------------------------------------|--------------------------------------|
-| `gateway.base_url`                   | `EYRIE_BASE_URL` (rho→eyrie link)   |
-| `gateway.api_key_env`                | `EYRIE_API_KEY`                      |
-| `gateway.allow_insecure_public_api`  | `EYRIE_ALLOW_INSECURE_PUBLIC_API`    |
-| `gateway.deployment_routing`         | `EYRIE_DEPLOYMENT_ROUTING` (also `RHO_DEPLOYMENT_ROUTING`) |
-| `gateway.model_catalog.path_env`     | `EYRIE_MODEL_CATALOG_PATH`           |
-| `gateway.model_catalog.url_env`      | `EYRIE_MODEL_CATALOG_URL`            |
-| `gateway.model_catalog.refresh`      | `EYRIE_MODEL_CATALOG_REFRESH` / `RHO_AUTO_REFRESH_CATALOG` / `RHO_CATALOG_REFRESH_ALWAYS` |
-| `gateway` config dir                 | `EYRIE_CONFIG_DIR` (default `<user config dir>/eyrie`) |
+| `gateway.base_url`                   | `FLUX_BASE_URL` (rho→flux link)   |
+| `gateway.api_key_env`                | `FLUX_API_KEY`                      |
+| `gateway.allow_insecure_public_api`  | `FLUX_ALLOW_INSECURE_PUBLIC_API`    |
+| `gateway.deployment_routing`         | `FLUX_DEPLOYMENT_ROUTING` (also `RHO_DEPLOYMENT_ROUTING`) |
+| `gateway.model_catalog.path_env`     | `FLUX_MODEL_CATALOG_PATH`           |
+| `gateway.model_catalog.url_env`      | `FLUX_MODEL_CATALOG_URL`            |
+| `gateway.model_catalog.refresh`      | `FLUX_MODEL_CATALOG_REFRESH` / `RHO_AUTO_REFRESH_CATALOG` / `RHO_CATALOG_REFRESH_ALWAYS` |
+| `gateway` config dir                 | `FLUX_CONFIG_DIR` (default `<user config dir>/flux`) |
 
 ### harrier: memory
 
@@ -212,7 +212,7 @@ few env vars.
 
 The unified file is designed to be **resolved** into the existing mechanisms:
 
-- **env-based repos** (rho, eyrie, shrike, swift): export the mapped env var for
+- **env-based repos** (rho, flux, shrike, swift): export the mapped env var for
   any key set in `graycode-eco.yaml` that is not already present in the process
   environment (preserving "env wins" precedence).
 - **file-based repos** (harrier): write/merge the `memory.*` section into
@@ -234,7 +234,7 @@ The schema is encoding-agnostic. The YAML above is identical in structure to:
   "providers": [
     { "name": "anthropic", "api_key_env": "ANTHROPIC_API_KEY" }
   ],
-  "gateway": { "base_url": "http://localhost:8080", "api_key_env": "EYRIE_API_KEY" },
+  "gateway": { "base_url": "http://localhost:8080", "api_key_env": "FLUX_API_KEY" },
   "memory": { "addr": "127.0.0.1:3456", "data_dir": "~/.harrier" },
   "compression": { "enabled": true, "db_path": "~/.shrike/usage.db" },
   "swift": { "telemetry_optout": false },
@@ -246,5 +246,5 @@ The schema is encoding-agnostic. The YAML above is identical in structure to:
 
 The `telemetry` and `swift` sections only configure *transport/opt-out*. The
 *attribute vocabulary* emitted on spans is defined separately in
-[`OTEL-CONVENTIONS.md`](./OTEL-CONVENTIONS.md), with eyrie's
+[`OTEL-CONVENTIONS.md`](./OTEL-CONVENTIONS.md), with flux's
 `internal/observability` package as the reference implementation.

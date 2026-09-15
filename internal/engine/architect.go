@@ -42,7 +42,7 @@ type PlanStep struct {
 }
 
 // Message is a lightweight chat message used by the architect pipeline.
-// This avoids coupling to external message types from eyrie.
+// This avoids coupling to external message types from flux.
 type ArchitectMessage struct {
 	Role    string // "system", "user", "assistant"
 	Content string
@@ -133,7 +133,7 @@ type architectProvider struct {
 	a *Architect
 }
 
-func (p *architectProvider) Chat(ctx context.Context, messages []types.EyrieMessage, opts types.ChatOptions) (*types.EyrieResponse, error) {
+func (p *architectProvider) Chat(ctx context.Context, messages []types.FluxMessage, opts types.ChatOptions) (*types.FluxResponse, error) {
 	archMsgs := make([]ArchitectMessage, len(messages))
 	for i, m := range messages {
 		archMsgs[i] = ArchitectMessage{Role: m.Role, Content: m.Content}
@@ -146,10 +146,10 @@ func (p *architectProvider) Chat(ctx context.Context, messages []types.EyrieMess
 	if err != nil {
 		return nil, err
 	}
-	return &types.EyrieResponse{Content: out}, nil
+	return &types.FluxResponse{Content: out}, nil
 }
 
-func (p *architectProvider) StreamChat(ctx context.Context, messages []types.EyrieMessage, opts types.ChatOptions) (*types.StreamResult, error) {
+func (p *architectProvider) StreamChat(ctx context.Context, messages []types.FluxMessage, opts types.ChatOptions) (*types.StreamResult, error) {
 	return nil, nil
 }
 func (p *architectProvider) Ping(ctx context.Context) error { return nil }

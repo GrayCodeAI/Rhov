@@ -18,7 +18,7 @@ var (
 
 const catalogHealthCacheTTL = 15 * time.Second
 
-// CatalogHealth summarizes the on-disk eyrie model catalog for doctor / status output.
+// CatalogHealth summarizes the on-disk flux model catalog for doctor / status output.
 type CatalogHealth struct {
 	CachePath   string    `json:"cache_path"`
 	Exists      bool      `json:"exists"`
@@ -33,7 +33,7 @@ type CatalogHealth struct {
 	Error       string    `json:"error,omitempty"`
 }
 
-// CatalogHealthReport inspects ~/.eyrie/model_catalog.json (or EYRIE_MODEL_CATALOG_PATH).
+// CatalogHealthReport inspects ~/.flux/model_catalog.json (or FLUX_MODEL_CATALOG_PATH).
 func CatalogHealthReport(ctx context.Context) CatalogHealth {
 	path := CatalogCachePathForDisplay()
 	catalogHealthMu.Lock()
@@ -61,7 +61,7 @@ func InvalidateCatalogHealthCache() {
 }
 
 func catalogHealthReportUncached(ctx context.Context) CatalogHealth {
-	engine, err := newEyrieEngine()
+	engine, err := newFluxEngine()
 	if err != nil {
 		return CatalogHealth{Error: err.Error()}
 	}
@@ -81,7 +81,7 @@ func catalogHealthReportUncached(ctx context.Context) CatalogHealth {
 // FormatCatalogHealth returns human-readable catalog status for rho doctor.
 func FormatCatalogHealth(h CatalogHealth) string {
 	var b strings.Builder
-	b.WriteString(theme.Tint("Model catalog (eyrie):", theme.ReportInfo) + "\n")
+	b.WriteString(theme.Tint("Model catalog (flux):", theme.ReportInfo) + "\n")
 	b.WriteString("  " + theme.Tint("path:", theme.ReportMuted) + " " + theme.Tint(h.CachePath, theme.ReportInfo) + "\n")
 	if h.Error != "" {
 		b.WriteString("  " + theme.Tint("status:", theme.ReportMuted) + " " + theme.Tint(h.Error, theme.ReportError) + "\n")
@@ -128,7 +128,7 @@ func EnsureCatalogAvailable(ctx context.Context) error {
 
 // CatalogCachePathForDisplay returns the path users should care about.
 func CatalogCachePathForDisplay() string {
-	engine, err := newEyrieEngine()
+	engine, err := newFluxEngine()
 	if err == nil {
 		return engine.StatePaths().Catalog
 	}

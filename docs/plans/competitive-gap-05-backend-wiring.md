@@ -5,8 +5,8 @@ Source: field comparison vs Qwen `computer_use`, Codex browser/screenshot, Goose
 
 Constraints (non-negotiable):
 
-- Provider ownership lives in `../eyrie`; rho consumes only the stable engine facade (`AGENTS.md`, `docs/SECURITY-DEVELOPER.md:51-56`).
-- Boundary guards must stay green: `make boundaries` (incl. `eyrie-client-guard`, `eyrie-engine-guard`).
+- Provider ownership lives in `../flux`; rho consumes only the stable engine facade (`AGENTS.md`, `docs/SECURITY-DEVELOPER.md:51-56`).
+- Boundary guards must stay green: `make boundaries` (incl. `flux-client-guard`, `flux-engine-guard`).
 - Tools fail safe today with explicit errors when unwired — preserve that behavior when disabled.
 
 ## Existing rho capabilities (verified)
@@ -20,7 +20,7 @@ Constraints (non-negotiable):
 
 Adopt: opt-in host wiring through the router facade, env-gated, off by default.
 
-Do not adopt: direct `eyrie/client` production imports, new secrets paths, always-on media/computer-use.
+Do not adopt: direct `flux/client` production imports, new secrets paths, always-on media/computer-use.
 
 ## Priority model
 
@@ -30,7 +30,7 @@ Do not adopt: direct `eyrie/client` production imports, new secrets paths, alway
 
 ## Steps
 
-1. Confirm facade methods exist in sibling `../eyrie/engine`; if missing, file the change there first (router repo owns providers).
+1. Confirm facade methods exist in sibling `../flux/engine`; if missing, file the change there first (router repo owns providers).
 2. Implement wiring in rho behind env gates; keep `Set*` seams for tests.
 3. Run `make boundaries` + `make vet` + targeted `go test ./internal/tool/ -run 'TestComputer|TestMedia'`.
 

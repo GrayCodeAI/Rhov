@@ -8,7 +8,7 @@ Linux Foundation / Agentic AI Foundation)
 ## Executive Decision
 
 Goose's audit against rho found that most of its runtime concepts already have
-a native rho implementation (providers via eyrie, sessions, MCP, ACP, skills,
+a native rho implementation (providers via flux, sessions, MCP, ACP, skills,
 native sandboxing, permissions). The genuinely novel, rho-relevant ideas are
 adopted here in Go, without copying Rust code or weakening rho's native
 sandboxing model.
@@ -17,7 +17,7 @@ sandboxing model.
 
 | Goose package/concept | Rho implementation | Decision |
 |---|---|---|
-| Provider abstraction (~36) | sibling `eyrie` (28 built-in + 75+ live) | Keep rho |
+| Provider abstraction (~36) | sibling `flux` (28 built-in + 75+ live) | Keep rho |
 | Sessions (SQLite WAL) | `internal/session` JSONL+WAL+zstd + sibling `swift` (Swift) | Keep rho |
 | MCP (client+server) | `internal/mcp` + sibling `falcon` | Keep rho |
 | ACP | `internal/acp` | Keep rho |
@@ -50,7 +50,7 @@ or MCP stdio processes by filtering dangerous environment overrides
   checker) — a `sanitizeEnv` / `SafeEnv` helper.
 - Consumers: `internal/mcp` stdio launch path and `internal/plugin` package
   execution.
-- No changes to sibling `eyrie`.
+- No changes to sibling `flux`.
 
 ### Required behavior
 
@@ -147,7 +147,7 @@ accounting, matching `goose-context-management`.
   change and is tracked separately.
 - MCP Apps / agent-provided HTML UIs: novel but requires UI-layer design.
 - ACP-as-provider wrapping other CLIs: larger provider abstraction change.
-- Local-inference tool emulation / toolshim: depends on eyrie's local-model
+- Local-inference tool emulation / toolshim: depends on flux's local-model
   path.
 - Recipe security scanner / cron recipes: rho already has schedule/cron.
 

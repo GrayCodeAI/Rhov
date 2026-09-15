@@ -87,7 +87,7 @@ rho/
 
 | Service | Role | Connection |
 |---------|------|------------|
-| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> **eyrie** | LLM provider runtime | Library — all LLM calls routed through its engine facade |
+| <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> **flux** | LLM provider runtime | Library — all LLM calls routed through its engine facade |
 | <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/scissors.svg" width="16" height="16" alt="scissors" /> **token** | Token optimization | Embedded — counting, compression, secrets, usage tracking |
 
 ### Client SDKs
@@ -100,7 +100,7 @@ rho/
 
 All three SDKs share types from **eagle** and consume the daemon REST API (:4590).
 
-> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> **rho never talks to LLM APIs directly** — all calls go through eyrie.
+> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> **rho never talks to LLM APIs directly** — all calls go through flux.
 
 ---
 

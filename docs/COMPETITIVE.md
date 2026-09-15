@@ -13,7 +13,7 @@ Verified from source in this repo:
 - Sandbox: mandatory Docker, fail-closed, never host fallback — `docs/SECURITY-DEVELOPER.md:71-73`, `internal/sandbox/container.go:72-74`.
 - Creds: OS secret store only, no `.env`/env read — `docs/SECURITY-DEVELOPER.md:7-12`.
 - Share: local deeplink only — `internal/session/export.go:801-819` returns `rho://share/<hash[:16]>`, no hosted URL.
-- Custom providers: supported — `internal/config/settings.go:50` (`custom_providers`), `internal/config/eyrie_engine.go:32-50`.
+- Custom providers: supported — `internal/config/settings.go:50` (`custom_providers`), `internal/config/engine.go:32-50`.
 - Unwired backends: `internal/tool/computer_use.go:67-94` (`SetComputerBackend`, nil default), `internal/tool/media_generation.go:69-71` (`SetMediaEngine`, nil default).
 - Terminal detect covers kitty/ghostty/wezterm/alacritty names (`internal/ui/icons/detect_test.go:56`); Kitty graphics protocol not implemented (see `docs/plans/pi-adoption-plan.md:25`).
 - Bench infra exists (`internal/feature/eval/`, `make bench`) but README publishes no numbers.
@@ -63,7 +63,7 @@ External star counts below are approximate web-search snapshots (2026-09-08), no
 
 1. **Traction.** rho has no star-moat (pre-release). Leaders won via day-1 provider-agnostic + one-liner install + Web/Desktop alongside TUI. rho already ships script/brew/npm paths (`README.md:48-59`) — keep, don't add Desktop.
 2. **Language/distro.** Go+MIT+zero-CGO (`Makefile:54`, `go.mod:3`) matches `gh/fzf/lazygit` enterprise-safe profile. Avoid GPL/EUPL patterns (kitty/eza). Rust wave wins on published benchmarks — rho has `make bench` but publishes none (Gap-04).
-3. **Providers.** rho routes only via `eyrie/engine` facade (`docs/SECURITY-DEVELOPER.md:51-56`, `ecosystem.yaml:29-30`); custom OpenAI-compat supported (`internal/config/settings.go:50`). Count messaging ("28 first-class" per README) trails OpenCode 75+ / Hermes 300+ — fix by exposing catalog count dynamically, not by forking providers into CLI (ownership lives in router per AGENTS.md).
+3. **Providers.** rho routes only via `flux/engine` facade (`docs/SECURITY-DEVELOPER.md:51-56`, `ecosystem.yaml:29-30`); custom OpenAI-compat supported (`internal/config/settings.go:50`). Count messaging ("28 first-class" per README) trails OpenCode 75+ / Hermes 300+ — fix by exposing catalog count dynamically, not by forking providers into CLI (ownership lives in router per AGENTS.md).
 4. **TUI/UX.** Bubble Tea v2 + vim keys + `/autonomy` + `/spec` + watch `AI!`/`AI?` + visual diff is competitive. Missing vs field: hosted share-link (ours is local `rho://` deeplink), multi-session grid (we have `mission` worktrees + daemon — unsurfaced like herdr/cmux). Gap-02.
 5. **Sandbox.** Docker-only fail-closed is strictest default alongside Codex net-off and Gemini gVisor. Tradeoff is onboarding friction without Docker. Must not add host-exec fallback (violates `docs/SECURITY-DEVELOPER.md:71-73`); fix with preflight/path/doctor messaging + image pull/build guidance. Gap-01.
 6. **Memory/context.** AST repomap + Harrier graph + compaction segments + relevance-prune + conversation-arc + 80% tool-result clearing exceeds most. Missing: Hermes-style auto-skill learning loop (we have curator archive + harness — surface it).

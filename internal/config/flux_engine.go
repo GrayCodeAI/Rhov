@@ -12,16 +12,16 @@ type (
 	EnginePreflightOptions = gateway.PreflightOptions
 )
 
-func newEyrieEngine() (*gateway.Gateway, error) {
+func newFluxEngine() (*gateway.Gateway, error) {
 	return gateway.New(context.Background(), globalCustomProviders())
 }
 
-func NewEyrieEngine() (*gateway.Gateway, error) { return newEyrieEngine() }
+func NewFluxEngine() (*gateway.Gateway, error) { return newFluxEngine() }
 
-// NewEyrieEngineForSettings composes a fresh gateway for one effective
+// NewFluxEngineForSettings composes a fresh gateway for one effective
 // Rho settings snapshot. It performs no package-global registration and does
 // not mutate provider environment variables.
-func NewEyrieEngineForSettings(settings Settings) (*gateway.Gateway, error) {
+func NewFluxEngineForSettings(settings Settings) (*gateway.Gateway, error) {
 	return gateway.New(context.Background(), gatewayCustomGateways(settings.CustomProviders))
 }
 
@@ -80,7 +80,7 @@ func FormatEnginePreflight(report EnginePreflight) string {
 }
 
 func EngineGatewayRegion(ctx context.Context, providerID string) (string, bool) {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return "", false
 	}
@@ -88,7 +88,7 @@ func EngineGatewayRegion(ctx context.Context, providerID string) (string, bool) 
 }
 
 func SetEngineGatewayRegion(ctx context.Context, providerID, region string) error {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func SetEngineGatewayRegion(ctx context.Context, providerID, region string) erro
 }
 
 func CanonicalModelID(ctx context.Context, modelID string) string {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return modelID
 	}
@@ -104,7 +104,7 @@ func CanonicalModelID(ctx context.Context, modelID string) string {
 }
 
 func HasCredentialEnv(ctx context.Context, envVar string) bool {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	return err == nil && gw.HasCredentialEnv(ctx, envVar)
 }
 
@@ -113,30 +113,30 @@ func CredentialGuidance(providerID, secret string) string {
 }
 
 func ProviderStateSecurityStatus() gateway.ProviderStateSecurity {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
-		return gateway.ProviderStateSecurity{Error: err.Error(), Detail: "Eyrie engine initialization failed"}
+		return gateway.ProviderStateSecurity{Error: err.Error(), Detail: "Flux engine initialization failed"}
 	}
 	return gw.ProviderStateSecurityStatus()
 }
 
 func EngineDeploymentSummary(ctx context.Context, model string) (gateway.DeploymentSummary, error) {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return gateway.DeploymentSummary{}, err
 	}
 	return gw.DeploymentSummary(ctx, model)
 }
 
-// newEyrieEngine is Rho's default composition root for Eyrie's stable host
+// newFluxEngine is Rho's default composition root for Flux's stable host
 // facade. Command paths that support --settings must use
-// NewEyrieEngineForSettings instead of relying on this global-settings default.
+// NewFluxEngineForSettings instead of relying on this global-settings default.
 
-// ListEngineModels returns model-picker rows through Eyrie's stable facade.
+// ListEngineModels returns model-picker rows through Flux's stable facade.
 // EngineModel is an alias of gateway.ModelInfo, so model lists returned by the
 // gateway pass through without conversion.
 func ListEngineModels(ctx context.Context, providerID string, refresh bool) ([]EngineModel, error) {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func ListEngineModels(ctx context.Context, providerID string, refresh bool) ([]E
 }
 
 func ListEngineModelsWithSettings(ctx context.Context, settings Settings, providerID string, refresh bool) ([]EngineModel, error) {
-	gw, err := NewEyrieEngineForSettings(settings)
+	gw, err := NewFluxEngineForSettings(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func ListEngineModelsWithSettings(ctx context.Context, settings Settings, provid
 }
 
 func ListLiveEngineModelsWithSettings(ctx context.Context, settings Settings, providerID string) ([]EngineModel, error) {
-	gw, err := NewEyrieEngineForSettings(settings)
+	gw, err := NewFluxEngineForSettings(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func ListLiveEngineModelsWithSettings(ctx context.Context, settings Settings, pr
 }
 
 func ListPublicEngineModels(ctx context.Context, providerID string) ([]EngineModel, error) {
-	gw, err := newEyrieEngine()
+	gw, err := newFluxEngine()
 	if err != nil {
 		return nil, err
 	}

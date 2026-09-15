@@ -19,14 +19,14 @@ repositories:
     module: github.com/GrayCodeAI/rho
     workspace: true
 
-  - directory: eyrie
-    github_repo: eyrie
-    product_name: Eyrie
+  - directory: flux
+    github_repo: flux
+    product_name: Flux
     kind: engine
     language: go
-    module: github.com/GrayCodeAI/eyrie
+    module: github.com/GrayCodeAI/flux
     workspace: true
-    facade: github.com/GrayCodeAI/eyrie/engine
+    facade: github.com/GrayCodeAI/flux/engine
 
   - directory: graycode-skills
     github_repo: graycode-skills

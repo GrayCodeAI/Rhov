@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	eyriecfg "github.com/GrayCodeAI/eyrie/config"
-	"github.com/GrayCodeAI/eyrie/credentials"
-	"github.com/GrayCodeAI/eyrie/setup"
+	fluxcfg "github.com/GrayCodeAI/flux/config"
+	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/flux/setup"
 	"github.com/GrayCodeAI/rho/internal/observability/logger"
 )
 
@@ -38,9 +38,9 @@ func TestLiveOpenCodeGoMiniMaxM3FullRhoPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("provider=%s model=%s tools=%d system_len=%d", effectiveProvider, effectiveModel, len(registry.EyrieTools()), len(systemPrompt))
+	t.Logf("provider=%s model=%s tools=%d system_len=%d", effectiveProvider, effectiveModel, len(registry.FluxTools()), len(systemPrompt))
 
-	adapter := setup.ConfiguredDeploymentAdapters(eyriecfg.LoadProviderConfig(""))["opencodego"]
+	adapter := setup.ConfiguredDeploymentAdapters(fluxcfg.LoadProviderConfig(""))["opencodego"]
 	t.Logf("adapter_type=%T", adapter.Provider)
 
 	sess := newRhoSession(settings, effectiveProvider, effectiveModel, systemPrompt, registry)

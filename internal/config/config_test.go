@@ -170,7 +170,7 @@ func TestLoadSettingsUsesUserConfigOnly(t *testing.T) {
 	t.Setenv("HOME", home)
 	configDir := filepath.Join(home, "config")
 	t.Setenv("RHO_CONFIG_DIR", configDir)
-	t.Setenv("EYRIE_CONFIG_DIR", filepath.Join(home, "eyrie"))
+	t.Setenv("FLUX_CONFIG_DIR", filepath.Join(home, "flux"))
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

@@ -5,14 +5,14 @@ Status: Implemented selectively in the current Rho feature branch.
 ## Guardrails
 
 Qwen Code is Apache-2.0 TypeScript software with a Gemini-shaped core. Rho
-will independently reimplement behavioral contracts in Go, preserve the Eyrie
+will independently reimplement behavioral contracts in Go, preserve the Flux
 provider boundary, and retain Rho's event-sourced sessions and OS sandbox.
 No Qwen source or dependency is vendored.
 
 ## Existing Rho Capabilities
 
 Rho already has durable sessions, event logging, WAL/recovery, branching,
-review contracts, provider routing in Eyrie, MCP integration, skills, memory,
+review contracts, provider routing in Flux, MCP integration, skills, memory,
 context compaction, policy snapshots, subagents, daemon security, and
 filesystem/process sandboxing. These systems will not be duplicated.
 

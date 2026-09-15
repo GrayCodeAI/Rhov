@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Dependency renamed eyrie → flux**: rho now depends on
+  `github.com/GrayCodeAI/flux v0.0.1` (the provider runtime was renamed).
+  All imports, env vars (`EYRIE_CONFIG_DIR` → `FLUX_CONFIG_DIR`,
+  `EYRIE_MODEL_CATALOG_PATH` → `FLUX_MODEL_CATALOG_PATH`), boundary-guard
+  scripts, ecosystem manifest entries, docs, and internal identifiers were
+  renamed to match. User state paths move from `~/.../eyrie/provider.json`
+  to `~/.../flux/provider.json`.
+
 ### Security
 - **Session lock TOCTOU eliminated**: `AcquireLock`'s stat → stale-if->5min → remove → O_EXCL dance could delete a live lock on misjudged staleness and let two instances open the same session. Mutual exclusion now uses an OS advisory lock (`gofrs/flock`, promoted to a direct dependency); a crashed holder's lock is reclaimed instantly because the kernel drops the flock at process death. The lock file keeps PID/timestamps purely as diagnostics.
 - **Hardened atomic writes for state files**: global settings, checkpoint file contents and restores, handovers, and named checkpoints now go through `internal/safewrite` (same 0600 mode as before, plus fsync+rename atomicity and symlink refusal at the destination).
@@ -22,20 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **BREAKING — `rho credentials migrate` removed**: the subcommand, its man page entry, and the `MigrateEnvFileCredentials` wrappers are gone, and `rho path` no longer reports legacy `~/.rho/env` / `~/.rho/.env` files. Save keys through `/config`.
-- **BREAKING — settings model/provider migration removed**: `LoadSettings` no longer moves `model`/`provider` from `settings.json` into Eyrie's `provider.json`, and `SetActiveSelection` is deleted. Stale `model`/`provider` values left in `settings.json` are now ignored on load (Eyrie's selection wins; `--settings` overrides still apply); select the model in `/config`.
+- **BREAKING — settings model/provider migration removed**: `LoadSettings` no longer moves `model`/`provider` from `settings.json` into Flux's `provider.json`, and `SetActiveSelection` is deleted. Stale `model`/`provider` values left in `settings.json` are now ignored on load (Flux's selection wins; `--settings` overrides still apply); select the model in `/config`.
 - **BREAKING — startup provider-secrets migration removed**: print/REPL/watch/TUI startup no longer calls `MigrateProviderSecrets`, and the method is dropped from the gateway `CatalogMaintenance` interface. `rho path` still fails when `provider.json` holds secrets; remove those fields manually.
 - **BREAKING — `shared/types` guards removed**: `scripts/check-shared-types-imports.sh`, the `contracts-guard` make target, its lefthook and CI steps, and the matching testaudit checks are deleted because the package no longer exists. The ecosystem boundary guards still block `rho/internal` imports.
 
 ## [0.2.0] — 2026-07-13
 
 ### Changed
-- **Rho/Eyrie production boundary completed**: Rho owns the product face,
-  sessions, tools, permissions, and public schemas while Eyrie v0.2.1 owns
+- **Rho/Flux production boundary completed**: Rho owns the product face,
+  sessions, tools, permissions, and public schemas while Flux v0.2.1 owns
   credentials, catalog resolution, provider transport, resilience, and usage
-  telemetry behind the stable `eyrie/engine` facade.
+  telemetry behind the stable `flux/engine` facade.
 - **Provider routing and usage attribution hardened**: resolved route changes,
   continuation segments, and terminal usage are propagated without duplicate
-  accounting, and production Eyrie calls use exactly one resilience layer.
+  accounting, and production Flux calls use exactly one resilience layer.
 - **Daemon conversations are durable**: JSON and SSE chat requests create or
   resume persisted sessions, expose stable session IDs, preserve metadata, and
   distinguish invalid, missing, and corrupt state.
@@ -48,8 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`--permission-mode` CLI flag removed**; `--dangerously-skip-permissions` unchanged (now maps to the Autonomous tier). New `--dry-run` flag added as an unconditional kill switch (deny every tool call, regardless of tier or spec stage) — replaces `dontAsk`'s hard-lockout role.
 - **Version re-baselined to `0.1.0`** across `cmd/rho/main.go`, `cmd/daemon.go`,
   `flake.nix`, `.github/workflows/release.yml`, and the `update`/daemon test suites, aligning rho
-  with the rest of the GrayCodeAI ecosystem (`eyrie`, `shrike`, `harrier`, `kestrel`, `merlin`).
-- **Architecture boundary hardening**: Rho now owns runtime request/response DTOs, transport config/provider seams, and review/verification product-boundary contracts, with `eyrie/client` usage restricted to internal adapters and guarded in CI.
+  with the rest of the GrayCodeAI ecosystem (`flux`, `shrike`, `harrier`, `kestrel`, `merlin`).
+- **Architecture boundary hardening**: Rho now owns runtime request/response DTOs, transport config/provider seams, and review/verification product-boundary contracts, with `flux/client` usage restricted to internal adapters and guarded in CI.
 - **`shared/types` removed**: Rho no longer ships the old shared type path, and local boundary checks now block any attempt to reintroduce it.
 
 ### Added
@@ -237,5 +246,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Project scaffold with cobra CLI and Bubbletea TUI
 - Interactive chat REPL with textarea input, spinner, lipgloss styling
-- eyrie wired as LLM provider dependency
+- flux wired as LLM provider dependency
 - GitHub Actions CI

@@ -140,7 +140,7 @@ func runPrint(text string) error {
 				writePrintResult(printed.String(), sessionID, sess, false, nil)
 			}
 			if !noSessionPersistence {
-				saveEyrieSession(sessionID, sess)
+				saveFluxSession(sessionID, sess)
 			}
 			return nil
 		}
@@ -155,7 +155,7 @@ func runPrint(text string) error {
 		writePrintResult(printed.String(), sessionID, sess, false, nil)
 	}
 	if !noSessionPersistence {
-		saveEyrieSession(sessionID, sess)
+		saveFluxSession(sessionID, sess)
 	}
 	return nil
 }
@@ -311,7 +311,7 @@ func writePrintEvent(sessionID, eventType, content, toolName string) {
 	fmt.Println(string(data))
 }
 
-func saveEyrieSession(id string, sess *engine.Session) {
+func saveFluxSession(id string, sess *engine.Session) {
 	raw := sess.RawMessages()
 	if len(raw) == 0 {
 		return
@@ -485,7 +485,7 @@ func runRepl() error {
 					writePrintResult(printed.String(), sessionID, sess, false, nil)
 				}
 				if !noSessionPersistence {
-					saveEyrieSession(sessionID, sess)
+					saveFluxSession(sessionID, sess)
 				}
 			}
 		}
