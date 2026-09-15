@@ -24,37 +24,49 @@ func (FuzzyFindTool) Description() string {
 	return "Fuzzy-search a project for files by name. Handles partial names, camel-case abbreviations (CP→CachePlanner), and multi-word queries (cache gate→cache_gate.go). Returns ranked paths."
 }
 
-func (FuzzyFindTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"query": map[string]interface{}{
-				"type":        "string",
-				"description": "Fuzzy query: full or partial file name, camel-case abbreviation, or space-separated terms.",
+// FuzzyFindInput is the typed input for FuzzyFindTool.
+type FuzzyFindInput struct {
+	Query string `json:"query"`
+	Path  string `json:"path"`
+	Limit int    `json:"limit"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge. The limit bounds are preserved verbatim.
+func (FuzzyFindTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"query": {
+				Type:        "string",
+				Description: "Fuzzy query: full or partial file name, camel-case abbreviation, or space-separated terms.",
 			},
-			"path": map[string]interface{}{
-				"type":        "string",
-				"description": "Project directory (default: session working directory).",
+			"path": {
+				Type:        "string",
+				Description: "Project directory (default: session working directory).",
 			},
-			"limit": map[string]interface{}{
-				"type":        "integer",
-				"minimum":     1,
-				"maximum":     100,
-				"description": "Maximum results (default 20).",
+			"limit": {
+				Type:        "integer",
+				Minimum:     1,
+				Maximum:     100,
+				Description: "Maximum results (default 20).",
 			},
 		},
-		"required": []string{"query"},
+		Required: []string{"query"},
 	}
 }
 
+func (FuzzyFindTool) Parameters() map[string]interface{} {
+	return fuzzyFindSchema.ToJSONSchema()
+}
+
+// fuzzyFindSchema is the single source of truth for FuzzyFind's input schema.
+var fuzzyFindSchema = FuzzyFindTool{}.Schema()
+
 func (FuzzyFindTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var params struct {
-		Query string `json:"query"`
-		Path  string `json:"path"`
-		Limit int    `json:"limit"`
-	}
-	if err := json.Unmarshal(input, &params); err != nil {
-		return "", fmt.Errorf("invalid input: %w", err)
+	params, err := DecodeInput[FuzzyFindInput]("FuzzyFind", input)
+	if err != nil {
+		return "", err
 	}
 	if strings.TrimSpace(params.Query) == "" {
 		return "", fmt.Errorf("query is required")

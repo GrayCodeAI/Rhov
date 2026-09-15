@@ -83,3 +83,38 @@ func TestScreenshotSchemaProvider(t *testing.T) {
 		t.Fatalf("required = %v, want [url]", ScreenshotTool{}.Parameters()["required"])
 	}
 }
+
+func TestFuzzyFindSchemaProvider(t *testing.T) {
+	var _ SchemaProvider = FuzzyFindTool{}
+	props := schemaProps(t, FuzzyFindTool{}.Parameters())
+	limit, ok := props["limit"].(map[string]interface{})
+	if !ok || limit["type"] != "integer" {
+		t.Fatalf("limit prop = %v, want integer type", props["limit"])
+	}
+	// Bounds must survive the migration verbatim.
+	if limit["minimum"] != 1 || limit["maximum"] != 100 {
+		t.Fatalf("limit bounds = %v/%v, want 1/100", limit["minimum"], limit["maximum"])
+	}
+	req, _ := FuzzyFindTool{}.Parameters()["required"].([]string)
+	if len(req) != 1 || req[0] != "query" {
+		t.Fatalf("required = %v, want [query]", FuzzyFindTool{}.Parameters()["required"])
+	}
+}
+
+func TestMatchesRange(t *testing.T) {
+	if !matchesRange("x", 1, 100) {
+		t.Fatal("non-numeric value should pass (only numbers are ranged)")
+	}
+	if !matchesRange(float64(50), 1, 100) {
+		t.Fatal("50 should be in range")
+	}
+	if matchesRange(float64(0), 1, 100) {
+		t.Fatal("0 should be out of range")
+	}
+	if matchesRange(float64(101), 1, 100) {
+		t.Fatal("101 should be out of range")
+	}
+	if !matchesRange(float64(5), nil, nil) {
+		t.Fatal("no bounds should pass")
+	}
+}

@@ -58,6 +58,11 @@ type SchemaProperty struct {
 	Enum []interface{} `json:"enum,omitempty"`
 	// Items describes the element type for array fields.
 	Items *SchemaProperty `json:"items,omitempty"`
+	// Minimum/Maximum constrain numeric fields. Kept as interface{} (like
+	// Default) so authors write plain literals and the wire output matches
+	// hand-written schemas exactly.
+	Minimum interface{} `json:"minimum,omitempty"`
+	Maximum interface{} `json:"maximum,omitempty"`
 }
 
 // SchemaProvider is an optional interface tools can implement to expose a typed
@@ -96,6 +101,12 @@ func (p SchemaProperty) toMap() map[string]interface{} {
 	}
 	if len(p.Enum) > 0 {
 		m["enum"] = p.Enum
+	}
+	if p.Minimum != nil {
+		m["minimum"] = p.Minimum
+	}
+	if p.Maximum != nil {
+		m["maximum"] = p.Maximum
 	}
 	if p.Items != nil {
 		m["items"] = p.Items.toMap()

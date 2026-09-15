@@ -61,6 +61,43 @@ func validateSchema(input map[string]interface{}, schema ToolSchema, name string
 		if len(prop.Enum) > 0 && !matchesEnum(value, prop.Enum) {
 			continue
 		}
+		if (prop.Minimum != nil || prop.Maximum != nil) && !matchesRange(value, prop.Minimum, prop.Maximum) {
+			// Same softening as above: advisory only, caught by unit tests.
+			continue
+		}
+	}
+}
+
+func matchesRange(value, minimum, maximum interface{}) bool {
+	n, ok := value.(float64) // JSON numbers decode as float64
+	if !ok {
+		return true
+	}
+	if minimum != nil {
+		if min, ok := toFloat(minimum); ok && n < min {
+			return false
+		}
+	}
+	if maximum != nil {
+		if max, ok := toFloat(maximum); ok && n > max {
+			return false
+		}
+	}
+	return true
+}
+
+func toFloat(v interface{}) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	default:
+		return 0, false
 	}
 }
 
