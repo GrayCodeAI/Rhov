@@ -84,6 +84,8 @@ func restoreThemeGlobals(t *testing.T) {
 	savedCost, savedBranch, savedToken, savedCwd := costViolet, branchYellow, tokenSage, cwdBlue
 	savedPrimary, savedMuted, savedPlaceholder, savedDisabled := textPrimary, textMuted, textPlaceholder, textDisabled
 	savedBorderDim, savedBgCode := borderDim, bgCode
+	savedInputBorder := inputBorderStyle
+	savedMinimalChrome := minimalChrome
 	hasDark := lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 	t.Cleanup(func() {
 		rhoColor, successTeal, warnAmber, errorCoral, infoSky = savedRho, savedSuccess, savedWarn, savedErr, savedInfo
@@ -93,6 +95,10 @@ func restoreThemeGlobals(t *testing.T) {
 		costViolet, branchYellow, tokenSage, cwdBlue = savedCost, savedBranch, savedToken, savedCwd
 		textPrimary, textMuted, textPlaceholder, textDisabled = savedPrimary, savedMuted, savedPlaceholder, savedDisabled
 		borderDim, bgCode = savedBorderDim, savedBgCode
+		// ApplyTheme also rewrites the input border and chrome mode; restore
+		// them so a palette swap cannot leak into layout tests.
+		inputBorderStyle = savedInputBorder
+		minimalChrome = savedMinimalChrome
 		// HasDarkBackground is now a function (no args), SetHasDarkBackground removed in v2
 		_ = hasDark
 	})

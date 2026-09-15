@@ -2,15 +2,20 @@ package tool
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 func BenchmarkIsSensitivePath(b *testing.B) {
+	// Use realistic paths under the user's home / temp dir. Literal "/home/..."
+	// paths hit macOS's autofs automounter and would measure the wrong thing.
+	home, _ := os.UserHomeDir()
 	paths := []string{
-		"/home/user/project/main.go",
-		"/home/user/.ssh/id_rsa",
-		"/home/user/project/.env",
-		"/tmp/notes.txt",
+		filepath.Join(home, "project", "main.go"),
+		filepath.Join(home, ".ssh", "id_rsa"),
+		filepath.Join(home, "project", ".env"),
+		filepath.Join(os.TempDir(), "notes.txt"),
 	}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
