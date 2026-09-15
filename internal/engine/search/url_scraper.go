@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/toolsafety"
 )
 
 // URLScraper detects URLs in conversation text and fetches/extracts their content.
@@ -113,7 +113,7 @@ func (s *URLScraper) Fetch(ctx context.Context, rawURL string) (*ScrapeResult, e
 	// SSRF guard: reject private/link-local targets and pin the resolved IP
 	// to prevent DNS rebinding. Without this, a scraped URL could reach cloud
 	// metadata endpoints or internal services.
-	pinnedURL, origHost, err := tool.ValidateURLPublic(ctx, rawURL)
+	pinnedURL, origHost, err := toolsafety.ValidateURLPublic(ctx, rawURL)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *URLScraper) Fetch(ctx context.Context, rawURL string) (*ScrapeResult, e
 	req.Header.Set("User-Agent", s.UserAgent)
 	req.Header.Set("Accept", "text/html, application/json, text/plain, */*")
 
-	client := tool.SSRFSafeClient(ctx, s.Timeout)
+	client := toolsafety.SSRFSafeClient(ctx, s.Timeout)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching URL: %w", err)

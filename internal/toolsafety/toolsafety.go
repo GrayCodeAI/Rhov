@@ -1,4 +1,4 @@
-package tool
+package toolsafety
 
 import (
 	"context"
@@ -40,15 +40,15 @@ func ToolTimeout(toolName string) time.Duration {
 // 2. Output size limiting
 // ──────────────────────────────────────────────────────────────────────────────
 
-const maxOutputBytes = 500_000 // 500 KB — tune this if your tool outputs are routinely larger
+const MaxOutputBytes = 500_000 // 500 KB — tune this if your tool outputs are routinely larger
 
-// TruncateOutput trims output to maxOutputBytes and appends an indicator.
+// TruncateOutput trims output to MaxOutputBytes and appends an indicator.
 func TruncateOutput(s string) string {
-	if len(s) <= maxOutputBytes {
+	if len(s) <= MaxOutputBytes {
 		return s
 	}
 	// Truncate at rune boundary to avoid splitting multi-byte UTF-8 characters.
-	truncated := s[:maxOutputBytes]
+	truncated := s[:MaxOutputBytes]
 	for i := len(truncated) - 1; i >= 0; i-- {
 		b := truncated[i]
 		if b&0xC0 != 0x80 {
@@ -505,3 +505,114 @@ func ssrfSafeClient(ctx context.Context, timeout time.Duration) *http.Client {
 		},
 	}
 }
+
+func SegmentCommand(cmd string) []string {
+	var segments []string
+	var current strings.Builder
+	inSingle, inDouble := false, false
+	inHeredoc := false
+	heredocDelim := ""
+	runes := []rune(cmd)
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+
+		// If inside a heredoc body, consume until we find the delimiter on its own line
+		if inHeredoc {
+			current.WriteRune(ch)
+			if ch == '\n' {
+				lineStart := i + 1
+				lineEnd := lineStart
+				for lineEnd < len(runes) && runes[lineEnd] != '\n' {
+					lineEnd++
+				}
+				line := strings.TrimSpace(string(runes[lineStart:lineEnd]))
+				if line == heredocDelim {
+					for j := lineStart; j <= lineEnd && j < len(runes); j++ {
+						current.WriteRune(runes[j])
+					}
+					i = lineEnd
+					inHeredoc = false
+					heredocDelim = ""
+				}
+			}
+			continue
+		}
+
+		if ch == '\'' && !inDouble {
+			inSingle = !inSingle
+			current.WriteRune(ch)
+			continue
+		}
+		if ch == '"' && !inSingle {
+			inDouble = !inDouble
+			current.WriteRune(ch)
+			continue
+		}
+		if inSingle || inDouble {
+			current.WriteRune(ch)
+			continue
+		}
+
+		// Detect heredoc: <<EOF, << EOF, <<-EOF
+		if ch == '<' && i+1 < len(runes) && runes[i+1] == '<' {
+			j := i + 2
+			if j < len(runes) && runes[j] == '-' {
+				j++
+			}
+			for j < len(runes) && runes[j] == ' ' {
+				j++
+			}
+			if j < len(runes) {
+				delimStart := j
+				delimQuote := rune(0)
+				if runes[j] == '\'' || runes[j] == '"' {
+					delimQuote = runes[j]
+					j++
+					delimStart = j
+					for j < len(runes) && runes[j] != delimQuote {
+						j++
+					}
+				} else {
+					for j < len(runes) && runes[j] != ' ' && runes[j] != '\n' && runes[j] != '<' && runes[j] != '>' && runes[j] != '|' && runes[j] != '&' && runes[j] != ';' {
+						j++
+					}
+				}
+				if j > delimStart {
+					heredocDelim = string(runes[delimStart:j])
+					inHeredoc = true
+					for k := i; k < j; k++ {
+						current.WriteRune(runes[k])
+					}
+					i = j - 1
+					continue
+				}
+			}
+		}
+
+		// Check for &&, ||
+		if i+1 < len(runes) && ((ch == '&' && runes[i+1] == '&') || (ch == '|' && runes[i+1] == '|')) {
+			if s := strings.TrimSpace(current.String()); s != "" {
+				segments = append(segments, s)
+			}
+			current.Reset()
+			i++ // skip second char
+			continue
+		}
+		// Check for ; or single |
+		if ch == ';' || ch == '|' {
+			if s := strings.TrimSpace(current.String()); s != "" {
+				segments = append(segments, s)
+			}
+			current.Reset()
+			continue
+		}
+		current.WriteRune(ch)
+	}
+	if s := strings.TrimSpace(current.String()); s != "" {
+		segments = append(segments, s)
+	}
+	return segments
+}
+
+// IsSuspicious returns true if the command needs a permission prompt.
+// This is fail-closed: anything we can't confidently classify as safe gets flagged.

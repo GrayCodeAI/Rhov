@@ -180,118 +180,6 @@ func (BashTool) Parameters() map[string]interface{} {
 // bashSchema is the single source of truth for Bash's input schema.
 var bashSchema = BashTool{}.Schema()
 
-// SegmentCommand splits a command string on &&, ||, ;, and | (respecting quotes
-// and heredocs) into individual segments for independent analysis.
-func SegmentCommand(cmd string) []string {
-	var segments []string
-	var current strings.Builder
-	inSingle, inDouble := false, false
-	inHeredoc := false
-	heredocDelim := ""
-	runes := []rune(cmd)
-	for i := 0; i < len(runes); i++ {
-		ch := runes[i]
-
-		// If inside a heredoc body, consume until we find the delimiter on its own line
-		if inHeredoc {
-			current.WriteRune(ch)
-			if ch == '\n' {
-				lineStart := i + 1
-				lineEnd := lineStart
-				for lineEnd < len(runes) && runes[lineEnd] != '\n' {
-					lineEnd++
-				}
-				line := strings.TrimSpace(string(runes[lineStart:lineEnd]))
-				if line == heredocDelim {
-					for j := lineStart; j <= lineEnd && j < len(runes); j++ {
-						current.WriteRune(runes[j])
-					}
-					i = lineEnd
-					inHeredoc = false
-					heredocDelim = ""
-				}
-			}
-			continue
-		}
-
-		if ch == '\'' && !inDouble {
-			inSingle = !inSingle
-			current.WriteRune(ch)
-			continue
-		}
-		if ch == '"' && !inSingle {
-			inDouble = !inDouble
-			current.WriteRune(ch)
-			continue
-		}
-		if inSingle || inDouble {
-			current.WriteRune(ch)
-			continue
-		}
-
-		// Detect heredoc: <<EOF, << EOF, <<-EOF
-		if ch == '<' && i+1 < len(runes) && runes[i+1] == '<' {
-			j := i + 2
-			if j < len(runes) && runes[j] == '-' {
-				j++
-			}
-			for j < len(runes) && runes[j] == ' ' {
-				j++
-			}
-			if j < len(runes) {
-				delimStart := j
-				delimQuote := rune(0)
-				if runes[j] == '\'' || runes[j] == '"' {
-					delimQuote = runes[j]
-					j++
-					delimStart = j
-					for j < len(runes) && runes[j] != delimQuote {
-						j++
-					}
-				} else {
-					for j < len(runes) && runes[j] != ' ' && runes[j] != '\n' && runes[j] != '<' && runes[j] != '>' && runes[j] != '|' && runes[j] != '&' && runes[j] != ';' {
-						j++
-					}
-				}
-				if j > delimStart {
-					heredocDelim = string(runes[delimStart:j])
-					inHeredoc = true
-					for k := i; k < j; k++ {
-						current.WriteRune(runes[k])
-					}
-					i = j - 1
-					continue
-				}
-			}
-		}
-
-		// Check for &&, ||
-		if i+1 < len(runes) && ((ch == '&' && runes[i+1] == '&') || (ch == '|' && runes[i+1] == '|')) {
-			if s := strings.TrimSpace(current.String()); s != "" {
-				segments = append(segments, s)
-			}
-			current.Reset()
-			i++ // skip second char
-			continue
-		}
-		// Check for ; or single |
-		if ch == ';' || ch == '|' {
-			if s := strings.TrimSpace(current.String()); s != "" {
-				segments = append(segments, s)
-			}
-			current.Reset()
-			continue
-		}
-		current.WriteRune(ch)
-	}
-	if s := strings.TrimSpace(current.String()); s != "" {
-		segments = append(segments, s)
-	}
-	return segments
-}
-
-// IsSuspicious returns true if the command needs a permission prompt.
-// This is fail-closed: anything we can't confidently classify as safe gets flagged.
 func IsSuspicious(command string) bool {
 	// Whole-command checks that apply regardless of segmentation
 	if strings.Contains(command, "\r") {
@@ -500,23 +388,23 @@ func (BashTool) Execute(ctx context.Context, input json.RawMessage) (string, err
 	if tc := GetToolContext(ctx); tc != nil && tc.WorkingDir != "" {
 		cmd.Dir = tc.WorkingDir
 	}
-	// Use a limitedWriter to cap output at maxOutputBytes instead of
+	// Use a limitedWriter to cap output at MaxOutputBytes instead of
 	// CombinedOutput, which buffers the entire output in memory. A command
 	// like `yes` or `cat /dev/urandom` can produce GBs before the timeout
 	// kills it; the limitedWriter keeps memory bounded while the command
 	// continues to run (writes are silently discarded after the cap).
 	var lw limitedWriter
-	// Cap one byte above maxOutputBytes so that TruncateOutput's > branch
-	// fires when the cap is reached. At exactly maxOutputBytes (no discard)
+	// Cap one byte above MaxOutputBytes so that TruncateOutput's > branch
+	// fires when the cap is reached. At exactly MaxOutputBytes (no discard)
 	// TruncateOutput returns unchanged, which is correct.
-	lw.maxBytes = maxOutputBytes + 1
+	lw.maxBytes = MaxOutputBytes + 1
 	cmd.Stdout = &lw
 	cmd.Stderr = &lw
 	err := cmd.Run()
 	result := lw.buf.String()
 
 	// Apply safety output truncation (50KB) — the limitedWriter may have
-	// captured up to maxOutputBytes (500KB), so we still truncate for the
+	// captured up to MaxOutputBytes (500KB), so we still truncate for the
 	// final result returned to the model.
 	result = TruncateOutput(result)
 	result = strings.TrimRight(result, "\n")

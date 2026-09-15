@@ -49,7 +49,7 @@ func (WebFetchTool) Execute(ctx context.Context, input json.RawMessage) (string,
 	if p.URL == "" {
 		return "", fmt.Errorf("url is required")
 	}
-	pinnedURL, origHost, err := validateURLPublic(ctx, p.URL)
+	pinnedURL, origHost, err := ValidateURLPublic(ctx, p.URL)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +70,7 @@ func (WebFetchTool) Execute(ctx context.Context, input json.RawMessage) (string,
 		req.Host = origHost
 	}
 
-	client := ssrfSafeClient(ctx, 30*time.Second)
+	client := SSRFSafeClient(ctx, 30*time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err

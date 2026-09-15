@@ -50,12 +50,12 @@ func (DownloadTool) Execute(ctx context.Context, input json.RawMessage) (string,
 	if reason := IsSensitivePath(p.Destination); reason != "" {
 		return "", fmt.Errorf("write blocked: %s", reason)
 	}
-	pinnedURL, origHost, err := validateURLPublic(ctx, p.URL)
+	pinnedURL, origHost, err := ValidateURLPublic(ctx, p.URL)
 	if err != nil {
 		return "", err
 	}
 
-	client := ssrfSafeClient(ctx, 2*time.Minute)
+	client := SSRFSafeClient(ctx, 2*time.Minute)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pinnedURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)

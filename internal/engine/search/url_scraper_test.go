@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/GrayCodeAI/rho/internal/testutil"
-	"github.com/GrayCodeAI/rho/internal/tool"
+	"github.com/GrayCodeAI/rho/internal/toolsafety"
 )
 
 func TestDetectURLs_HTTPAndHTTPS(t *testing.T) {
@@ -330,7 +330,7 @@ func TestCachePreventsRefetch(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	ctx := tool.WithSSRFSkip(context.Background())
+	ctx := toolsafety.WithSSRFSkip(context.Background())
 
 	// First fetch should hit server.
 	_, err := scraper.Fetch(ctx, ts.URL)
@@ -359,7 +359,7 @@ func TestFetch_HTMLContent(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
+	result, err := scraper.Fetch(toolsafety.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
@@ -386,7 +386,7 @@ func TestFetch_JSONContent(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
+	result, err := scraper.Fetch(toolsafety.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
@@ -494,7 +494,7 @@ func TestTokenEstimate(t *testing.T) {
 	defer ts.Close()
 
 	scraper := NewURLScraper()
-	result, err := scraper.Fetch(tool.WithSSRFSkip(context.Background()), ts.URL)
+	result, err := scraper.Fetch(toolsafety.WithSSRFSkip(context.Background()), ts.URL)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
