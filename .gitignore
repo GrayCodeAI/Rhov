@@ -50,3 +50,6 @@ rho_bin
 # Logs
 *.log
 rho-sec105b.log
+
+# Compiled Go test binaries
+*.test
