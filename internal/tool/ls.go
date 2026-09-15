@@ -19,23 +19,38 @@ func (LSTool) Description() string {
 	return "List files and directories in a directory."
 }
 
-func (LSTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"path":   map[string]interface{}{"type": "string", "description": "Directory path to list (default: current directory)"},
-			"ignore": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}, "description": "Optional file or glob patterns to exclude"},
+// LSInput is the typed input for LSTool.
+type LSInput struct {
+	Path   string   `json:"path"`
+	Ignore []string `json:"ignore"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (LSTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"path":   {Type: "string", Description: "Directory path to list (default: current directory)"},
+			"ignore": {Type: "array", Description: "Optional file or glob patterns to exclude", Items: &SchemaProperty{Type: "string"}},
 		},
 	}
 }
 
+func (LSTool) Parameters() map[string]interface{} {
+	return lsSchema.ToJSONSchema()
+}
+
+// lsSchema is the single source of truth for LS's input schema.
+var lsSchema = LSTool{}.Schema()
+
 func (LSTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		Path   string   `json:"path"`
-		Ignore []string `json:"ignore"`
-	}
+	// Empty input lists the current directory; only decode when present.
+	var p LSInput
 	if len(input) > 0 {
-		if err := json.Unmarshal(input, &p); err != nil {
+		var err error
+		p, err = DecodeInput[LSInput]("LS", input)
+		if err != nil {
 			return "", err
 		}
 	}

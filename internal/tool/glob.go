@@ -15,23 +15,36 @@ func (GlobTool) Name() string        { return "Glob" }
 func (GlobTool) RiskLevel() string   { return "low" }
 func (GlobTool) Aliases() []string   { return []string{"glob"} }
 func (GlobTool) Description() string { return "Find files matching a glob pattern." }
-func (GlobTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"pattern": map[string]interface{}{"type": "string", "description": "Glob pattern (e.g. **/*.go)"},
-			"path":    map[string]interface{}{"type": "string", "description": "Root directory (default: current dir)"},
+
+// GlobInput is the typed input for GlobTool.
+type GlobInput struct {
+	Pattern string `json:"pattern"`
+	Path    string `json:"path"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (GlobTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"pattern": {Type: "string", Description: "Glob pattern (e.g. **/*.go)"},
+			"path":    {Type: "string", Description: "Root directory (default: current dir)"},
 		},
-		"required": []string{"pattern"},
+		Required: []string{"pattern"},
 	}
 }
 
+func (GlobTool) Parameters() map[string]interface{} {
+	return globSchema.ToJSONSchema()
+}
+
+// globSchema is the single source of truth for Glob's input schema.
+var globSchema = GlobTool{}.Schema()
+
 func (GlobTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		Pattern string `json:"pattern"`
-		Path    string `json:"path"`
-	}
-	if err := json.Unmarshal(input, &p); err != nil {
+	p, err := DecodeInput[GlobInput]("Glob", input)
+	if err != nil {
 		return "", err
 	}
 	root := p.Path
@@ -42,7 +55,7 @@ func (GlobTool) Execute(ctx context.Context, input json.RawMessage) (string, err
 		return "", err
 	}
 	var matches []string
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}

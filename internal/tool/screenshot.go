@@ -21,31 +21,43 @@ func (ScreenshotTool) Description() string {
 	return "Capture a full-page screenshot of a URL with headless Chrome and save it as a PNG file."
 }
 
-func (ScreenshotTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"url":      map[string]interface{}{"type": "string", "description": "URL (http/https) to capture"},
-			"path":     map[string]interface{}{"type": "string", "description": "Destination PNG path; defaults to a temp file"},
-			"width":    map[string]interface{}{"type": "number", "description": "Viewport width in pixels (default 1280)"},
-			"height":   map[string]interface{}{"type": "number", "description": "Viewport height in pixels (default 800)"},
-			"wait_ms":  map[string]interface{}{"type": "number", "description": "Milliseconds to wait for the page to render (default 1500)"},
-			"selector": map[string]interface{}{"type": "string", "description": "Optional CSS selector to wait for before capturing"},
+// ScreenshotInput is the typed input for ScreenshotTool.
+type ScreenshotInput struct {
+	URL      string `json:"url"`
+	Path     string `json:"path"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+	WaitMS   int    `json:"wait_ms"`
+	Selector string `json:"selector"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (ScreenshotTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"url":      {Type: "string", Description: "URL (http/https) to capture"},
+			"path":     {Type: "string", Description: "Destination PNG path; defaults to a temp file"},
+			"width":    {Type: "number", Description: "Viewport width in pixels (default 1280)"},
+			"height":   {Type: "number", Description: "Viewport height in pixels (default 800)"},
+			"wait_ms":  {Type: "number", Description: "Milliseconds to wait for the page to render (default 1500)"},
+			"selector": {Type: "string", Description: "Optional CSS selector to wait for before capturing"},
 		},
-		"required": []string{"url"},
+		Required: []string{"url"},
 	}
 }
 
+func (ScreenshotTool) Parameters() map[string]interface{} {
+	return screenshotSchema.ToJSONSchema()
+}
+
+// screenshotSchema is the single source of truth for Screenshot's input schema.
+var screenshotSchema = ScreenshotTool{}.Schema()
+
 func (ScreenshotTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		URL      string `json:"url"`
-		Path     string `json:"path"`
-		Width    int    `json:"width"`
-		Height   int    `json:"height"`
-		WaitMS   int    `json:"wait_ms"`
-		Selector string `json:"selector"`
-	}
-	if err := json.Unmarshal(input, &p); err != nil {
+	p, err := DecodeInput[ScreenshotInput]("Screenshot", input)
+	if err != nil {
 		return "", err
 	}
 

@@ -17,25 +17,38 @@ func (GrepTool) Name() string        { return "Grep" }
 func (GrepTool) RiskLevel() string   { return "low" }
 func (GrepTool) Aliases() []string   { return []string{"grep"} }
 func (GrepTool) Description() string { return "Search for a regex pattern in files." }
-func (GrepTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"pattern": map[string]interface{}{"type": "string", "description": "Regex pattern to search for"},
-			"path":    map[string]interface{}{"type": "string", "description": "Directory to search (default: current dir)"},
-			"include": map[string]interface{}{"type": "string", "description": "File glob filter (e.g. *.go)"},
+
+// GrepInput is the typed input for GrepTool.
+type GrepInput struct {
+	Pattern string `json:"pattern"`
+	Path    string `json:"path"`
+	Include string `json:"include"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (GrepTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"pattern": {Type: "string", Description: "Regex pattern to search for"},
+			"path":    {Type: "string", Description: "Directory to search (default: current dir)"},
+			"include": {Type: "string", Description: "File glob filter (e.g. *.go)"},
 		},
-		"required": []string{"pattern"},
+		Required: []string{"pattern"},
 	}
 }
 
+func (GrepTool) Parameters() map[string]interface{} {
+	return grepSchema.ToJSONSchema()
+}
+
+// grepSchema is the single source of truth for Grep's input schema.
+var grepSchema = GrepTool{}.Schema()
+
 func (GrepTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		Pattern string `json:"pattern"`
-		Path    string `json:"path"`
-		Include string `json:"include"`
-	}
-	if err := json.Unmarshal(input, &p); err != nil {
+	p, err := DecodeInput[GrepInput]("Grep", input)
+	if err != nil {
 		return "", err
 	}
 	re, err := regexp.Compile(p.Pattern)

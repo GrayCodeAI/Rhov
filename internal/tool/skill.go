@@ -20,21 +20,36 @@ func (SkillTool) Description() string {
 	return "Load instructions from a local Rho skill. Use without a skill name to list available skills."
 }
 
-func (SkillTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"skill": map[string]interface{}{"type": "string", "description": "Skill name to load"},
+// SkillInput is the typed input for SkillTool.
+type SkillInput struct {
+	Skill string `json:"skill"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (SkillTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"skill": {Type: "string", Description: "Skill name to load"},
 		},
 	}
 }
 
+func (SkillTool) Parameters() map[string]interface{} {
+	return skillSchema.ToJSONSchema()
+}
+
+// skillSchema is the single source of truth for Skill's input schema.
+var skillSchema = SkillTool{}.Schema()
+
 func (SkillTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		Skill string `json:"skill"`
-	}
+	// Empty input lists available skills; only decode when present.
+	var p SkillInput
 	if len(input) > 0 {
-		if err := json.Unmarshal(input, &p); err != nil {
+		var err error
+		p, err = DecodeInput[SkillInput]("Skill", input)
+		if err != nil {
 			return "", err
 		}
 	}
