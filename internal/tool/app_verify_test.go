@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -14,7 +13,7 @@ func TestAppVerifyDetectAction(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module x\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err := AppVerifyTool{}.Execute(context.Background(), json.RawMessage(`{"action":"detect","path":"`+dir+`"}`))
+	out, err := AppVerifyTool{}.Execute(testCtx(), json.RawMessage(`{"action":"detect","path":"`+dir+`"}`))
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -32,7 +31,7 @@ func TestAppVerifyManifestActionPersistsContract(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module x\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err := AppVerifyTool{}.Execute(context.Background(), json.RawMessage(`{"action":"manifest","path":"`+dir+`"}`))
+	out, err := AppVerifyTool{}.Execute(testCtx(), json.RawMessage(`{"action":"manifest","path":"`+dir+`"}`))
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -51,7 +50,7 @@ func TestAppVerifyManifestActionPersistsContract(t *testing.T) {
 	}
 
 	// Second run loads the existing manifest.
-	out2, err := AppVerifyTool{}.Execute(context.Background(), json.RawMessage(`{"action":"manifest","path":"`+dir+`"}`))
+	out2, err := AppVerifyTool{}.Execute(testCtx(), json.RawMessage(`{"action":"manifest","path":"`+dir+`"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +70,7 @@ func TestAppVerifySmokeSkipsWithoutStartCommand(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module x\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	out, err := AppVerifyTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := AppVerifyTool{}.Execute(testCtx(), json.RawMessage(
 		`{"action":"smoke","path":"`+dir+`","readiness_seconds":2}`,
 	))
 	if err != nil {
@@ -90,7 +89,7 @@ func TestAppVerifySmokeSkipsWithoutStartCommand(t *testing.T) {
 
 func TestAppVerifyInvalidAction(t *testing.T) {
 	tool := AppVerifyTool{}
-	if _, err := tool.Execute(context.Background(), json.RawMessage(`{"action":"nope"}`)); err == nil {
+	if _, err := tool.Execute(testCtx(), json.RawMessage(`{"action":"nope"}`)); err == nil {
 		t.Fatal("expected error for unsupported action")
 	}
 }

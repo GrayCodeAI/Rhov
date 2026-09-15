@@ -40,6 +40,7 @@ type FileWatcher struct {
 	OnChange       func([]FileEvent)
 
 	polling  bool
+	stopped  bool
 	interval time.Duration
 	done     chan struct{}
 	mu       sync.Mutex
@@ -159,13 +160,17 @@ func (fw *FileWatcher) Start(ctx context.Context) error {
 	}
 }
 
-// Stop signals the watcher to stop polling.
+// Stop signals the watcher to stop polling. Safe to call multiple times and
+// before Start.
 func (fw *FileWatcher) Stop() {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
-	if fw.polling {
-		close(fw.done)
+	if fw.stopped || fw.done == nil {
+		return
 	}
+	fw.stopped = true
+	fw.polling = false
+	close(fw.done)
 }
 
 // scan walks the root directory and builds a snapshot of all tracked files.

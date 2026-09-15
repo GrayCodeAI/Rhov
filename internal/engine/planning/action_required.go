@@ -1,6 +1,7 @@
 package planning
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -43,10 +44,16 @@ type FormResponse struct {
 // ActionManager coordinates action-required requests, managing pending and
 // historical forms and delegating presentation to the configured PromptFn.
 type ActionManager struct {
-	Pending  []*ActionRequired
-	History  []*ActionRequired
+	Pending []*ActionRequired
+	History []*ActionRequired
+	// PromptFn presents the form and blocks until the user responds. It should
+	// return promptly; when it cannot be cancelled it may outlive a timeout.
 	PromptFn func(action *ActionRequired) (*FormResponse, error)
-	mu       sync.Mutex
+	// PromptCtxFn, when set, is preferred over PromptFn and receives a context
+	// that is cancelled when the action times out, so a blocking prompt can
+	// abort instead of leaking its goroutine.
+	PromptCtxFn func(ctx context.Context, action *ActionRequired) (*FormResponse, error)
+	mu          sync.Mutex
 }
 
 // NewActionManager creates an ActionManager with the given prompt function.
@@ -73,20 +80,30 @@ func (am *ActionManager) Request(action *ActionRequired) (*FormResponse, error) 
 	var err error
 
 	if action.Timeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), action.Timeout)
+		defer cancel()
 		type result struct {
 			resp *FormResponse
 			err  error
 		}
 		ch := make(chan result, 1)
+		prompt := am.PromptFn
+		ctxPrompt := am.PromptCtxFn
 		go func() {
-			r, e := am.PromptFn(action)
+			var r *FormResponse
+			var e error
+			if ctxPrompt != nil {
+				r, e = ctxPrompt(ctx, action)
+			} else {
+				r, e = prompt(action)
+			}
 			ch <- result{r, e}
 		}()
 		select {
 		case res := <-ch:
 			resp = res.resp
 			err = res.err
-		case <-time.After(action.Timeout):
+		case <-ctx.Done():
 			resp = &FormResponse{
 				Values:      make(map[string]string),
 				SubmittedAt: time.Now(),

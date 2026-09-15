@@ -1,11 +1,20 @@
 package tool
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// A model-facing path check with no ToolContext attached must fail closed
+// rather than silently skipping the allowed-directory policy.
+func TestValidatePathAllowedFailsClosedWithoutToolContext(t *testing.T) {
+	if err := validatePathAllowed(context.Background(), "somefile.txt"); err == nil {
+		t.Fatal("validatePathAllowed must fail closed when no ToolContext is attached")
+	}
+}
 
 func TestGuardedRootPathRejectsSymlinkEscape(t *testing.T) {
 	allowed := t.TempDir()

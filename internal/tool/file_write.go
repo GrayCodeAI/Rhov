@@ -104,7 +104,9 @@ func (FileWriteTool) Execute(ctx context.Context, input json.RawMessage) (string
 		return "", fmt.Errorf("rename: %w", err)
 	}
 	if autoCommitEnabled(ctx) {
-		_ = AutoCommit(ctx, path, "Write", "wrote file")
+		if err := AutoCommit(ctx, path, "Write", "wrote file"); err != nil {
+			slog.Warn("auto-commit failed", "path", path, "error", err)
+		}
 	}
 	lintNote := postWriteLint(ctx, path)
 	return fmt.Sprintf("Wrote %d bytes to %s%s", len(p.Content), path, lintNote), nil

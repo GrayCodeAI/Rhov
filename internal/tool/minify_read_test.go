@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -26,7 +25,7 @@ func Add(a, b int) int {
 	}
 
 	in, _ := json.Marshal(map[string]interface{}{"path": path, "minify": true})
-	out, err := FileReadTool{}.Execute(context.Background(), in)
+	out, err := FileReadTool{}.Execute(testCtx(), in)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +45,7 @@ func TestReadWithoutMinifyKeepsComments(t *testing.T) {
 		t.Fatal(err)
 	}
 	in, _ := json.Marshal(map[string]string{"path": path})
-	out, err := FileReadTool{}.Execute(context.Background(), in)
+	out, err := FileReadTool{}.Execute(testCtx(), in)
 	if err != nil {
 		t.Fatal(err)
 	}

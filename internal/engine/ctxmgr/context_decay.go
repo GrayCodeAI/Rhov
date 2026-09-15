@@ -22,7 +22,17 @@ type ContextDecay struct {
 	HalfLife  time.Duration
 	MinWeight float64
 	Entries   []DecayEntry
-	mu        sync.RWMutex
+	// nowFn is an injectable clock for deterministic tests; nil means time.Now.
+	nowFn func() time.Time
+	mu    sync.RWMutex
+}
+
+// now returns the current time from the injected clock, or time.Now.
+func (cd *ContextDecay) now() time.Time {
+	if cd.nowFn != nil {
+		return cd.nowFn()
+	}
+	return time.Now()
 }
 
 // DecayEntry represents a single piece of context with decay metadata.
@@ -67,7 +77,7 @@ func (cd *ContextDecay) Add(content, category string, tokens int) string {
 	cd.mu.Lock()
 	defer cd.mu.Unlock()
 
-	now := time.Now()
+	now := cd.now()
 	id := fmt.Sprintf("ctx_%d_%d", now.UnixNano(), len(cd.Entries))
 
 	entry := DecayEntry{
@@ -108,7 +118,7 @@ func (cd *ContextDecay) calculateWeight(entry *DecayEntry) float64 {
 		return 1.0
 	}
 
-	elapsed := time.Since(entry.LastAccessed)
+	elapsed := cd.now().Sub(entry.LastAccessed)
 	halfLives := float64(elapsed) / float64(cd.HalfLife)
 	weight := entry.Weight * math.Pow(0.5, halfLives)
 
@@ -130,7 +140,7 @@ func (cd *ContextDecay) ApplyDecay() {
 			continue
 		}
 
-		elapsed := time.Since(cd.Entries[i].LastAccessed)
+		elapsed := cd.now().Sub(cd.Entries[i].LastAccessed)
 		halfLives := float64(elapsed) / float64(cd.HalfLife)
 		newWeight := math.Pow(0.5, halfLives)
 
@@ -149,7 +159,7 @@ func (cd *ContextDecay) Access(id string) {
 
 	for i := range cd.Entries {
 		if cd.Entries[i].ID == id {
-			cd.Entries[i].LastAccessed = time.Now()
+			cd.Entries[i].LastAccessed = cd.now()
 			cd.Entries[i].AccessCount++
 			// Boost weight back toward 1.0 on access
 			cd.Entries[i].Weight = math.Min(1.0, cd.Entries[i].Weight+0.2)

@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ func TestMultiEditApplyAll(t *testing.T) {
 		},
 	})
 
-	out, err := (MultiEditTool{}).Execute(context.Background(), input)
+	out, err := (MultiEditTool{}).Execute(testCtx(), input)
 	if err != nil {
 		t.Fatalf("MultiEdit: %v", err)
 	}
@@ -50,7 +49,7 @@ func TestMultiEditPartialFailure(t *testing.T) {
 		},
 	})
 
-	out, err := (MultiEditTool{}).Execute(context.Background(), input)
+	out, err := (MultiEditTool{}).Execute(testCtx(), input)
 	if err != nil {
 		t.Fatalf("MultiEdit: %v", err)
 	}
@@ -69,7 +68,7 @@ func TestMultiEditNoEdits(t *testing.T) {
 		"edits":     []map[string]interface{}{},
 	})
 
-	_, err := (MultiEditTool{}).Execute(context.Background(), input)
+	_, err := (MultiEditTool{}).Execute(testCtx(), input)
 	if err == nil {
 		t.Error("expected error for empty edits")
 	}
@@ -77,7 +76,7 @@ func TestMultiEditNoEdits(t *testing.T) {
 
 func TestDownloadToolMissingParams(t *testing.T) {
 	input, _ := json.Marshal(map[string]interface{}{})
-	_, err := (DownloadTool{}).Execute(context.Background(), input)
+	_, err := (DownloadTool{}).Execute(testCtx(), input)
 	if err == nil {
 		t.Error("expected error for missing params")
 	}

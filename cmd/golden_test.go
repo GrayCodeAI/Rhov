@@ -12,7 +12,7 @@ import (
 var updateGolden = flag.Bool("update-golden", false, "update golden files")
 
 func TestGoldenHelp(t *testing.T) {
-	SetVersion("0.1.0")
+	SetVersion("0.0.1")
 	SetBuildDate("test")
 
 	tests := []struct {
@@ -25,6 +25,13 @@ func TestGoldenHelp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Restore the global rootCmd's output/args after this test so a
+			// later test is not affected by our mutation.
+			t.Cleanup(func() {
+				rootCmd.SetOut(os.Stdout)
+				rootCmd.SetErr(os.Stderr)
+				rootCmd.SetArgs(nil)
+			})
 			buf := new(bytes.Buffer)
 			groupRootCommands()
 			rootCmd.SetOut(buf)

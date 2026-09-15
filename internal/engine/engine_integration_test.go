@@ -56,8 +56,6 @@ func drainStream(ctx context.Context, ch <-chan StreamEvent, timeout time.Durati
 // ──────────────────────────────────────────────────────────────────────────────
 
 func TestIntegration_FullSessionFlow(t *testing.T) {
-	// FIXME: requires configured LLM provider — run manually with ANTHROPIC_API_KEY set
-	t.Skip("requires configured LLM provider — run manually with ANTHROPIC_API_KEY set")
 	sess := newTestSession()
 
 	// Add user message and assistant response to simulate a flow.
@@ -104,19 +102,6 @@ func TestIntegration_FullSessionFlow(t *testing.T) {
 	}
 	if raw[3].Role != "assistant" || raw[3].Content == "" {
 		t.Error("fourth message should be assistant with final content")
-	}
-
-	// Stream with immediate timeout exercises the stream/done path.
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-	defer cancel()
-	ch, err := sess.Stream(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	events := drainStream(ctx, ch, 5*time.Second)
-	// We expect at least an error or done event (no provider configured).
-	if len(events) == 0 {
-		t.Fatal("expected at least one stream event")
 	}
 }
 

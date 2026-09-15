@@ -7,7 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -130,14 +134,31 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
-// ValidateHTTPHookURL is a light SSRF guard: only http(s) and no localhost unless
-// RHO_HOOKS_ALLOW_LOCAL=1. Callers may skip this for tests.
+// ValidateHTTPHookURL is a light SSRF guard: only http(s) and no localhost
+// unless RHO_HOOKS_ALLOW_LOCAL=1. Callers may skip this for tests.
 func ValidateHTTPHookURL(raw string) error {
 	if raw == "" {
 		return fmt.Errorf("empty hook URL")
 	}
-	if !(len(raw) > 8 && (raw[:7] == "http://" || raw[:8] == "https://")) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("hook URL is not a valid URL: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("hook URL must be http(s)")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("hook URL has no host")
+	}
+	if strings.EqualFold(os.Getenv("RHO_HOOKS_ALLOW_LOCAL"), "1") {
+		return nil
+	}
+	if strings.EqualFold(host, "localhost") {
+		return fmt.Errorf("hook URL must not target localhost (set RHO_HOOKS_ALLOW_LOCAL=1 to override)")
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return fmt.Errorf("hook URL must not target a loopback address (set RHO_HOOKS_ALLOW_LOCAL=1 to override)")
 	}
 	return nil
 }

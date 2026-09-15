@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/rho/internal/gitcmd"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -51,6 +51,10 @@ func (fw *FileWatcher) Start(ctx context.Context) error {
 		mu      sync.Mutex
 		pending = make(map[string]time.Time)
 	)
+	// Bound concurrent change callbacks: a burst of writes (formatter, go
+	// generate, checkout) would otherwise spawn one goroutine + git process
+	// per file.
+	fireSem := make(chan struct{}, 8)
 
 	// Flush goroutine: fires debounced callbacks.
 	go func() {
@@ -66,9 +70,19 @@ func (fw *FileWatcher) Start(ctx context.Context) error {
 				mu.Lock()
 				now := time.Now()
 				for p, t := range pending {
-					if now.Sub(t) >= debounce {
+					if now.Sub(t) < debounce {
+						continue
+					}
+					select {
+					case fireSem <- struct{}{}:
 						delete(pending, p)
-						go fw.fireChange(p)
+						go func(path string) {
+							defer func() { <-fireSem }()
+							fw.fireChange(path)
+						}(p)
+					default:
+						// All workers busy; leave the path pending for the
+						// next tick instead of spawning unbounded work.
 					}
 				}
 				mu.Unlock()
@@ -135,7 +149,10 @@ func gitDiffForFile(dir, path string) string {
 	if err != nil {
 		rel = path
 	}
-	cmd := exec.CommandContext(context.Background(), "git", "diff", "--", rel) // #nosec G204 -- fixed command 'git' with args, not user-controlled binary
+	// Bound the git invocation so a hung process cannot block a worker.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := gitcmd.Command(ctx, "diff", "--", rel) // #nosec G204 -- fixed command 'git' with args, not user-controlled binary
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {

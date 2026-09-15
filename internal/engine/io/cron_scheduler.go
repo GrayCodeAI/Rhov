@@ -29,6 +29,7 @@ type CronScheduler struct {
 	Jobs    map[string]*CronJob
 	Running bool
 	done    chan struct{}
+	stopped bool
 	mu      sync.RWMutex
 	nextID  int
 }
@@ -111,8 +112,11 @@ func (cs *CronScheduler) Start(ctx context.Context, execFn func(string) (string,
 			case <-ctx.Done():
 				cs.mu.Lock()
 				cs.Running = false
+				if !cs.stopped {
+					cs.stopped = true
+					close(cs.done)
+				}
 				cs.mu.Unlock()
-				close(cs.done)
 				return
 			case <-cs.done:
 				return
@@ -123,16 +127,18 @@ func (cs *CronScheduler) Start(ctx context.Context, execFn func(string) (string,
 	}()
 }
 
-// Stop halts the scheduler.
+// Stop halts the scheduler. Safe to call multiple times.
 func (cs *CronScheduler) Stop() {
 	cs.mu.Lock()
-	if !cs.Running {
-		cs.mu.Unlock()
+	defer cs.mu.Unlock()
+	if cs.stopped {
 		return
 	}
+	cs.stopped = true
 	cs.Running = false
-	cs.mu.Unlock()
-	close(cs.done)
+	if cs.done != nil {
+		close(cs.done)
+	}
 }
 
 // PauseJob disables a job so it won't be executed.

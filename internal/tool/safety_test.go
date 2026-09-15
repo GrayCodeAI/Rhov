@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -299,15 +298,15 @@ func TestFileToolsBlockFluxProviderConfig(t *testing.T) {
 		run  func() error
 	}{
 		{name: "Read", run: func() error {
-			_, err := (FileReadTool{}).Execute(context.Background(), readInput)
+			_, err := (FileReadTool{}).Execute(testCtx(), readInput)
 			return err
 		}},
 		{name: "Edit", run: func() error {
-			_, err := (FileEditTool{}).Execute(context.Background(), editInput)
+			_, err := (FileEditTool{}).Execute(testCtx(), editInput)
 			return err
 		}},
 		{name: "Write", run: func() error {
-			_, err := (FileWriteTool{}).Execute(context.Background(), writeInput)
+			_, err := (FileWriteTool{}).Execute(testCtx(), writeInput)
 			return err
 		}},
 	}
@@ -357,7 +356,7 @@ func TestFileRead_BlocksSymlinkToSensitiveFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	in, _ := json.Marshal(map[string]string{"path": link})
-	_, err := (FileReadTool{}).Execute(context.Background(), in)
+	_, err := (FileReadTool{}).Execute(testCtx(), in)
 	if err == nil || !strings.Contains(err.Error(), "blocked") {
 		t.Fatalf("expected sensitive-path block for symlinked provider config, got %v", err)
 	}
@@ -372,7 +371,7 @@ func TestFileRead_BlocksSymlinkToSensitiveFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	in2, _ := json.Marshal(map[string]string{"path": link2})
-	out, err := (FileReadTool{}).Execute(context.Background(), in2)
+	out, err := (FileReadTool{}).Execute(testCtx(), in2)
 	if err != nil {
 		t.Fatalf("expected symlinked plain file to read, got %v", err)
 	}

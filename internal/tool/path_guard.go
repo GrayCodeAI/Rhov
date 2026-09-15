@@ -11,12 +11,11 @@ import (
 func validatePathAllowed(ctx context.Context, path string) error {
 	tc := GetToolContext(ctx)
 	if tc == nil {
-		// No ToolContext: there is no allowed-directory policy to enforce.
-		// Model-facing tools are always dispatched with a ToolContext attached
-		// (engine/tool_service.go), so this branch is only reachable from
-		// internal helpers and tests. Those internal callers use the pinned
-		// helpers below, which still pin the parent directory with os.Root.
-		return nil
+		// Fail closed: a model-facing file tool invoked without a ToolContext
+		// has no allowed-directory policy to enforce. Internal callers that
+		// legitimately operate without one use the pinned helpers below, which
+		// pin the parent directory with os.Root but skip this check.
+		return fmt.Errorf("path access denied: no tool context attached for %q", path)
 	}
 	path = strings.TrimSpace(path)
 	if path == "" {

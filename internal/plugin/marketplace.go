@@ -157,7 +157,8 @@ func (mc *MarketplaceClient) fetchOne(src MarketplaceSource) (*MarketplaceIndex,
 	if resp.StatusCode != http.StatusOK {
 		return loadCachedMarketplace(cachePath)
 	}
-	data, err := io.ReadAll(resp.Body)
+	// Cap the remote index read so a hostile or misconfigured host cannot OOM us.
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxRemoteIndexBytes))
 	if err != nil {
 		return loadCachedMarketplace(cachePath)
 	}

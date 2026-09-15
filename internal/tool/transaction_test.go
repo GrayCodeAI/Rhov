@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -660,7 +659,7 @@ func TestTransactionTool_Execute(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(input)
-	ctx := context.Background()
+	ctx := testCtx()
 
 	tool := TransactionTool{}
 	result, err := tool.Execute(ctx, data)
@@ -702,7 +701,7 @@ func TestTransactionTool_ExecuteDryRun(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(input)
-	ctx := context.Background()
+	ctx := testCtx()
 
 	tool := TransactionTool{}
 	result, err := tool.Execute(ctx, data)
@@ -723,7 +722,7 @@ func TestTransactionTool_ExecuteDryRun(t *testing.T) {
 func TestTransactionTool_ExecuteEmptyOperations(t *testing.T) {
 	input := transactionInput{}
 	data, _ := json.Marshal(input)
-	ctx := context.Background()
+	ctx := testCtx()
 
 	tool := TransactionTool{}
 	_, err := tool.Execute(ctx, data)
@@ -753,7 +752,7 @@ func TestTransactionTool_RejectsCredentialContent(t *testing.T) {
 	}
 
 	data, _ := json.Marshal(input)
-	_, err := (TransactionTool{}).Execute(context.Background(), data)
+	_, err := (TransactionTool{}).Execute(testCtx(), data)
 	if err == nil || !strings.Contains(err.Error(), "contains a credential") {
 		t.Fatalf("expected credential rejection, got %v", err)
 	}

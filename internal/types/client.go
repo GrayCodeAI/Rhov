@@ -25,12 +25,6 @@ type ChatProvider interface {
 	Name() string
 }
 
-// ChatClient is the session-level agent-loop client interface.
-type ChatClient interface {
-	Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error)
-	StreamChatContinue(ctx context.Context, messages []FluxMessage, opts ChatOptions, cfg ContinuationConfig) (*StreamResult, error)
-}
-
 // ResponseFormat specifies the desired output format for a Rho runtime request.
 type ResponseFormat = llm.ResponseFormat
 

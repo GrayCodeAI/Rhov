@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/GrayCodeAI/rho/internal/home"
+	"github.com/GrayCodeAI/rho/internal/pathsafe"
 	"github.com/GrayCodeAI/rho/internal/provider/gateway"
 	"github.com/GrayCodeAI/rho/internal/theme"
 	"github.com/GrayCodeAI/rho/internal/token"
-	"github.com/GrayCodeAI/rho/internal/tool"
 
 	"github.com/GrayCodeAI/rho/internal/ui/icons"
 )
@@ -138,7 +138,7 @@ func EvaluateDeveloperPath(ctx context.Context) DeveloperPathReport {
 	if provPath == "" {
 		provPath = filepath.Join(rhoDir, ".rho", "provider.json")
 	}
-	if reason := tool.IsSensitivePath(provPath); reason != "" {
+	if reason := pathsafe.IsSensitivePath(provPath); reason != "" {
 		checks = append(checks, PathCheck{
 			Section: "Security", Name: "read guard", Status: PathPass,
 			Detail:   "Sensitive paths blocked for Read tool",

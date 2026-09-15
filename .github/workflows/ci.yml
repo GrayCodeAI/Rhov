@@ -135,7 +135,7 @@ jobs:
             echo "==> validating $dir"
             (cd "$dir" && GOWORK=off go mod tidy -diff)
             (cd "$dir" && GOWORK=off go mod verify)
-            (cd "$dir" && GOWORK=off go test ./... -count=1 -timeout=300s -skip='TestDefaultSkillDirsCrossAgent|TestCopySelectionE2E')
+            (cd "$dir" && GOWORK=off go test ./... -count=1 -timeout=300s)
           done < <(find . -name go.mod -not -path './.git/*' -print | sort)
 
   public-modules:
@@ -159,7 +159,7 @@ jobs:
           go mod download
           go mod verify
           go build -mod=readonly ./cmd/rho
-          go test ./... -count=1 -timeout=300s -skip='TestDefaultSkillDirsCrossAgent|TestCopySelectionE2E'
+          go test ./... -count=1 -timeout=300s
 
   release-parity:
     name: workspace and module parity
@@ -249,7 +249,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
       - name: Test with race detector
-        run: go test ./... -race -count=1 -shuffle=on -coverprofile=coverage.out -covermode=atomic -timeout=300s -skip='TestDefaultSkillDirsCrossAgent|TestCopySelectionE2E'
+        run: go test ./... -race -count=1 -shuffle=on -coverprofile=coverage.out -covermode=atomic -timeout=300s
       - name: Coverage summary
         run: |
           coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%' | tail -1)
@@ -261,6 +261,23 @@ jobs:
             echo "::error::Coverage ${COVERAGE}% is below minimum 65%"
             exit 1
           fi
+      - name: Per-package coverage floors
+        run: |
+          set -euo pipefail
+          check() {
+            pkg="$1"; floor="$2"
+            cov=$(go test "$pkg" -count=1 -cover 2>/dev/null | grep -o 'coverage: [0-9.]*%' | grep -o '[0-9.]*' | tail -1)
+            echo "$pkg coverage: ${cov:-<none>}% (floor ${floor}%)"
+            if [ -z "$cov" ]; then echo "::error::no coverage reported for $pkg"; exit 1; fi
+            if (( $(echo "$cov < $floor" | bc -l) )); then
+              echo "::error::$pkg coverage ${cov}% is below floor ${floor}%"; exit 1
+            fi
+          }
+          check ./internal/spec 20
+          check ./internal/codegraph 20
+          check ./internal/provider/gateway 20
+          check ./internal/tool 50
+          check ./cmd 45
       - name: Upload coverage
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -540,6 +557,7 @@ jobs:
           go test -run='^$' -fuzz=FuzzIsSafeGitCommit    -fuzztime=60s ./internal/tool
           go test -run='^$' -fuzz=FuzzParseMessage       -fuzztime=60s ./internal/session
           go test -run='^$' -fuzz=FuzzParseSessionMeta   -fuzztime=60s ./internal/session
+          go test -run='^$' -fuzz=FuzzParseDeltaSpec    -fuzztime=60s ./internal/spec
 
   # -------------------------------------------------------------------------
   # 10. Smoke — build rho and verify ecosystem CLI wiring.

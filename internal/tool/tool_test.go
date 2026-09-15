@@ -16,7 +16,7 @@ func TestFileWriteAndRead(t *testing.T) {
 
 	// Write
 	input, _ := json.Marshal(map[string]string{"path": path, "content": "hello world"})
-	out, err := FileWriteTool{}.Execute(context.Background(), input)
+	out, err := FileWriteTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestFileWriteAndRead(t *testing.T) {
 
 	// Read
 	input, _ = json.Marshal(map[string]string{"path": path})
-	out, err = FileReadTool{}.Execute(context.Background(), input)
+	out, err = FileReadTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestFileReadArchiveAliases(t *testing.T) {
 	}
 
 	input, _ := json.Marshal(map[string]interface{}{"file_path": path, "offset": 2, "limit": 1})
-	out, err := FileReadTool{}.Execute(context.Background(), input)
+	out, err := FileReadTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestFileWriteArchiveFilePathAlias(t *testing.T) {
 	path := filepath.Join(dir, "alias.txt")
 
 	input, _ := json.Marshal(map[string]string{"file_path": path, "content": "archive write"})
-	if _, err := (FileWriteTool{}).Execute(context.Background(), input); err != nil {
+	if _, err := (FileWriteTool{}).Execute(testCtx(), input); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(path)
@@ -75,7 +75,7 @@ func TestFileEdit(t *testing.T) {
 	os.WriteFile(path, []byte("foo bar baz"), 0o644)
 
 	input, _ := json.Marshal(map[string]string{"path": path, "old_str": "bar", "new_str": "qux"})
-	_, err := FileEditTool{}.Execute(context.Background(), input)
+	_, err := FileEditTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestFileEditArchiveAliases(t *testing.T) {
 	}
 
 	input, _ := json.Marshal(map[string]string{"file_path": path, "old_string": "beta", "new_string": "delta"})
-	if _, err := (FileEditTool{}).Execute(context.Background(), input); err != nil {
+	if _, err := (FileEditTool{}).Execute(testCtx(), input); err != nil {
 		t.Fatal(err)
 	}
 
@@ -113,7 +113,7 @@ func TestFileEditNotFound(t *testing.T) {
 	os.WriteFile(path, []byte("hello"), 0o644)
 
 	input, _ := json.Marshal(map[string]string{"path": path, "old_str": "missing", "new_str": "x"})
-	_, err := FileEditTool{}.Execute(context.Background(), input)
+	_, err := FileEditTool{}.Execute(testCtx(), input)
 	if err == nil {
 		t.Fatal("expected error for missing old_str")
 	}
@@ -125,7 +125,7 @@ func TestFileEditDuplicate(t *testing.T) {
 	os.WriteFile(path, []byte("aaa aaa"), 0o644)
 
 	input, _ := json.Marshal(map[string]string{"path": path, "old_str": "aaa", "new_str": "bbb"})
-	_, err := FileEditTool{}.Execute(context.Background(), input)
+	_, err := FileEditTool{}.Execute(testCtx(), input)
 	if err == nil {
 		t.Fatal("expected error for duplicate old_str")
 	}
@@ -138,7 +138,7 @@ func TestGlob(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "c.txt"), []byte("x"), 0o644)
 
 	input, _ := json.Marshal(map[string]interface{}{"pattern": "*.go", "path": dir})
-	out, err := GlobTool{}.Execute(context.Background(), input)
+	out, err := GlobTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestLS(t *testing.T) {
 	}
 
 	input, _ := json.Marshal(map[string]interface{}{"path": dir, "ignore": []string{"*.txt"}})
-	out, err := LSTool{}.Execute(context.Background(), input)
+	out, err := LSTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +214,7 @@ func TestGrep(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "test.go"), []byte("func main() {\n\tfmt.Println(\"hello\")\n}"), 0o644)
 
 	input, _ := json.Marshal(map[string]interface{}{"pattern": "Println", "path": dir})
-	out, err := GrepTool{}.Execute(context.Background(), input)
+	out, err := GrepTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestBashDangerous(t *testing.T) {
 	}
 	for _, cmd := range dangerous {
 		input, _ := json.Marshal(map[string]string{"command": cmd})
-		_, err := BashTool{}.Execute(context.Background(), input)
+		_, err := BashTool{}.Execute(testCtx(), input)
 		if err == nil {
 			t.Fatalf("expected error for dangerous command: %s", cmd)
 		}
@@ -272,7 +272,7 @@ func TestBashSafe(t *testing.T) {
 
 func TestBashSimple(t *testing.T) {
 	input, _ := json.Marshal(map[string]string{"command": "echo hello"})
-	out, err := BashTool{}.Execute(context.Background(), input)
+	out, err := BashTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestBashSimple(t *testing.T) {
 
 func TestBashBackgroundTaskOutput(t *testing.T) {
 	input, _ := json.Marshal(map[string]interface{}{"command": "sleep 0.1; echo background", "run_in_background": true})
-	out, err := BashTool{}.Execute(context.Background(), input)
+	out, err := BashTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +297,7 @@ func TestBashBackgroundTaskOutput(t *testing.T) {
 	}
 	taskInput, _ := json.Marshal(map[string]string{"task_id": taskID})
 	for i := 0; i < 20; i++ {
-		taskOut, err := TaskOutputTool{}.Execute(context.Background(), taskInput)
+		taskOut, err := TaskOutputTool{}.Execute(testCtx(), taskInput)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -330,7 +330,7 @@ func TestTodoWriteArchiveTodosArray(t *testing.T) {
 			{"content": "write tests", "status": "in_progress", "priority": "medium"},
 		},
 	})
-	out, err := TodoWriteTool{}.Execute(context.Background(), input)
+	out, err := TodoWriteTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +387,7 @@ func TestSkillToolListsAndReadsSkills(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	listOut, err := SkillTool{}.Execute(context.Background(), nil)
+	listOut, err := SkillTool{}.Execute(testCtx(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,7 +396,7 @@ func TestSkillToolListsAndReadsSkills(t *testing.T) {
 	}
 
 	input, _ := json.Marshal(map[string]string{"skill": "review"})
-	readOut, err := SkillTool{}.Execute(context.Background(), input)
+	readOut, err := SkillTool{}.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}

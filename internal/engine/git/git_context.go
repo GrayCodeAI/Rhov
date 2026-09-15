@@ -58,8 +58,12 @@ func NewGitContext(repoDir string) *GitContext {
 }
 
 // runGit executes a git command in the repo directory and returns its output.
+// A timeout bounds each invocation so a slow or hung git process cannot block
+// the caller indefinitely.
 func (gc *GitContext) runGit(args ...string) (string, error) {
-	cmd := gitcmd.Command(context.Background(), args...) // #nosec G204 -- fixed git executable
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	cmd := gitcmd.Command(ctx, args...) // #nosec G204 -- fixed git executable
 	cmd.Dir = gc.RepoDir
 	out, err := cmd.Output()
 	if err != nil {

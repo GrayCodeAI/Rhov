@@ -32,9 +32,25 @@ func TestValidateHTTPHookURL_Invalid(t *testing.T) {
 }
 
 func TestValidateHTTPHookURL_Valid(t *testing.T) {
-	err := ValidateHTTPHookURL("http://localhost:8080/hook")
+	err := ValidateHTTPHookURL("https://hooks.example.com/hook")
 	if err != nil {
 		t.Errorf("expected no error for valid URL, got: %v", err)
+	}
+}
+
+func TestValidateHTTPHookURL_RejectsLocalhostByDefault(t *testing.T) {
+	if err := ValidateHTTPHookURL("http://localhost:8080/hook"); err == nil {
+		t.Error("expected localhost hook URL to be rejected by default")
+	}
+	if err := ValidateHTTPHookURL("http://127.0.0.1:8080/hook"); err == nil {
+		t.Error("expected loopback hook URL to be rejected by default")
+	}
+}
+
+func TestValidateHTTPHookURL_AllowsLocalhostWithOverride(t *testing.T) {
+	t.Setenv("RHO_HOOKS_ALLOW_LOCAL", "1")
+	if err := ValidateHTTPHookURL("http://localhost:8080/hook"); err != nil {
+		t.Errorf("expected localhost hook URL to be allowed with override, got: %v", err)
 	}
 }
 

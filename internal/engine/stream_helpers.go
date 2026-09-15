@@ -8,14 +8,12 @@ import (
 
 	"github.com/GrayCodeAI/rho/internal/intelligence/memory"
 	"github.com/GrayCodeAI/rho/internal/resilience/retry"
+	"github.com/GrayCodeAI/rho/internal/textutil"
 )
 
 // truncate shortens a string to maxLen characters, appending "..." if truncated.
 func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
+	return textutil.TruncateAppend(s, maxLen)
 }
 
 // toolTimeout returns a per-tool timeout duration based on the tool name.

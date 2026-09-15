@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Transcriber turns audio bytes into text. rho does not bundle an STT
@@ -51,7 +52,9 @@ type TranscribeResult struct {
 // path-traversal attempts in the file path or name.
 func DownloadAttachment(ctx context.Context, client *http.Client, downloadURL, downloadToken, suggestedName string) (string, error) {
 	if client == nil {
-		client = http.DefaultClient
+		// Bound the download so a slow or hostile host cannot hang the caller
+		// (http.DefaultClient has no timeout).
+		client = &http.Client{Timeout: 2 * time.Minute}
 	}
 	u, err := url.Parse(downloadURL)
 	if err != nil {

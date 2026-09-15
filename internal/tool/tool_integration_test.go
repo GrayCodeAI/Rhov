@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ func TestIntegration_BashThenRead(t *testing.T) {
 	bashInput, _ := json.Marshal(map[string]string{
 		"command": "echo -n 'hello from bash' > " + filePath,
 	})
-	bashOut, err := BashTool{}.Execute(context.Background(), bashInput)
+	bashOut, err := BashTool{}.Execute(testCtx(), bashInput)
 	if err != nil {
 		t.Fatalf("Bash execute error: %v (output: %s)", err, bashOut)
 	}
@@ -33,7 +32,7 @@ func TestIntegration_BashThenRead(t *testing.T) {
 
 	// Read reads it back.
 	readInput, _ := json.Marshal(map[string]string{"path": filePath})
-	readOut, err := FileReadTool{}.Execute(context.Background(), readInput)
+	readOut, err := FileReadTool{}.Execute(testCtx(), readInput)
 	if err != nil {
 		t.Fatalf("Read execute error: %v", err)
 	}
@@ -61,7 +60,7 @@ func TestIntegration_EditThenRead(t *testing.T) {
 		"old_str": "brown fox",
 		"new_str": "red rho",
 	})
-	editOut, err := FileEditTool{}.Execute(context.Background(), editInput)
+	editOut, err := FileEditTool{}.Execute(testCtx(), editInput)
 	if err != nil {
 		t.Fatalf("Edit error: %v", err)
 	}
@@ -71,7 +70,7 @@ func TestIntegration_EditThenRead(t *testing.T) {
 
 	// Read confirms the change.
 	readInput, _ := json.Marshal(map[string]string{"path": filePath})
-	readOut, err := FileReadTool{}.Execute(context.Background(), readInput)
+	readOut, err := FileReadTool{}.Execute(testCtx(), readInput)
 	if err != nil {
 		t.Fatalf("Read error: %v", err)
 	}
@@ -105,7 +104,7 @@ func TestIntegration_GlobThenRead(t *testing.T) {
 		"pattern": "*.go",
 		"path":    dir,
 	})
-	globOut, err := GlobTool{}.Execute(context.Background(), globInput)
+	globOut, err := GlobTool{}.Execute(testCtx(), globInput)
 	if err != nil {
 		t.Fatalf("Glob error: %v", err)
 	}
@@ -125,7 +124,7 @@ func TestIntegration_GlobThenRead(t *testing.T) {
 	// Read each found .go file to verify content.
 	for _, name := range []string{"alpha.go", "beta.go", "delta.go"} {
 		readInput, _ := json.Marshal(map[string]string{"path": filepath.Join(dir, name)})
-		readOut, err := FileReadTool{}.Execute(context.Background(), readInput)
+		readOut, err := FileReadTool{}.Execute(testCtx(), readInput)
 		if err != nil {
 			t.Fatalf("Read %s error: %v", name, err)
 		}
@@ -163,7 +162,7 @@ func TestIntegration_SafetyBlocks_DestructiveCommands(t *testing.T) {
 
 			// BashTool.Execute should block it.
 			input, _ := json.Marshal(map[string]string{"command": tc.cmd})
-			_, err := BashTool{}.Execute(context.Background(), input)
+			_, err := BashTool{}.Execute(testCtx(), input)
 			if err == nil {
 				t.Errorf("expected BashTool to block destructive command: %s", tc.cmd)
 			}
@@ -243,7 +242,7 @@ func TestIntegration_WriteThenRead(t *testing.T) {
 		"content": "Content from Write tool",
 	})
 	wt := FileWriteTool{}
-	writeOut, err := wt.Execute(context.Background(), writeInput)
+	writeOut, err := wt.Execute(testCtx(), writeInput)
 	if err != nil {
 		t.Fatalf("Write error: %v", err)
 	}
@@ -254,7 +253,7 @@ func TestIntegration_WriteThenRead(t *testing.T) {
 	// Read confirms the content.
 	readInput, _ := json.Marshal(map[string]string{"path": filePath})
 	rt := FileReadTool{}
-	readOut, err := rt.Execute(context.Background(), readInput)
+	readOut, err := rt.Execute(testCtx(), readInput)
 	if err != nil {
 		t.Fatalf("Read error: %v", err)
 	}
@@ -277,7 +276,7 @@ func TestIntegration_WriteEditRead(t *testing.T) {
 		"content": "Hello World",
 	})
 	wt := FileWriteTool{}
-	if _, err := wt.Execute(context.Background(), writeInput); err != nil {
+	if _, err := wt.Execute(testCtx(), writeInput); err != nil {
 		t.Fatal(err)
 	}
 
@@ -288,14 +287,14 @@ func TestIntegration_WriteEditRead(t *testing.T) {
 		"new_str": "Rho",
 	})
 	et := FileEditTool{}
-	if _, err := et.Execute(context.Background(), editInput); err != nil {
+	if _, err := et.Execute(testCtx(), editInput); err != nil {
 		t.Fatal(err)
 	}
 
 	// Read confirms the chain.
 	readInput, _ := json.Marshal(map[string]string{"path": filePath})
 	rt := FileReadTool{}
-	readOut, err := rt.Execute(context.Background(), readInput)
+	readOut, err := rt.Execute(testCtx(), readInput)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +314,7 @@ func TestIntegration_BashCreatesFilesGlobFinds(t *testing.T) {
 	bashCmd := "for f in a.go b.go c.go; do echo 'pkg' > " + dir + "/$f; done"
 	bashInput, _ := json.Marshal(map[string]string{"command": bashCmd})
 	bt := BashTool{}
-	if _, err := bt.Execute(context.Background(), bashInput); err != nil {
+	if _, err := bt.Execute(testCtx(), bashInput); err != nil {
 		t.Fatal(err)
 	}
 
@@ -325,7 +324,7 @@ func TestIntegration_BashCreatesFilesGlobFinds(t *testing.T) {
 		"path":    dir,
 	})
 	gt := GlobTool{}
-	globOut, err := gt.Execute(context.Background(), globInput)
+	globOut, err := gt.Execute(testCtx(), globInput)
 	if err != nil {
 		t.Fatal(err)
 	}

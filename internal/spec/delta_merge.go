@@ -72,8 +72,14 @@ func deleteRemoved(content string, req DeltaRequirement) string {
 func applyRename(content string, req DeltaRequirement) string {
 	oldName := regexp.QuoteMeta(req.OldName)
 	newName := req.NewName
-	re := regexp.MustCompile(`(?m)^### Requirement: ` + oldName + `$`)
-	return re.ReplaceAllString(content, "### Requirement: "+newName)
+	re, err := regexp.Compile(`(?m)^### Requirement: ` + oldName + `$`)
+	if err != nil {
+		// An unparseable name (e.g. invalid UTF-8) must not panic; leave the
+		// content unchanged.
+		return content
+	}
+	// Literal replacement so "$" in the new name is not treated as a group ref.
+	return re.ReplaceAllLiteralString(content, "### Requirement: "+newName)
 }
 
 // renderRequirementBlock renders a delta requirement as markdown.

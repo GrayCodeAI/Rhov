@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -28,7 +27,7 @@ func TestCodeMatchGoFunctionPattern(t *testing.T) {
 	root := writeMatchTree(t, map[string]string{
 		"a/a.go": "package a\n\n// helper comment mentioning Handler\nfunc Handler(w io.Writer) { }\n\nfunc ignored() {}\n",
 	})
-	out, err := CodeMatchTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := CodeMatchTool{}.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"(function_declaration name: (identifier) @name) @fn","path":"`+root+`","language":"go"}`,
 	))
 	if err != nil {
@@ -58,7 +57,7 @@ func TestCodeMatchCommentsDoNotFalsePositive(t *testing.T) {
 	root := writeMatchTree(t, map[string]string{
 		"a/a.go": "package a\n\n// func fakeDeclaration name: (identifier)\nfunc Real() {}\n",
 	})
-	out, err := CodeMatchTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := CodeMatchTool{}.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"(function_declaration name: (identifier) @n) @f","path":"`+root+`","language":"go","limit":10}`,
 	))
 	if err != nil {
@@ -73,7 +72,7 @@ func TestCodeMatchPythonDef(t *testing.T) {
 	root := writeMatchTree(t, map[string]string{
 		"svc.py": "def handler(req):\n    return req\n\nclass C:\n    def method(self):\n        pass\n",
 	})
-	out, err := CodeMatchTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := CodeMatchTool{}.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"(function_definition name: (identifier) @name) @fn","path":"`+root+`","language":"python"}`,
 	))
 	if err != nil {
@@ -92,7 +91,7 @@ func TestCodeMatchLanguageFilterAndLimit(t *testing.T) {
 	root := writeMatchTree(t, map[string]string{
 		"x.go": "package x\nfunc A() {}\nfunc B() {}\nfunc C() {}\n",
 	})
-	out, err := CodeMatchTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := CodeMatchTool{}.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"(function_declaration) @f","path":"`+root+`","language":"go","limit":2}`,
 	))
 	if err != nil {
@@ -111,7 +110,7 @@ func TestCodeMatchLanguageFilterAndLimit(t *testing.T) {
 func TestCodeMatchInvalidPatternFailsBeforeWalk(t *testing.T) {
 	root := t.TempDir()
 	tool := CodeMatchTool{}
-	_, err := tool.Execute(context.Background(), json.RawMessage(
+	_, err := tool.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"((( not-a-query","path":"`+root+`","language":"go"}`,
 	))
 	if err == nil {
@@ -121,7 +120,7 @@ func TestCodeMatchInvalidPatternFailsBeforeWalk(t *testing.T) {
 
 func TestCodeMatchUnsupportedLanguage(t *testing.T) {
 	tool := CodeMatchTool{}
-	if _, err := tool.Execute(context.Background(), json.RawMessage(
+	if _, err := tool.Execute(testCtx(), json.RawMessage(
 		`{"pattern":"(x)","language":"ruby"}`,
 	)); err == nil {
 		t.Fatal("unsupported language must error")

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/textutil"
 )
 
 type ErrorRecovery struct {
@@ -573,11 +575,5 @@ func extractLineNumber(msg string) string {
 }
 
 func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 3 {
-		return s[:maxLen]
-	}
-	return s[:maxLen-3] + "..."
+	return textutil.Truncate(s, maxLen)
 }

@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/GrayCodeAI/rho/internal/textutil"
 )
 
 // ModelBenchmark orchestrates benchmarking multiple LLM models on standardized tasks.
@@ -506,13 +508,7 @@ func valueRatio(r ModelResult) float64 {
 
 // truncate shortens a string to at most maxLen bytes.
 func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 3 {
-		return s[:maxLen]
-	}
-	return s[:maxLen-3] + "..."
+	return textutil.Truncate(s, maxLen)
 }
 
 // formatBenchDuration formats a duration for benchmark display.

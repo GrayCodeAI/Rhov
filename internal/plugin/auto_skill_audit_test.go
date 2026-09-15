@@ -245,6 +245,8 @@ func TestStripDangerousChars(t *testing.T) {
 }
 
 func TestDefaultSkillDirsCrossAgent(t *testing.T) {
+	// Hermetic: pin HOME so the user-scoped skills dir is deterministic.
+	t.Setenv("HOME", t.TempDir())
 	dirs := DefaultSkillDirs()
 	foundRho := false
 	for _, d := range dirs {

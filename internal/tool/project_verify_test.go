@@ -2,7 +2,6 @@ package tool
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -15,7 +14,7 @@ func TestProjectVerifyDetectsStacks(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	out, err := (ProjectVerifyTool{}).Execute(context.Background(), mustProjectJSON(map[string]interface{}{"action": "detect", "path": dir}))
+	out, err := (ProjectVerifyTool{}).Execute(testCtx(), mustProjectJSON(map[string]interface{}{"action": "detect", "path": dir}))
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}
@@ -25,7 +24,7 @@ func TestProjectVerifyDetectsStacks(t *testing.T) {
 }
 
 func TestProjectVerifyRejectsUnknownAction(t *testing.T) {
-	_, err := (ProjectVerifyTool{}).Execute(context.Background(), json.RawMessage(`{"action":"unknown"}`))
+	_, err := (ProjectVerifyTool{}).Execute(testCtx(), json.RawMessage(`{"action":"unknown"}`))
 	if err == nil || !strings.Contains(err.Error(), "unsupported action") {
 		t.Fatalf("unknown action error = %v", err)
 	}

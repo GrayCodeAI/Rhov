@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -128,7 +129,9 @@ func (FileEditTool) Execute(ctx context.Context, input json.RawMessage) (string,
 		return "", fmt.Errorf("write: %w", err)
 	}
 	if autoCommitEnabled(ctx) {
-		_ = AutoCommit(ctx, path, "Edit", "edited file")
+		if err := AutoCommit(ctx, path, "Edit", "edited file"); err != nil {
+			slog.Warn("auto-commit failed", "path", path, "error", err)
+		}
 	}
 	lintNote := postWriteLint(ctx, path)
 	return fmt.Sprintf("Edited %s (replaced 1 occurrence)%s%s", path, fuzzyNote, lintNote), nil

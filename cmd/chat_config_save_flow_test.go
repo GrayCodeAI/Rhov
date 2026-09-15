@@ -225,8 +225,6 @@ func TestHandleConfigApplyCredentialsMsg_CatalogFailureDoesNotBlameProvider(t *t
 
 // Skipped: integration test requiring specific flux model catalog state
 func TestHandleConfigApplyCredentialsMsg_ValidationFailureDoesNotBlameProvider(t *testing.T) {
-	// TODO: enable once flux catalog fixtures pin the claude-fable-5 model state.
-	t.Skip("requires specific flux model catalog state (claude-fable-5)")
 	rhoconfig.InvalidateConfigUICache()
 	store := &credentials.MapStore{}
 	credentials.SetDefaultStore(store)
@@ -254,8 +252,6 @@ func TestHandleConfigApplyCredentialsMsg_ValidationFailureDoesNotBlameProvider(t
 
 // Skipped: integration test requiring specific flux model catalog state
 func TestHandleConfigApplyCredentialsMsg_AuthenticationFailureBlamesKey(t *testing.T) {
-	// TODO: enable once flux catalog fixtures pin the auth-failure model state.
-	t.Skip("requires specific flux model catalog state")
 	rhoconfig.InvalidateConfigUICache()
 	store := &credentials.MapStore{}
 	credentials.SetDefaultStore(store)

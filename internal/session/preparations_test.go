@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -25,7 +26,7 @@ func TestPreparationsHasAndInspect(t *testing.T) {
 	}
 
 	var loadCount atomic.Int32
-	src, err := p.Inspect("test", func() (*PreparedSource, error) {
+	src, err := p.Inspect(context.Background(), "test", func(context.Context) (*PreparedSource, error) {
 		loadCount.Add(1)
 		return mkPrepSource("test"), nil
 	})
@@ -48,7 +49,7 @@ func TestPreparationsSharesInFlightLoad(t *testing.T) {
 	p := NewSessionPreparations(10)
 	var loadCount atomic.Int32
 	delay := make(chan struct{})
-	loadFn := func() (*PreparedSource, error) {
+	loadFn := func(context.Context) (*PreparedSource, error) {
 		loadCount.Add(1)
 		<-delay
 		return mkPrepSource("shared"), nil
@@ -63,9 +64,9 @@ func TestPreparationsSharesInFlightLoad(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			if i == 0 {
-				src1, err1 = p.Inspect("shared", loadFn)
+				src1, err1 = p.Inspect(context.Background(), "shared", loadFn)
 			} else {
-				src2, err2 = p.Inspect("shared", loadFn)
+				src2, err2 = p.Inspect(context.Background(), "shared", loadFn)
 			}
 		}(i)
 	}
@@ -90,7 +91,7 @@ func TestPreparationsSharesInFlightLoad(t *testing.T) {
 
 func TestPreparationsReserveAndRelease(t *testing.T) {
 	p := NewSessionPreparations(10)
-	src, err := p.Inspect("reserve-test", func() (*PreparedSource, error) {
+	src, err := p.Inspect(context.Background(), "reserve-test", func(context.Context) (*PreparedSource, error) {
 		return mkPrepSource("reserve-test"), nil
 	})
 	if err != nil {
@@ -99,8 +100,9 @@ func TestPreparationsReserveAndRelease(t *testing.T) {
 
 	var commitCount atomic.Int32
 	reservation, err := p.Reserve(
+		context.Background(),
 		"reserve-test",
-		func() (*PreparedSource, error) {
+		func(context.Context) (*PreparedSource, error) {
 			return src, nil
 		},
 		func(source PreparedSource) (*SessionState, error) {
@@ -119,12 +121,9 @@ func TestPreparationsReserveAndRelease(t *testing.T) {
 	}
 
 	// AssertWritable should fail during reserved phase.
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected panic on AssertWritable during reserved phase")
-		}
-	}()
-	p.AssertWritable("reserve-test")
+	if err := p.AssertWritable("reserve-test"); err == nil {
+		t.Fatal("expected error from AssertWritable during reserved phase")
+	}
 }
 
 func TestPreparationsLRUEviction(t *testing.T) {
@@ -132,7 +131,7 @@ func TestPreparationsLRUEviction(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		id := "session-" + string(rune('a'+i))
-		_, err := p.Inspect(id, func() (*PreparedSource, error) {
+		_, err := p.Inspect(context.Background(), id, func(context.Context) (*PreparedSource, error) {
 			return mkPrepSource(id), nil
 		})
 		if err != nil {
@@ -148,7 +147,7 @@ func TestPreparationsLRUEviction(t *testing.T) {
 
 func TestPreparationsTakeReady(t *testing.T) {
 	p := NewSessionPreparations(10)
-	src, err := p.Inspect("take-ready", func() (*PreparedSource, error) {
+	src, err := p.Inspect(context.Background(), "take-ready", func(context.Context) (*PreparedSource, error) {
 		return mkPrepSource("take-ready"), nil
 	})
 	if err != nil {
@@ -171,7 +170,7 @@ func TestPreparationsTakeReady(t *testing.T) {
 
 func TestPreparationsInvalidate(t *testing.T) {
 	p := NewSessionPreparations(10)
-	_, err := p.Inspect("invalidate-test", func() (*PreparedSource, error) {
+	_, err := p.Inspect(context.Background(), "invalidate-test", func(context.Context) (*PreparedSource, error) {
 		return mkPrepSource("invalidate-test"), nil
 	})
 	if err != nil {
@@ -190,7 +189,7 @@ func TestPreparationsInvalidate(t *testing.T) {
 
 func TestPreparationsDiscardReady(t *testing.T) {
 	p := NewSessionPreparations(10)
-	src, err := p.Inspect("discard-test", func() (*PreparedSource, error) {
+	src, err := p.Inspect(context.Background(), "discard-test", func(context.Context) (*PreparedSource, error) {
 		return mkPrepSource("discard-test"), nil
 	})
 	if err != nil {
@@ -212,7 +211,7 @@ func TestPreparationsDiscardReady(t *testing.T) {
 func TestPreparationsLoadError(t *testing.T) {
 	p := NewSessionPreparations(10)
 	loadErr := errors.New("load failed")
-	src, err := p.Inspect("load-error", func() (*PreparedSource, error) {
+	src, err := p.Inspect(context.Background(), "load-error", func(context.Context) (*PreparedSource, error) {
 		return nil, loadErr
 	})
 	if err == nil {

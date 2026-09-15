@@ -305,7 +305,9 @@ func downloadMedia(ctx context.Context, rawURL string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	// Bound the download so a slow or hostile host cannot hang the tool.
+	client := &http.Client{Timeout: 2 * time.Minute}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

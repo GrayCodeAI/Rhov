@@ -16,3 +16,17 @@ func Truncate(s string, max int) string {
 	}
 	return string(r[:max-3]) + "..."
 }
+
+// TruncateAppend truncates s to at most max runes and appends "..." when
+// content is dropped, without reserving space for the ellipsis. It is
+// rune-safe and never splits a multi-byte character.
+func TruncateAppend(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max]) + "..."
+}

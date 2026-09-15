@@ -32,7 +32,7 @@ func TestNotebookEditTool_Execute(t *testing.T) {
 		"new_source":  "print('updated')",
 	})
 
-	result, err := tool.Execute(context.Background(), input)
+	result, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestNotebookEditTool_Execute_MissingFile(t *testing.T) {
 		"cell_number": 0,
 		"new_source":  "x",
 	})
-	_, err := tool.Execute(context.Background(), input)
+	_, err := tool.Execute(testCtx(), input)
 	if err == nil {
 		t.Error("should error on missing file")
 	}
@@ -58,7 +58,7 @@ func TestNotebookEditTool_Execute_MissingFile(t *testing.T) {
 func TestNotebookEditTool_Execute_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	tool := NotebookEditTool{}
-	_, err := tool.Execute(context.Background(), []byte("not json"))
+	_, err := tool.Execute(testCtx(), []byte("not json"))
 	if err == nil {
 		t.Error("should error on invalid JSON input")
 	}
@@ -98,7 +98,7 @@ func TestConfigTool_Execute(t *testing.T) {
 func TestConfigTool_Execute_InvalidInput(t *testing.T) {
 	t.Parallel()
 	tool := ConfigTool{}
-	_, err := tool.Execute(context.Background(), []byte("bad"))
+	_, err := tool.Execute(testCtx(), []byte("bad"))
 	if err == nil {
 		t.Error("should error on invalid input")
 	}
@@ -110,7 +110,7 @@ func TestBriefTool_Execute(t *testing.T) {
 	input, _ := json.Marshal(map[string]interface{}{
 		"message": "hello user",
 	})
-	result, err := tool.Execute(context.Background(), input)
+	result, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestBriefTool_Execute_Empty(t *testing.T) {
 	t.Parallel()
 	tool := BriefTool{}
 	input, _ := json.Marshal(map[string]interface{}{})
-	_, err := tool.Execute(context.Background(), input)
+	_, err := tool.Execute(testCtx(), input)
 	if err == nil {
 		t.Error("should error on empty message")
 	}

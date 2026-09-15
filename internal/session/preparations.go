@@ -9,6 +9,8 @@ package session
 
 import (
 	"container/list"
+	"context"
+	"fmt"
 	"sync"
 
 	"github.com/GrayCodeAI/rho/internal/eventlog"
@@ -108,13 +110,17 @@ func (p *SessionPreparations) Has(id string) bool {
 }
 
 // Inspect observes one prepared source, sharing an in-flight read for the same id.
-// The load function is called only if no entry exists for the id yet.
-// Ported from DSH's inspect().
-func (p *SessionPreparations) Inspect(id string, load func() (*PreparedSource, error)) (*PreparedSource, error) {
-	entry := p.entryFor(id, load)
+// The load function is called only if no entry exists for the id yet, and
+// receives ctx so a hung load can be cancelled. Ported from DSH's inspect().
+func (p *SessionPreparations) Inspect(ctx context.Context, id string, load func(context.Context) (*PreparedSource, error)) (*PreparedSource, error) {
+	entry := p.entryFor(ctx, id, load)
 
-	// Wait for the load to complete.
-	<-entry.result
+	// Wait for the load to complete, or for the caller to give up.
+	select {
+	case <-entry.result:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	p.mu.Lock()
 	if elem, ok := p.entries[id]; ok {
@@ -136,14 +142,19 @@ func (p *SessionPreparations) Inspect(id string, load func() (*PreparedSource, e
 // returns the committed state, or nil if the source was invalidated.
 // Ported from DSH's reserve().
 func (p *SessionPreparations) Reserve(
+	ctx context.Context,
 	id string,
-	load func() (*PreparedSource, error),
+	load func(context.Context) (*PreparedSource, error),
 	commit func(source PreparedSource) (*SessionState, error),
 ) (*Reservation, error) {
-	entry := p.entryFor(id, load)
+	entry := p.entryFor(ctx, id, load)
 
-	// Wait for the load to complete.
-	<-entry.result
+	// Wait for the load to complete, or for the caller to give up.
+	select {
+	case <-entry.result:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	entry.mu.Lock()
 	// Check for load errors.
@@ -167,7 +178,11 @@ func (p *SessionPreparations) Reserve(
 		}
 		settleCh := entry.settleCh
 		entry.mu.Unlock()
-		<-settleCh
+		select {
+		case <-settleCh:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		entry.mu.Lock()
 	}
 
@@ -339,8 +354,9 @@ func (p *SessionPreparations) DiscardReady(id string, expected *PreparedSource) 
 }
 
 // AssertWritable rejects writes while a session is reserved or committing.
-// Ported from DSH's assertWritable().
-func (p *SessionPreparations) AssertWritable(id string) {
+// Ported from DSH's assertWritable(). It returns an error rather than
+// panicking so a library caller cannot crash an unrelated goroutine.
+func (p *SessionPreparations) AssertWritable(id string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -350,9 +366,10 @@ func (p *SessionPreparations) AssertWritable(id string) {
 		phase := entry.phase
 		entry.mu.Unlock()
 		if phase == PhaseCommitting || phase == PhaseReserved {
-			panic("cannot append session \"" + id + "\": its persisted preparation is reserved")
+			return fmt.Errorf("cannot append session %q: its persisted preparation is reserved", id)
 		}
 	}
+	return nil
 }
 
 // TakeReady removes a completed entry for an already-serialized append adoption.
@@ -386,7 +403,7 @@ func (p *SessionPreparations) Len() int {
 
 // --- internal helpers ---
 
-func (p *SessionPreparations) entryFor(id string, load func() (*PreparedSource, error)) *prepEntry {
+func (p *SessionPreparations) entryFor(ctx context.Context, id string, load func(context.Context) (*PreparedSource, error)) *prepEntry {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -406,7 +423,7 @@ func (p *SessionPreparations) entryFor(id string, load func() (*PreparedSource, 
 
 	// Start the load asynchronously.
 	go func() {
-		source, err := load()
+		source, err := load(ctx)
 		p.mu.Lock()
 		if p.entries[id] != elem {
 			p.mu.Unlock()

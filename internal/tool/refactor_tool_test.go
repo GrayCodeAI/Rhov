@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -55,7 +54,7 @@ func increment() {
 		"new_name": "count",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +75,7 @@ func TestRefactorTool_Execute_MissingAction(t *testing.T) {
 		"file": "/tmp/test.go",
 	})
 
-	_, err := tool.Execute(context.Background(), input)
+	_, err := tool.Execute(testCtx(), input)
 	if err == nil {
 		t.Fatal("expected error for missing action")
 	}
@@ -88,7 +87,7 @@ func TestRefactorTool_Execute_MissingFile(t *testing.T) {
 		"action": "sort_imports",
 	})
 
-	_, err := tool.Execute(context.Background(), input)
+	_, err := tool.Execute(testCtx(), input)
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}
@@ -101,7 +100,7 @@ func TestRefactorTool_Execute_UnknownAction(t *testing.T) {
 		"file":   "/tmp/test.go",
 	})
 
-	_, err := tool.Execute(context.Background(), input)
+	_, err := tool.Execute(testCtx(), input)
 	if err == nil {
 		t.Fatal("expected error for unknown action")
 	}
@@ -130,7 +129,7 @@ func main() {
 		"file":   file,
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +162,7 @@ func main() {
 		"new_name":   "printAB",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +193,7 @@ func main() {
 		"line":   6,
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +225,7 @@ func main() {
 		"var_name": "result",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,7 +253,7 @@ func main() {
 		"line":   4,
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +283,7 @@ func work() error {
 		"context": "work failed",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +311,7 @@ func process(used int, unused string) int {
 		"func_name": "process",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +344,7 @@ func TestMultiply(t *testing.T) {
 		"test_func": "TestMultiply",
 	})
 
-	output, err := tool.Execute(context.Background(), input)
+	output, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,6 +10,7 @@ import (
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
 	"github.com/GrayCodeAI/rho/internal/engine"
+	"github.com/GrayCodeAI/rho/internal/textutil"
 	"github.com/GrayCodeAI/rho/internal/tool"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
@@ -382,10 +383,7 @@ func runTests(ctx context.Context, dir string) bool {
 }
 
 func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + "..."
+	return textutil.TruncateAppend(s, max)
 }
 
 // attemptFromBranch extracts the attempt number from an attempt-suffixed

@@ -1,7 +1,6 @@
 package tool
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -25,7 +24,7 @@ func TestFuzzyFindToolBasic(t *testing.T) {
 		}
 	}
 
-	out, err := FuzzyFindTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := FuzzyFindTool{}.Execute(testCtx(), json.RawMessage(
 		`{"query":"config.go","path":"`+root+`","limit":5}`,
 	))
 	if err != nil {
@@ -52,7 +51,7 @@ func TestFuzzyFindToolBasic(t *testing.T) {
 
 func TestFuzzyFindNoResults(t *testing.T) {
 	root := t.TempDir()
-	out, err := FuzzyFindTool{}.Execute(context.Background(), json.RawMessage(
+	out, err := FuzzyFindTool{}.Execute(testCtx(), json.RawMessage(
 		`{"query":"zzz_nothing","path":"`+root+`"}`,
 	))
 	if err != nil {
@@ -65,7 +64,7 @@ func TestFuzzyFindNoResults(t *testing.T) {
 
 func TestFuzzyFindRequiresQuery(t *testing.T) {
 	tool := FuzzyFindTool{}
-	if _, err := tool.Execute(context.Background(), json.RawMessage(`{"path":"/tmp"}`)); err == nil {
+	if _, err := tool.Execute(testCtx(), json.RawMessage(`{"path":"/tmp"}`)); err == nil {
 		t.Fatal("expected error for empty query")
 	}
 }

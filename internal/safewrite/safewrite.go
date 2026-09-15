@@ -24,15 +24,13 @@
 package safewrite
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -95,17 +93,29 @@ func WriteFile(path string, data []byte) error {
 		return fmt.Errorf("%w: %s", ErrPathEscape, path)
 	}
 
-	// Build a temp file name in the same directory.
-	tmpName := filepath.Join(dir, fmt.Sprintf(".safewrite.%d.%s.tmp",
-		unix.Getpid(), strconv.FormatInt(randSuffix(), 36)))
-
-	// Open with O_NOFOLLOW so a symlink that appears between Lstat
-	// and Openat is detected and rejected.
-	fd, err := unix.Open(tmpName,
-		unix.O_WRONLY|unix.O_CREAT|unix.O_TRUNC|unix.O_NOFOLLOW,
-		0o600)
-	if err != nil {
-		return fmt.Errorf("safewrite: open temp: %w", err)
+	// Build a temp file name in the same directory. The suffix is drawn from
+	// crypto/rand and the file is opened with O_EXCL, so a same-directory attacker
+	// cannot pre-create the temp path to hijack or block the write.
+	var fd int
+	var tmpName string
+	for attempt := 0; attempt < 5; attempt++ {
+		tmpName = filepath.Join(dir, fmt.Sprintf(".safewrite.%d.%s.tmp",
+			unix.Getpid(), randomSuffix()))
+		// Open with O_NOFOLLOW so a symlink that appears between Lstat
+		// and Openat is detected and rejected; O_EXCL rejects a pre-existing
+		// temp file.
+		fd, err = unix.Open(tmpName,
+			unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL|unix.O_NOFOLLOW,
+			0o600)
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, unix.EEXIST) {
+			return fmt.Errorf("safewrite: open temp: %w", err)
+		}
+	}
+	if fd < 0 {
+		return fmt.Errorf("safewrite: could not create a unique temp file in %s", dir)
 	}
 	tmpFile := os.NewFile(uintptr(fd), tmpName)
 	defer func() {
@@ -148,18 +158,15 @@ func readLink(path string) string {
 	return "<unreadable>"
 }
 
-var (
-	randMu  sync.Mutex
-	randSrc *rand.Rand
-)
-
-// randSuffix returns a random integer for the temp-file suffix.
-// The math/rand source is seeded once at package init time.
-func randSuffix() int64 {
-	randMu.Lock()
-	defer randMu.Unlock()
-	if randSrc == nil {
-		randSrc = rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- non-cryptographic use (random temp-file suffix)
+// randomSuffix returns a cryptographically random hex suffix for the temp-file
+// name. O_EXCL is the primary defense against pre-creation; this just makes
+// collisions vanishingly unlikely.
+func randomSuffix() string {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		// crypto/rand should never fail; fall back to a fixed marker and rely
+		// on O_EXCL to reject a collision.
+		return "fallback"
 	}
-	return randSrc.Int63()
+	return hex.EncodeToString(b[:])
 }

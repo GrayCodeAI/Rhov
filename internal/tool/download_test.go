@@ -71,7 +71,7 @@ func TestDownloadTool_RiskLevel(t *testing.T) {
 
 func TestDownloadTool_Execute_InvalidJSON(t *testing.T) {
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	_, err := dt.Execute(ctx, []byte("not json"))
 	if err == nil {
 		t.Error("expected error for invalid JSON")
@@ -80,7 +80,7 @@ func TestDownloadTool_Execute_InvalidJSON(t *testing.T) {
 
 func TestDownloadTool_Execute_MissingURL(t *testing.T) {
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"destination": "/tmp/test.txt",
 	})
@@ -95,7 +95,7 @@ func TestDownloadTool_Execute_MissingURL(t *testing.T) {
 
 func TestDownloadTool_Execute_MissingDestination(t *testing.T) {
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url": "http://example.com/file",
 	})
@@ -107,7 +107,7 @@ func TestDownloadTool_Execute_MissingDestination(t *testing.T) {
 
 func TestDownloadTool_Execute_BothEmpty(t *testing.T) {
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         "",
 		"destination": "",
@@ -131,7 +131,7 @@ func TestDownloadTool_Execute_Success(t *testing.T) {
 	dest := tmpDir + "/downloaded.txt"
 
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         server.URL + "/file.txt",
 		"destination": dest,
@@ -156,7 +156,7 @@ func TestDownloadTool_Execute_HTTPError(t *testing.T) {
 	dest := tmpDir + "/downloaded.txt"
 
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         server.URL + "/missing.txt",
 		"destination": dest,
@@ -180,7 +180,7 @@ func TestDownloadTool_Execute_CredentialContent(t *testing.T) {
 	dest := tmpDir + "/creds.txt"
 
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         server.URL + "/config.txt",
 		"destination": dest,
@@ -203,7 +203,7 @@ func TestDownloadTool_Execute_EmptyBody(t *testing.T) {
 	dest := tmpDir + "/empty.txt"
 
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         server.URL + "/empty",
 		"destination": dest,
@@ -219,7 +219,7 @@ func TestDownloadTool_Execute_EmptyBody(t *testing.T) {
 
 func TestDownloadTool_Execute_BlockedScheme(t *testing.T) {
 	dt := DownloadTool{}
-	ctx := WithSSRFSkip(context.Background())
+	ctx := WithSSRFSkip(testCtx())
 	input, _ := json.Marshal(map[string]string{
 		"url":         "ftp://example.com/file",
 		"destination": "/tmp/test.txt",

@@ -278,19 +278,12 @@ func parseScenarios(body string) []Scenario {
 }
 
 // extractDescription gets the text after the requirement header, before scenarios.
+// The requirement body passed in already excludes the "### Requirement:" line,
+// so the description starts at the first line and ends at the next scenario or
+// requirement header.
 func extractDescription(body string) string {
-	// Remove the requirement header line
-	lines := strings.Split(body, "\n")
 	var descLines []string
-	inHeader := true
-	for _, line := range lines {
-		if inHeader {
-			if strings.HasPrefix(strings.TrimSpace(line), "### Requirement:") {
-				inHeader = false
-			}
-			continue
-		}
-		// Stop at scenario header or next requirement
+	for _, line := range strings.Split(body, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "#### Scenario:") || strings.HasPrefix(trimmed, "### Requirement:") {
 			break

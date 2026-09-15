@@ -30,6 +30,10 @@ const defaultIndexURL = "https://github.com/GrayCodeAI/graycode-skills/releases/
 // copy.
 const maxSkillSearchDepth = 4
 
+// maxRemoteIndexBytes caps how much of a remote plugin/skill index we read into
+// memory (8 MiB) so a hostile or misconfigured host cannot OOM the process.
+const maxRemoteIndexBytes = 8 << 20
+
 // discoverSkillDirs finds every directory under root containing a SKILL.md,
 // keyed by the directory name. It replaces the previous two hard-coded
 // layouts (<root>/<name>/ and <root>/skills/<name>/) so repositories that
@@ -190,7 +194,8 @@ func (rc *RegistryClient) FetchIndex() (*SkillIndex, error) {
 		return rc.loadCachedIndex(cachePath)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	// Cap the remote index read so a hostile or misconfigured host cannot OOM us.
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxRemoteIndexBytes))
 	if err != nil {
 		return rc.loadCachedIndex(cachePath)
 	}

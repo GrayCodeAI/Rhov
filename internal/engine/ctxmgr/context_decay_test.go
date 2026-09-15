@@ -419,9 +419,10 @@ func TestContextDecayConcurrentAccess(t *testing.T) {
 }
 
 func TestDecayOverTime(t *testing.T) {
-	// FIXME: flaky: timing-sensitive test fails in CI
-	t.Skip("flaky: timing-sensitive test fails in CI")
 	cd := NewContextDecay(10 * time.Millisecond)
+	// Inject a deterministic clock so the test does not depend on wall time.
+	now := time.Unix(0, 0)
+	cd.nowFn = func() time.Time { return now }
 
 	id := cd.Add("decaying content", "general", 10)
 
@@ -432,14 +433,14 @@ func TestDecayOverTime(t *testing.T) {
 	}
 
 	// After one half-life, weight should be ~0.5
-	time.Sleep(10 * time.Millisecond)
+	now = now.Add(10 * time.Millisecond)
 	_, w1 := cd.Get(id)
 	if w1 > 0.6 || w1 < 0.4 {
 		t.Errorf("after one half-life, weight should be ~0.5, got %f", w1)
 	}
 
 	// After two half-lives, weight should be ~0.25
-	time.Sleep(10 * time.Millisecond)
+	now = now.Add(10 * time.Millisecond)
 	_, w2 := cd.Get(id)
 	if w2 > 0.35 || w2 < 0.15 {
 		t.Errorf("after two half-lives, weight should be ~0.25, got %f", w2)
@@ -449,11 +450,13 @@ func TestDecayOverTime(t *testing.T) {
 func TestMinWeightFloor(t *testing.T) {
 	cd := NewContextDecay(1 * time.Millisecond)
 	cd.MinWeight = 0.05
+	now := time.Unix(0, 0)
+	cd.nowFn = func() time.Time { return now }
 
 	id := cd.Add("content", "general", 10)
 
-	// Wait many half-lives
-	time.Sleep(20 * time.Millisecond)
+	// Advance many half-lives deterministically.
+	now = now.Add(20 * time.Millisecond)
 
 	_, w := cd.Get(id)
 	if w < 0.05 {

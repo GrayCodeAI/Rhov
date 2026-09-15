@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
@@ -130,7 +131,9 @@ func (s StructuredEditTool) Execute(ctx context.Context, input json.RawMessage) 
 		msg += fmt.Sprintf(" (%d block(s) skipped — no match found)", skipped)
 	}
 	if autoCommitEnabled(ctx) {
-		_ = AutoCommit(ctx, p.Path, "StructuredEdit", msg)
+		if err := AutoCommit(ctx, p.Path, "StructuredEdit", msg); err != nil {
+			slog.Warn("auto-commit failed", "path", p.Path, "error", err)
+		}
 	}
 	return msg, nil
 }

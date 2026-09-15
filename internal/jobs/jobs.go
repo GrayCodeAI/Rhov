@@ -184,6 +184,14 @@ type Hooks struct {
 	ReadOutput func() string
 }
 
+// cancelTarget snapshots a job's cancel hook and whether it was active while
+// the registry lock was held, so cancellation is decided without reading
+// j.status outside the lock.
+type cancelTarget struct {
+	h      Hooks
+	active bool
+}
+
 // Start registers a new job and runs the producer synchronously to obtain its
 // hooks. The producer owns execution resources and signals termination by
 // sending on [Hooks.Done] (DSH's `done` promise); the registry owns identity
@@ -243,6 +251,12 @@ func (r *Registry) Start(s Start) (id ID, err error) {
 	// Drain the producer's completion promise (DSH: `void hooks.done.then(...)`)
 	// and settle registry state on the producer's goroutine.
 	go func() {
+		if hooks.Done == nil {
+			// Defensive: a producer that returns no Done promise would leak
+			// this goroutine forever. Settle as failed instead.
+			r.fireDone(id, Outcome{Status: StatusFailed, Detail: "producer returned no Done channel"})
+			return
+		}
 		o := <-hooks.Done
 		r.fireDone(id, o)
 	}()
@@ -486,15 +500,15 @@ func (r *Registry) ReleaseOwner(owner string) error {
 			}
 		}
 	}
-	hooks := make(map[*job]Hooks)
+	hooks := make(map[*job]cancelTarget)
 	for _, j := range owned {
-		hooks[j] = j.hooks
+		hooks[j] = cancelTarget{h: j.hooks, active: j.status == StatusStopping || j.status == StatusRunning}
 	}
 	r.mu.Unlock()
 
-	for j, h := range hooks {
-		if h.Cancel != nil && (j.status == StatusStopping || j.status == StatusRunning) {
-			h.Cancel("owner released")
+	for _, t := range hooks {
+		if t.h.Cancel != nil && t.active {
+			t.h.Cancel("owner released")
 		}
 	}
 
@@ -537,15 +551,15 @@ func (r *Registry) Close() error {
 			all = append(all, j)
 		}
 	}
-	hooks := make(map[*job]Hooks)
+	hooks := make(map[*job]cancelTarget)
 	for _, j := range all {
-		hooks[j] = j.hooks
+		hooks[j] = cancelTarget{h: j.hooks, active: j.status == StatusStopping || j.status == StatusRunning}
 	}
 	r.mu.Unlock()
 
-	for j, h := range hooks {
-		if h.Cancel != nil && (j.status == StatusStopping || j.status == StatusRunning) {
-			h.Cancel("registry closed")
+	for _, t := range hooks {
+		if t.h.Cancel != nil && t.active {
+			t.h.Cancel("registry closed")
 		}
 	}
 

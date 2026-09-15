@@ -135,22 +135,6 @@ func (c *waterfallChain) remove(node *waterfallNode) {
 	}
 }
 
-func (c *waterfallChain) run(ev Event) (Event, error) {
-	if c == nil || c.head == nil {
-		return ev, nil
-	}
-	return c.head.run(ev)
-}
-
-func (n *waterfallNode) run(ev Event) (Event, error) {
-	return n.fn(ev, func(ev Event) (Event, error) {
-		if n.rest == nil {
-			return ev, nil
-		}
-		return n.rest.run(ev)
-	})
-}
-
 // Waterfall registers a synchronous, ordered, value-returning handler for an event
 // type and returns a disposer that removes exactly it. Handlers run in registration
 // order, independently of the channel subscribers (Subscribe/Publish paths are
@@ -177,11 +161,30 @@ func (eb *EventBus) RunWaterfall(eventType EventType, ev Event) (Event, error) {
 	if eb == nil {
 		return ev, nil
 	}
+	// Snapshot the handler list under the read lock so concurrent
+	// Waterfall/remove mutations cannot race the traversal.
 	eb.waterMu.RLock()
 	chain := eb.waterfalls[eventType]
+	var handlers []WaterfallHandler
+	if chain != nil {
+		for n := chain.head; n != nil; n = n.rest {
+			handlers = append(handlers, n.fn)
+		}
+	}
 	eb.waterMu.RUnlock()
-	if chain == nil {
+	if len(handlers) == 0 {
 		return ev, nil
 	}
-	return chain.run(ev)
+	// Run the snapshot in registration order with the same short-circuit
+	// semantics: the first handler that does not call next stops the chain.
+	var run func(i int, e Event) (Event, error)
+	run = func(i int, e Event) (Event, error) {
+		if i >= len(handlers) {
+			return e, nil
+		}
+		return handlers[i](e, func(next Event) (Event, error) {
+			return run(i+1, next)
+		})
+	}
+	return run(0, ev)
 }

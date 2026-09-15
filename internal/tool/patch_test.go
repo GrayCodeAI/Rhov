@@ -473,7 +473,7 @@ func TestApplyAll(t *testing.T) {
 		t.Fatalf("parse error: %v", err)
 	}
 
-	modified, err := parser.ApplyAll(context.Background())
+	modified, err := parser.ApplyAll(testCtx())
 	if err != nil {
 		t.Fatalf("ApplyAll error: %v", err)
 	}
@@ -553,7 +553,7 @@ func main() {
 	input, _ := json.Marshal(map[string]string{"patch": patchContent})
 
 	tool := PatchTool{}
-	result, err := tool.Execute(context.Background(), input)
+	result, err := tool.Execute(testCtx(), input)
 	if err != nil {
 		t.Fatalf("Execute failed: %v", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GrayCodeAI/rho/internal/textutil"
 	"github.com/GrayCodeAI/rho/internal/types"
 )
 
@@ -236,8 +237,5 @@ func dedup(items []string) []string {
 
 // truncateStr truncates s to maxLen characters.
 func truncateStr(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
+	return textutil.TruncateAppend(s, maxLen)
 }

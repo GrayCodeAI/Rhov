@@ -100,6 +100,9 @@ api-validate: ## Validate the OpenAPI spec.
 bench: ## Run benchmarks.
 	go test ./... -bench=. -benchmem -count=3 -timeout=300s
 
+update-golden: ## Regenerate golden test fixtures.
+	go test ./cmd/ -run TestGoldenHelp -update-golden -count=1
+
 # ---------------------------------------------------------------------------
 # Quality gates.
 # ---------------------------------------------------------------------------
