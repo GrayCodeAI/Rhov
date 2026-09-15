@@ -246,39 +246,47 @@ func TestFormatHistoryEmpty(t *testing.T) {
 }
 
 func TestSetTerminalTitle(t *testing.T) {
-	// We can't easily capture os.Stdout in a test, but we can verify
-	// the escape sequence format by testing the function doesn't panic
+	// We can't easily capture os.Stdout in a test, but we can verify the
+	// notifier is configured and the calls do not panic.
 	n := NewNotifier()
 	n.Sound = false
 	n.Desktop = false
+	if n == nil || !n.Enabled {
+		t.Fatal("expected an enabled notifier")
+	}
+	if n.Sound || n.Desktop {
+		t.Fatal("expected Sound and Desktop to be disabled")
+	}
 
-	// Just verify it doesn't panic
 	n.SetTerminalTitle("rho: running")
 	n.ClearTitle()
 }
 
 func TestBellCharacter(t *testing.T) {
-	// Verify Bell doesn't panic
 	n := NewNotifier()
+	if n == nil {
+		t.Fatal("expected a notifier")
+	}
 	n.Bell()
 }
 
 func TestDesktopNotifyCommandConstruction(t *testing.T) {
-	// We can't actually send desktop notifications in tests,
-	// but we can verify the function handles various inputs without panic
+	// Verify the AppleScript escaper neutralizes quotes and backslashes; the
+	// actual notification command may not exist in CI.
+	if got := escapeAppleScript(`a"b\c`); strings.Contains(got, `"`) && !strings.Contains(got, `\"`) {
+		t.Errorf("unescaped quote in %q", got)
+	}
 	n := NewNotifier()
-
-	// The actual command will likely fail in CI, but should not panic
-	err := n.DesktopNotify("Test Title", "Test Message")
-	// We don't assert on error because the notification tool may not be available
-	_ = err
+	_ = n.DesktopNotify("Test Title", "Test Message")
 }
 
 func TestDesktopNotifySpecialCharacters(t *testing.T) {
 	n := NewNotifier()
-	// Test with special characters that need escaping
-	err := n.DesktopNotify(`Title with "quotes"`, `Message with "quotes" and \ backslash`)
-	_ = err
+	// Test with special characters that need escaping.
+	_ = n.DesktopNotify(`Title with "quotes"`, `Message with "quotes" and \ backslash`)
+	if got := escapeAppleScript(`"quoted"`); !strings.Contains(got, `\"`) {
+		t.Errorf("expected escaped quotes, got %q", got)
+	}
 }
 
 func TestHistoryLimit(t *testing.T) {

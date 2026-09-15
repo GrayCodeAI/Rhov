@@ -34,10 +34,19 @@ type EnrichedError struct {
 
 func NewErrorContext() *ErrorContext {
 	ec := &ErrorContext{
-		Patterns: make(map[string]*ErrorHelp),
+		Patterns: make(map[string]*ErrorHelp, len(builtinErrorPatterns)),
 	}
+	for key, help := range builtinErrorPatterns {
+		ec.Patterns[key] = help
+	}
+	return ec
+}
 
-	ec.Patterns["go_undefined"] = &ErrorHelp{
+// builtinErrorPatterns is the static error-pattern table consulted by
+// ErrorContext. Keeping it as data (rather than a 500-line constructor) makes
+// it reviewable and keeps NewErrorContext small.
+var builtinErrorPatterns = map[string]*ErrorHelp{
+	"go_undefined": {
 		Pattern:     regexp.MustCompile(`undefined:\s*(\w+)`),
 		Title:       "Undefined identifier",
 		Explanation: "The identifier is used but has not been declared in the current scope. This can happen when a variable, function, or type is misspelled, not imported, or declared in a different scope.",
@@ -52,9 +61,9 @@ func NewErrorContext() *ErrorContext {
 			"import \"fmt\" // import the needed package",
 		},
 		DocURL: "https://go.dev/ref/spec#Declarations_and_scope",
-	}
+	},
 
-	ec.Patterns["go_type_mismatch"] = &ErrorHelp{
+	"go_type_mismatch": {
 		Pattern:     regexp.MustCompile(`cannot use .+ as .+ in`),
 		Title:       "Type mismatch",
 		Explanation: "A value of one type was used where a different type was expected. Go is strictly typed and does not perform implicit type conversions.",
@@ -69,9 +78,9 @@ func NewErrorContext() *ErrorContext {
 			"strconv.Itoa(num) // int to string",
 		},
 		DocURL: "https://go.dev/ref/spec#Conversions",
-	}
+	},
 
-	ec.Patterns["go_import_cycle"] = &ErrorHelp{
+	"go_import_cycle": {
 		Pattern:     regexp.MustCompile(`import cycle not allowed`),
 		Title:       "Import cycle detected",
 		Explanation: "Two or more packages import each other, creating a circular dependency. Go does not allow import cycles. This usually indicates a design issue where shared types or interfaces should be extracted to a separate package.",
@@ -86,9 +95,9 @@ func NewErrorContext() *ErrorContext {
 			"// Use an interface in package A instead of importing package B directly",
 		},
 		DocURL: "https://go.dev/doc/faq#mutual_import",
-	}
+	},
 
-	ec.Patterns["go_too_many_args"] = &ErrorHelp{
+	"go_too_many_args": {
 		Pattern:     regexp.MustCompile(`too many arguments`),
 		Title:       "Too many arguments in function call",
 		Explanation: "More arguments were passed to a function than its signature accepts. This often happens after refactoring when a function signature changes.",
@@ -102,9 +111,9 @@ func NewErrorContext() *ErrorContext {
 			"func foo(a, b int) {} // accepts exactly 2 args",
 			"func bar(args ...int) {} // accepts variable args",
 		},
-	}
+	},
 
-	ec.Patterns["go_not_enough_args"] = &ErrorHelp{
+	"go_not_enough_args": {
 		Pattern:     regexp.MustCompile(`not enough arguments`),
 		Title:       "Not enough arguments in function call",
 		Explanation: "Fewer arguments were passed to a function than its signature requires. Ensure all required parameters are provided.",
@@ -117,9 +126,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"result := foo(a, b) // provide all required args",
 		},
-	}
+	},
 
-	ec.Patterns["go_deadlock"] = &ErrorHelp{
+	"go_deadlock": {
 		Pattern:     regexp.MustCompile(`(fatal error: all goroutines are asleep|deadlock)`),
 		Title:       "Goroutine deadlock",
 		Explanation: "All goroutines are blocked waiting for each other, and no progress can be made. This typically happens when channels are used incorrectly or mutexes are locked in inconsistent order.",
@@ -133,9 +142,9 @@ func NewErrorContext() *ErrorContext {
 			"ch := make(chan int, 1) // buffered channel prevents blocking",
 			"select {\ncase val := <-ch:\n    // handle\ncase <-time.After(5 * time.Second):\n    // timeout\n}",
 		},
-	}
+	},
 
-	ec.Patterns["go_nil_pointer"] = &ErrorHelp{
+	"go_nil_pointer": {
 		Pattern:     regexp.MustCompile(`nil pointer dereference`),
 		Title:       "Nil pointer dereference",
 		Explanation: "A nil pointer was accessed. This means a variable was used before being initialized or after being set to nil.",
@@ -149,9 +158,9 @@ func NewErrorContext() *ErrorContext {
 			"if obj != nil {\n    obj.Method()\n}",
 			"result, err := GetObj()\nif err != nil || result == nil {\n    return err\n}",
 		},
-	}
+	},
 
-	ec.Patterns["py_indentation"] = &ErrorHelp{
+	"py_indentation": {
 		Pattern:     regexp.MustCompile(`IndentationError`),
 		Title:       "Python indentation error",
 		Explanation: "Python uses indentation to define code blocks. Mixing tabs and spaces or inconsistent indentation levels will cause this error.",
@@ -164,9 +173,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"def foo():\n    if True:\n        pass  # 4 spaces per level",
 		},
-	}
+	},
 
-	ec.Patterns["py_import"] = &ErrorHelp{
+	"py_import": {
 		Pattern:     regexp.MustCompile(`(ImportError|ModuleNotFoundError)`),
 		Title:       "Python import error",
 		Explanation: "The module or package could not be found. It may not be installed, or the module path may be incorrect.",
@@ -181,9 +190,9 @@ func NewErrorContext() *ErrorContext {
 			"pip install requests  # install missing package",
 			"python -m venv venv && source venv/bin/activate",
 		},
-	}
+	},
 
-	ec.Patterns["py_type"] = &ErrorHelp{
+	"py_type": {
 		Pattern:     regexp.MustCompile(`TypeError`),
 		Title:       "Python type error",
 		Explanation: "An operation was applied to an object of inappropriate type. This often happens when mixing incompatible types or calling a non-callable object.",
@@ -197,9 +206,9 @@ func NewErrorContext() *ErrorContext {
 			"str(42) + \" items\"  # convert int to str before concatenation",
 			"isinstance(obj, list)  # check type before use",
 		},
-	}
+	},
 
-	ec.Patterns["py_attribute"] = &ErrorHelp{
+	"py_attribute": {
 		Pattern:     regexp.MustCompile(`AttributeError`),
 		Title:       "Python attribute error",
 		Explanation: "An object does not have the attribute or method being accessed. This can happen when using the wrong type, a typo in the attribute name, or accessing an attribute before it is set.",
@@ -213,9 +222,9 @@ func NewErrorContext() *ErrorContext {
 			"if hasattr(obj, 'method'):\n    obj.method()",
 			"print(type(obj))  # verify the actual type",
 		},
-	}
+	},
 
-	ec.Patterns["js_module_not_found"] = &ErrorHelp{
+	"js_module_not_found": {
 		Pattern:     regexp.MustCompile(`Cannot find module`),
 		Title:       "Module not found",
 		Explanation: "The required module could not be resolved. It may not be installed, the path may be wrong, or type definitions may be missing.",
@@ -230,9 +239,9 @@ func NewErrorContext() *ErrorContext {
 			"npm install lodash @types/lodash",
 			"// Check relative path: import { foo } from './utils/foo'",
 		},
-	}
+	},
 
-	ec.Patterns["js_not_a_function"] = &ErrorHelp{
+	"js_not_a_function": {
 		Pattern:     regexp.MustCompile(`is not a function`),
 		Title:       "Not a function",
 		Explanation: "A value that is not a function was invoked as one. This usually means the variable holds undefined, null, or a non-function value at the time of the call.",
@@ -246,9 +255,9 @@ func NewErrorContext() *ErrorContext {
 			"if (typeof fn === 'function') { fn(); }",
 			"// Verify: export function myFunc() {} in the source module",
 		},
-	}
+	},
 
-	ec.Patterns["js_undefined_not_object"] = &ErrorHelp{
+	"js_undefined_not_object": {
 		Pattern:     regexp.MustCompile(`undefined is not an object`),
 		Title:       "Cannot access property of undefined",
 		Explanation: "An attempt was made to access a property on undefined. This means a previous property access or function call returned undefined.",
@@ -262,9 +271,9 @@ func NewErrorContext() *ErrorContext {
 			"const name = obj?.user?.name ?? 'default';",
 			"if (response && response.data) { /* use data */ }",
 		},
-	}
+	},
 
-	ec.Patterns["git_merge_conflict"] = &ErrorHelp{
+	"git_merge_conflict": {
 		Pattern:     regexp.MustCompile(`(merge conflict|CONFLICT|Merge conflict)`),
 		Title:       "Git merge conflict",
 		Explanation: "Changes in different branches affect the same lines. Git cannot automatically determine which version to keep.",
@@ -279,9 +288,9 @@ func NewErrorContext() *ErrorContext {
 			"git status  # see which files have conflicts",
 			"git add resolved_file.go && git commit",
 		},
-	}
+	},
 
-	ec.Patterns["git_not_a_repo"] = &ErrorHelp{
+	"git_not_a_repo": {
 		Pattern:     regexp.MustCompile(`not a git repository`),
 		Title:       "Not a git repository",
 		Explanation: "The current directory (or specified path) is not inside a git repository. Either initialize a new repository or navigate to the correct directory.",
@@ -295,9 +304,9 @@ func NewErrorContext() *ErrorContext {
 			"git init",
 			"cd /path/to/project && git status",
 		},
-	}
+	},
 
-	ec.Patterns["git_nothing_to_commit"] = &ErrorHelp{
+	"git_nothing_to_commit": {
 		Pattern:     regexp.MustCompile(`nothing to commit`),
 		Title:       "Nothing to commit",
 		Explanation: "There are no staged or modified files to commit. All changes have already been committed or the working directory is clean.",
@@ -311,9 +320,9 @@ func NewErrorContext() *ErrorContext {
 			"git add . && git commit -m \"message\"",
 			"git status  # check for untracked or modified files",
 		},
-	}
+	},
 
-	ec.Patterns["sys_permission_denied"] = &ErrorHelp{
+	"sys_permission_denied": {
 		Pattern:     regexp.MustCompile(`permission denied`),
 		Title:       "Permission denied",
 		Explanation: "The operation was rejected due to insufficient filesystem or OS permissions. The current user does not have the required access rights.",
@@ -327,9 +336,9 @@ func NewErrorContext() *ErrorContext {
 			"chmod 644 file.txt  # owner read/write, others read",
 			"ls -la /path/to/file  # check current permissions",
 		},
-	}
+	},
 
-	ec.Patterns["sys_no_such_file"] = &ErrorHelp{
+	"sys_no_such_file": {
 		Pattern:     regexp.MustCompile(`no such file or directory`),
 		Title:       "File or directory not found",
 		Explanation: "The specified path does not exist. The file may have been moved, deleted, or the path may contain a typo.",
@@ -344,9 +353,9 @@ func NewErrorContext() *ErrorContext {
 			"mkdir -p /path/to/dir  # create missing directories",
 			"find . -name 'filename'  # search for the file",
 		},
-	}
+	},
 
-	ec.Patterns["sys_address_in_use"] = &ErrorHelp{
+	"sys_address_in_use": {
 		Pattern:     regexp.MustCompile(`address already in use`),
 		Title:       "Address already in use",
 		Explanation: "Another process is already listening on the requested port. Only one process can bind to a specific port at a time.",
@@ -360,9 +369,9 @@ func NewErrorContext() *ErrorContext {
 			"lsof -i :8080  # find process using port 8080",
 			"kill -9 <PID>  # kill the process",
 		},
-	}
+	},
 
-	ec.Patterns["sys_connection_refused"] = &ErrorHelp{
+	"sys_connection_refused": {
 		Pattern:     regexp.MustCompile(`connection refused`),
 		Title:       "Connection refused",
 		Explanation: "No service is listening on the target address and port. The server may not be running, or the address/port may be incorrect.",
@@ -376,9 +385,9 @@ func NewErrorContext() *ErrorContext {
 			"curl http://localhost:8080/health  # test connectivity",
 			"netstat -tlnp | grep 8080  # check if port is listening",
 		},
-	}
+	},
 
-	ec.Patterns["sys_disk_full"] = &ErrorHelp{
+	"sys_disk_full": {
 		Pattern:     regexp.MustCompile(`(no space left on device|disk full)`),
 		Title:       "Disk full",
 		Explanation: "The filesystem has no remaining free space. Write operations will fail until space is freed.",
@@ -392,9 +401,9 @@ func NewErrorContext() *ErrorContext {
 			"df -h  # check free space",
 			"du -sh /tmp/*  # find large temp files",
 		},
-	}
+	},
 
-	ec.Patterns["sys_timeout"] = &ErrorHelp{
+	"sys_timeout": {
 		Pattern:     regexp.MustCompile(`(connection timed out|timeout|context deadline exceeded)`),
 		Title:       "Operation timed out",
 		Explanation: "The operation did not complete within the allowed time. This could be a network issue, an overloaded server, or an operation that needs a longer timeout.",
@@ -408,9 +417,9 @@ func NewErrorContext() *ErrorContext {
 			"ctx, cancel := context.WithTimeout(ctx, 30*time.Second)",
 			"curl --connect-timeout 10 http://example.com",
 		},
-	}
+	},
 
-	ec.Patterns["rho_old_str_not_found"] = &ErrorHelp{
+	"rho_old_str_not_found": {
 		Pattern:     regexp.MustCompile(`old_str not found`),
 		Title:       "Edit target string not found",
 		Explanation: "The text specified in old_str does not exist in the file. The file may have been modified since it was last read, or the string may contain whitespace or encoding differences.",
@@ -425,9 +434,9 @@ func NewErrorContext() *ErrorContext {
 			"// Re-read the file first, then retry the edit with exact content",
 		},
 		AutoFix: "Re-read the target file and retry with the exact current content",
-	}
+	},
 
-	ec.Patterns["rho_file_too_large"] = &ErrorHelp{
+	"rho_file_too_large": {
 		Pattern:     regexp.MustCompile(`file too large`),
 		Title:       "File exceeds size limit",
 		Explanation: "The file is too large to be processed in a single operation. This protects against accidentally loading very large files into memory.",
@@ -442,9 +451,9 @@ func NewErrorContext() *ErrorContext {
 			"// head_tail tool: read first 50 and last 50 lines",
 		},
 		AutoFix: "Use head_tail or line-range reads to process the file in parts",
-	}
+	},
 
-	ec.Patterns["rho_budget_exceeded"] = &ErrorHelp{
+	"rho_budget_exceeded": {
 		Pattern:     regexp.MustCompile(`budget exceeded`),
 		Title:       "Token or cost budget exceeded",
 		Explanation: "The session has consumed more tokens or cost than the configured budget allows. This is a safety limit to prevent runaway costs.",
@@ -458,9 +467,9 @@ func NewErrorContext() *ErrorContext {
 			"rho --budget 10.00  # set a higher budget",
 			"/compact  # reduce context size",
 		},
-	}
+	},
 
-	ec.Patterns["rho_tool_not_found"] = &ErrorHelp{
+	"rho_tool_not_found": {
 		Pattern:     regexp.MustCompile(`(tool not found|unknown tool)`),
 		Title:       "Tool not found",
 		Explanation: "The requested tool does not exist in the current tool registry. It may be misspelled or not available in this configuration.",
@@ -473,9 +482,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"// List available tools to find the correct name",
 		},
-	}
+	},
 
-	ec.Patterns["rho_sandbox_violation"] = &ErrorHelp{
+	"rho_sandbox_violation": {
 		Pattern:     regexp.MustCompile(`(sandbox violation|operation not permitted by sandbox)`),
 		Title:       "Sandbox security violation",
 		Explanation: "The operation was blocked by the sandbox security policy. The command attempted to access a resource outside the allowed scope.",
@@ -488,9 +497,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"// Ensure operations target files within the project root",
 		},
-	}
+	},
 
-	ec.Patterns["go_unused_import"] = &ErrorHelp{
+	"go_unused_import": {
 		Pattern:     regexp.MustCompile(`imported and not used`),
 		Title:       "Unused import",
 		Explanation: "A package was imported but none of its exported identifiers are used. Go treats unused imports as compile errors.",
@@ -504,9 +513,9 @@ func NewErrorContext() *ErrorContext {
 			"import _ \"net/http/pprof\" // side-effect import",
 			"// Run: goimports -w file.go",
 		},
-	}
+	},
 
-	ec.Patterns["go_unused_var"] = &ErrorHelp{
+	"go_unused_var": {
 		Pattern:     regexp.MustCompile(`declared (and|but) not used`),
 		Title:       "Unused variable",
 		Explanation: "A variable was declared but never referenced. Go treats unused local variables as compile errors.",
@@ -518,9 +527,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"_ = unusedValue // explicitly discard",
 		},
-	}
+	},
 
-	ec.Patterns["json_parse"] = &ErrorHelp{
+	"json_parse": {
 		Pattern:     regexp.MustCompile(`(invalid character|unexpected end of JSON|json: cannot unmarshal)`),
 		Title:       "JSON parse error",
 		Explanation: "The input is not valid JSON or does not match the expected structure. This can happen with malformed data, trailing commas, or type mismatches.",
@@ -534,9 +543,9 @@ func NewErrorContext() *ErrorContext {
 			"echo '{\"key\": \"value\"}' | jq .  // validate JSON",
 			"json.Unmarshal(data, &target)  // ensure target matches structure",
 		},
-	}
+	},
 
-	ec.Patterns["go_interface_not_implemented"] = &ErrorHelp{
+	"go_interface_not_implemented": {
 		Pattern:     regexp.MustCompile(`does not implement`),
 		Title:       "Interface not satisfied",
 		Explanation: "A type was used where an interface is expected, but it does not implement all required methods. Check the missing method signatures.",
@@ -549,9 +558,9 @@ func NewErrorContext() *ErrorContext {
 		Examples: []string{
 			"// Compile-time check:\nvar _ MyInterface = (*MyType)(nil)",
 		},
-	}
+	},
 
-	ec.Patterns["docker_not_found"] = &ErrorHelp{
+	"docker_not_found": {
 		Pattern:     regexp.MustCompile(`(docker: command not found|Cannot connect to the Docker daemon)`),
 		Title:       "Docker unavailable",
 		Explanation: "Docker is either not installed or the daemon is not running. Docker requires both the CLI tool and a running daemon.",
@@ -565,9 +574,9 @@ func NewErrorContext() *ErrorContext {
 			"sudo systemctl start docker",
 			"docker info  # verify daemon is running",
 		},
-	}
+	},
 
-	ec.Patterns["oom"] = &ErrorHelp{
+	"oom": {
 		Pattern:     regexp.MustCompile(`(out of memory|OOM|cannot allocate memory)`),
 		Title:       "Out of memory",
 		Explanation: "The process attempted to allocate more memory than is available. This can happen with large data sets, memory leaks, or insufficient system resources.",
@@ -581,9 +590,7 @@ func NewErrorContext() *ErrorContext {
 			"// Process in batches instead of loading all at once",
 			"GOGC=50 ./myapp  // more aggressive garbage collection",
 		},
-	}
-
-	return ec
+	},
 }
 
 func (ec *ErrorContext) Enrich(err string) *EnrichedError {

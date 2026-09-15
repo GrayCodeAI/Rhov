@@ -85,20 +85,27 @@ func TestHasString(t *testing.T) {
 }
 
 func TestBranchSummary(t *testing.T) {
-	// May produce output or empty depending on whether we're in a git repo
+	// May produce output or empty depending on whether we're in a git repo.
+	// It must at least be deterministic for a fixed repo state.
 	summary := branchSummary()
-	_ = summary // just verify no panic
+	if summary != branchSummary() {
+		t.Error("branchSummary is not deterministic for the same repo state")
+	}
 }
 
 func TestFilesSummary(t *testing.T) {
 	summary := filesSummary()
-	_ = summary // just verify no panic
+	if summary != filesSummary() {
+		t.Error("filesSummary is not deterministic for the same repo state")
+	}
 }
 
 func TestHooksSummary(t *testing.T) {
 	t.Parallel()
 	summary := hooksSummary()
-	_ = summary
+	if summary != hooksSummary() {
+		t.Error("hooksSummary is not deterministic for the same repo state")
+	}
 }
 
 func TestApplySlashSuggestion(t *testing.T) {

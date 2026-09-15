@@ -94,8 +94,10 @@ func TestRecordStep(t *testing.T) {
 
 func TestRecordStepNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic when no active session
 	dr.RecordStep("read", "foo.go", "result", "insight")
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session to be created")
+	}
 }
 
 func TestRecordStepDeduplicatesFiles(t *testing.T) {
@@ -140,8 +142,10 @@ func TestAddHypothesis(t *testing.T) {
 
 func TestAddHypothesisNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic
 	dr.AddHypothesis("some hypothesis")
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session to be created")
+	}
 }
 
 func TestConfirmHypothesis(t *testing.T) {
@@ -168,9 +172,12 @@ func TestConfirmHypothesisOutOfBounds(t *testing.T) {
 	dr.StartSession("test")
 	dr.AddHypothesis("h1")
 
-	// Should not panic
 	dr.ConfirmHypothesis(-1, "evidence")
 	dr.ConfirmHypothesis(5, "evidence")
+	h := dr.ActiveSession.HypothesesTested[0]
+	if h.Tested || h.Confirmed {
+		t.Error("out-of-bounds confirm must not mutate the hypothesis")
+	}
 }
 
 func TestRejectHypothesis(t *testing.T) {
@@ -194,8 +201,10 @@ func TestRejectHypothesis(t *testing.T) {
 
 func TestRejectHypothesisNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic
 	dr.RejectHypothesis(0, "evidence")
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session to be created")
+	}
 }
 
 func TestSetRootCause(t *testing.T) {
@@ -211,8 +220,10 @@ func TestSetRootCause(t *testing.T) {
 
 func TestSetRootCauseNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic
 	dr.SetRootCause("some cause")
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session to be created")
+	}
 }
 
 func TestSetResolution(t *testing.T) {
@@ -228,8 +239,10 @@ func TestSetResolution(t *testing.T) {
 
 func TestSetResolutionNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic
 	dr.SetResolution("some resolution")
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session to be created")
+	}
 }
 
 func TestEndSession(t *testing.T) {
@@ -265,8 +278,13 @@ func TestEndSessionUnsuccessful(t *testing.T) {
 
 func TestEndSessionNoActiveSession(t *testing.T) {
 	dr := NewDebugRecorder("/tmp/test-debug")
-	// Should not panic
 	dr.EndSession(true)
+	if dr.ActiveSession != nil {
+		t.Error("expected no active session")
+	}
+	if len(dr.Sessions) != 0 {
+		t.Errorf("expected no sessions recorded, got %d", len(dr.Sessions))
+	}
 }
 
 func TestFormatSession(t *testing.T) {
