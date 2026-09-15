@@ -118,3 +118,14 @@ func TestRequireGH(t *testing.T) {
 	// Just verify it doesn't panic — gh may or may not be installed
 	_ = err
 }
+
+func TestAnalyzeDiff_CorrectedLineNumbers(t *testing.T) {
+	diff := "diff --git a/main.go b/main.go\n--- a/main.go\n+++ b/main.go\n@@ -1,2 +1,3 @@\n package main\n+// TODO: fix\n+import \"log\"\n"
+	findings := analyzeDiff(diff)
+	if len(findings) != 1 {
+		t.Fatalf("analyzeDiff() found %d issues, want 1", len(findings))
+	}
+	if findings[0].file != "main.go" || findings[0].line != 2 {
+		t.Errorf("finding = %+v, want file main.go line 2", findings[0])
+	}
+}

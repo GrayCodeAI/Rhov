@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/GrayCodeAI/rho/internal/installtxn"
 	"github.com/GrayCodeAI/rho/internal/storage"
@@ -77,6 +78,55 @@ func (l *SkillsLock) Save(scope string) error {
 		return fmt.Errorf("encode skills lock: %w", err)
 	}
 	return installtxn.WriteFileAtomically(path, append(data, '\n'), 0o600)
+}
+
+// Verify recomputes the installed SKILL.md hash for every locked skill and
+// reports drift as human-readable lines: a missing SKILL.md, a hash mismatch
+// (content changed since install), or an entry with no recorded hash (older
+// lockfiles predate hash recording). It never modifies anything; callers
+// decide whether to warn or fail.
+func (l *SkillsLock) Verify(skillDir string) []string {
+	if l == nil {
+		return nil
+	}
+	names := make([]string, 0, len(l.Skills))
+	for name := range l.Skills {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	var drift []string
+	for _, name := range names {
+		entry := l.Skills[name]
+		path := filepath.Join(skillDir, sanitizeName(name), "SKILL.md")
+		data, err := os.ReadFile(path) // #nosec G304 -- path is the fixed per-skill file under the skills dir, not raw external input
+		if err != nil {
+			if os.IsNotExist(err) {
+				drift = append(drift, fmt.Sprintf("skill %q is in the lockfile but SKILL.md is missing", name))
+			} else {
+				drift = append(drift, fmt.Sprintf("skill %q SKILL.md is unreadable: %v", name, err))
+			}
+			continue
+		}
+		if entry.ComputedHash == "" {
+			drift = append(drift, fmt.Sprintf("skill %q has no recorded hash; reinstall to pin it", name))
+			continue
+		}
+		if got := HashSkillContent(data); got != entry.ComputedHash {
+			drift = append(drift, fmt.Sprintf("skill %q SKILL.md changed since install (lock drift)", name))
+		}
+	}
+	return drift
+}
+
+// VerifyInstalledSkills loads the scope lockfile and reports installed-skill
+// drift. A missing or unreadable lockfile yields no warnings (nothing pinned
+// means nothing to verify); the returned lines are for display only.
+func VerifyInstalledSkills(scope string) []string {
+	lock, err := LoadSkillsLock(scope)
+	if err != nil {
+		return nil
+	}
+	return lock.Verify(filepath.Dir(SkillsLockPath(scope)))
 }
 
 // Set records or updates the entry for one skill.

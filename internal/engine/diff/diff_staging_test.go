@@ -628,7 +628,7 @@ func TestApplyAllSkipsRejected(t *testing.T) {
 	}
 }
 
-func TestSplitLinesStaging(t *testing.T) {
+func TestSplitLines(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected []string
@@ -640,14 +640,14 @@ func TestSplitLinesStaging(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := splitLinesStaging(tt.input)
+		got := splitLines(tt.input)
 		if len(got) != len(tt.expected) {
-			t.Errorf("splitLinesStaging(%q) len = %d, want %d", tt.input, len(got), len(tt.expected))
+			t.Errorf("splitLines(%q) len = %d, want %d", tt.input, len(got), len(tt.expected))
 			continue
 		}
 		for i := range got {
 			if got[i] != tt.expected[i] {
-				t.Errorf("splitLinesStaging(%q)[%d] = %q, want %q", tt.input, i, got[i], tt.expected[i])
+				t.Errorf("splitLines(%q)[%d] = %q, want %q", tt.input, i, got[i], tt.expected[i])
 			}
 		}
 	}

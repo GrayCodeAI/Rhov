@@ -13,6 +13,7 @@ import (
 	"time"
 
 	rhoconfig "github.com/GrayCodeAI/rho/internal/config"
+	"github.com/GrayCodeAI/rho/internal/plugin"
 	"github.com/GrayCodeAI/rho/internal/resilience/health"
 	"github.com/GrayCodeAI/rho/internal/session"
 	"github.com/GrayCodeAI/rho/internal/storage"
@@ -97,6 +98,20 @@ func doctorReport(settings rhoconfig.Settings) string {
 		b.WriteString(fmt.Sprintf("Installed skills: %d\n", len(entries)))
 	} else {
 		b.WriteString("Installed skills: none (install with `rho skills install`)\n")
+	}
+	// Warn when installed skills drifted from the lockfile pins (content
+	// changed or SKILL.md removed after install). Warn-only: local edits are
+	// legitimate, they just mean the install is no longer reproducible.
+	if drift := plugin.VerifyInstalledSkills("user"); len(drift) > 0 {
+		b.WriteString("Skills lock drift:\n")
+		const maxDriftLines = 5
+		for i, line := range drift {
+			if i >= maxDriftLines {
+				b.WriteString(fmt.Sprintf("  - ... and %d more (reinstall to re-pin)\n", len(drift)-maxDriftLines))
+				break
+			}
+			b.WriteString("  - " + line + "\n")
+		}
 	}
 
 	b.WriteString(fmt.Sprintf("Configured MCP servers: %d\n", len(settings.MCPServers)+len(mcpServers)))

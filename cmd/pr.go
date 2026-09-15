@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	enginediff "github.com/GrayCodeAI/rho/internal/engine/diff"
 	"github.com/spf13/cobra"
 )
 
@@ -299,47 +300,15 @@ type finding struct {
 }
 
 // analyzeDiff performs a basic static analysis pass over a unified diff.
+// File/line tracking is shared with the engine diff package; the heuristic
+// checks in checkLine stay here. Note: added-line numbers now follow the
+// hunk headers exactly (context and added lines advance the new-file
+// counter); the previous inline walker was off by one after context lines.
 func analyzeDiff(diff string) []finding {
 	var findings []finding
 
-	lines := strings.Split(diff, "\n")
-	currentFile := ""
-	currentLine := 0
-
-	for _, line := range lines {
-		// Track current file
-		if strings.HasPrefix(line, "+++ b/") {
-			currentFile = strings.TrimPrefix(line, "+++ b/")
-			currentLine = 0
-			continue
-		}
-
-		// Track line numbers from hunk headers
-		if strings.HasPrefix(line, "@@") {
-			// Parse @@ -a,b +c,d @@
-			parts := strings.Split(line, "+")
-			if len(parts) >= 2 {
-				numStr := strings.Split(parts[1], ",")[0]
-				if n, err := strconv.Atoi(numStr); err == nil {
-					currentLine = n
-					continue
-				}
-			}
-		}
-
-		// Only analyze added lines
-		if !strings.HasPrefix(line, "+") || strings.HasPrefix(line, "+++") {
-			if strings.HasPrefix(line, "+") || strings.HasPrefix(line, " ") {
-				currentLine++
-			}
-			continue
-		}
-
-		added := line[1:]
-		currentLine++
-
-		// Check for common issues
-		if f := checkLine(added, currentFile, currentLine); f != nil {
+	for _, added := range enginediff.ParseUnifiedAddedLines(diff) {
+		if f := checkLine(added.Text, added.File, added.Line); f != nil {
 			findings = append(findings, *f)
 		}
 	}

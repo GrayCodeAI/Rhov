@@ -2,6 +2,8 @@ package plugin
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -70,5 +72,50 @@ func TestHashSkillContentStable(t *testing.T) {
 	}
 	if HashSkillContent([]byte("other")) == h1 {
 		t.Fatal("different content must hash differently")
+	}
+}
+
+func TestSkillsLockVerify(t *testing.T) {
+	dir := t.TempDir()
+	writeSkill := func(name, content string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Join(dir, name), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name, "SKILL.md"), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeSkill("good", "# good")
+	writeSkill("tampered", "# tampered")
+
+	lock := &SkillsLock{Skills: map[string]SkillsLockEntry{
+		"good":     {ComputedHash: HashSkillContent([]byte("# good"))},
+		"tampered": {ComputedHash: HashSkillContent([]byte("# original"))},
+		"missing":  {ComputedHash: HashSkillContent([]byte("# gone"))},
+		"unpinned": {},
+	}}
+	got := lock.Verify(dir)
+	if len(got) != 3 {
+		t.Fatalf("Verify() = %v, want 3 drift lines", got)
+	}
+	joined := strings.Join(got, "\n")
+	for _, want := range []string{`"tampered"`, `"missing"`, `"unpinned"`} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("drift lines %v missing %s", got, want)
+		}
+	}
+	if strings.Contains(joined, `"good"`) {
+		t.Errorf("matching skill reported as drift: %v", got)
+	}
+}
+
+func TestSkillsLockVerifyEmpty(t *testing.T) {
+	if got := (&SkillsLock{Skills: map[string]SkillsLockEntry{}}).Verify(t.TempDir()); len(got) != 0 {
+		t.Fatalf("empty lock Verify() = %v, want none", got)
+	}
+	var nilLock *SkillsLock
+	if got := nilLock.Verify(t.TempDir()); len(got) != 0 {
+		t.Fatalf("nil lock Verify() = %v, want none", got)
 	}
 }

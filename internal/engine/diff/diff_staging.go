@@ -300,7 +300,7 @@ func (sa *StagingArea) buildApprovedContent(change *StagedChange) string {
 	}
 
 	// Partial apply: reconstruct content applying only approved hunks
-	originalLines := splitLinesStaging(change.Original)
+	originalLines := splitLines(change.Original)
 	var result []string
 	origIdx := 0
 
@@ -347,10 +347,10 @@ func (sa *StagingArea) buildApprovedContent(change *StagedChange) string {
 
 // computeStagedHunks computes hunks between original and modified content.
 func computeStagedHunks(original, modified string) []StagedHunk {
-	oldLines := splitLinesStaging(original)
-	newLines := splitLinesStaging(modified)
+	oldLines := splitLines(original)
+	newLines := splitLines(modified)
 
-	lcs := computeLCSStaging(oldLines, newLines)
+	lcs := computeLCS(oldLines, newLines)
 
 	// Build edit script
 	type editOp struct {
@@ -449,94 +449,44 @@ func computeStagedHunks(original, modified string) []StagedHunk {
 	return hunks
 }
 
-// splitLinesStaging splits content into lines, handling empty input.
-func splitLinesStaging(s string) []string {
-	if s == "" {
-		return nil
-	}
-	lines := strings.Split(s, "\n")
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	return lines
-}
-
-// computeLCSStaging returns the longest common subsequence of two string slices.
-func computeLCSStaging(a, b []string) []string {
-	m, n := len(a), len(b)
-	dp := make([][]int, m+1)
-	for i := range dp {
-		dp[i] = make([]int, n+1)
-	}
-	for i := 1; i <= m; i++ {
-		for j := 1; j <= n; j++ {
-			if a[i-1] == b[j-1] {
-				dp[i][j] = dp[i-1][j-1] + 1
-			} else if dp[i-1][j] >= dp[i][j-1] {
-				dp[i][j] = dp[i-1][j]
-			} else {
-				dp[i][j] = dp[i][j-1]
-			}
-		}
-	}
-
-	lcs := make([]string, 0, dp[m][n])
-	i, j := m, n
-	for i > 0 && j > 0 {
-		if a[i-1] == b[j-1] {
-			lcs = append(lcs, a[i-1])
-			i--
-			j--
-		} else if dp[i-1][j] >= dp[i][j-1] {
-			i--
-		} else {
-			j--
-		}
-	}
-	for left, right := 0, len(lcs)-1; left < right; left, right = left+1, right-1 {
-		lcs[left], lcs[right] = lcs[right], lcs[left]
-	}
-	return lcs
-}
-
 // unifiedDiffStaging produces a unified diff between old and new content.
 func unifiedDiffStaging(old, new, path string) string {
-	oldLines := splitLinesStaging(old)
-	newLines := splitLinesStaging(new)
+	oldLines := splitLines(old)
+	newLines := splitLines(new)
 
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("--- a/%s\n", path))
 	b.WriteString(fmt.Sprintf("+++ b/%s\n", path))
 
-	lcs := computeLCSStaging(oldLines, newLines)
+	lcs := computeLCS(oldLines, newLines)
 
-	type editEntry struct {
+	type edit struct {
 		op   byte
 		line string
 	}
 
-	var edits []editEntry
+	var edits []edit
 	oi, ni, li := 0, 0, 0
 	for li < len(lcs) {
 		for oi < len(oldLines) && oldLines[oi] != lcs[li] {
-			edits = append(edits, editEntry{'-', oldLines[oi]})
+			edits = append(edits, edit{'-', oldLines[oi]})
 			oi++
 		}
 		for ni < len(newLines) && newLines[ni] != lcs[li] {
-			edits = append(edits, editEntry{'+', newLines[ni]})
+			edits = append(edits, edit{'+', newLines[ni]})
 			ni++
 		}
-		edits = append(edits, editEntry{' ', lcs[li]})
+		edits = append(edits, edit{' ', lcs[li]})
 		oi++
 		ni++
 		li++
 	}
 	for oi < len(oldLines) {
-		edits = append(edits, editEntry{'-', oldLines[oi]})
+		edits = append(edits, edit{'-', oldLines[oi]})
 		oi++
 	}
 	for ni < len(newLines) {
-		edits = append(edits, editEntry{'+', newLines[ni]})
+		edits = append(edits, edit{'+', newLines[ni]})
 		ni++
 	}
 
@@ -633,10 +583,10 @@ func unifiedDiffStaging(old, new, path string) string {
 
 // countAddsDels counts added and deleted lines between old and new content.
 func countAddsDels(old, new string) (int, int) {
-	oldLines := splitLinesStaging(old)
-	newLines := splitLinesStaging(new)
+	oldLines := splitLines(old)
+	newLines := splitLines(new)
 
-	lcs := computeLCSStaging(oldLines, newLines)
+	lcs := computeLCS(oldLines, newLines)
 	dels := len(oldLines) - len(lcs)
 	adds := len(newLines) - len(lcs)
 	return adds, dels

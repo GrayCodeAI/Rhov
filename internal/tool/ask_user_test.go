@@ -96,3 +96,24 @@ func TestAskUserQuestionTool_Execute_ValidationErrors(t *testing.T) {
 		t.Error("expected error when ask_user is not configured")
 	}
 }
+
+func TestAskUserSchemaProvider(t *testing.T) {
+	var _ SchemaProvider = AskUserQuestionTool{}
+	params := AskUserQuestionTool{}.Parameters()
+	props, ok := params["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("properties missing")
+	}
+	// Array-of-string wire shape for options must survive.
+	opts, ok := props["options"].(map[string]interface{})
+	if !ok || opts["type"] != "array" {
+		t.Fatalf("options prop = %v, want array type", props["options"])
+	}
+	items, ok := opts["items"].(map[string]interface{})
+	if !ok || items["type"] != "string" {
+		t.Fatalf("options items = %v, want string type", opts["items"])
+	}
+	if req := params["required"].([]string); len(req) != 1 || req[0] != "question" {
+		t.Fatalf("required = %v, want [question]", params["required"])
+	}
+}

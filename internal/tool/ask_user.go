@@ -15,29 +15,26 @@ func (AskUserQuestionTool) Description() string {
 }
 
 func (AskUserQuestionTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"question": map[string]interface{}{"type": "string", "description": "The question to ask"},
-			"options": map[string]interface{}{
-				"type":        "array",
-				"items":       map[string]interface{}{"type": "string"},
-				"description": "Optional list of choices (for single-select)",
-			},
-			"multi_select": map[string]interface{}{
-				"type":        "boolean",
-				"description": "Allow multiple selections (default: false)",
-			},
-			"other": map[string]interface{}{
-				"type":        "boolean",
-				"description": "Allow free-text 'other' option (default: true)",
-			},
-			"cancel_message": map[string]interface{}{
-				"type":        "string",
-				"description": "Message to show on cancel",
-			},
+	return askUserSchema.ToJSONSchema()
+}
+
+// askUserSchema is the single source of truth for AskUserQuestion's input
+// schema. The "options" Items entry preserves the existing array-of-string
+// wire shape.
+var askUserSchema = AskUserQuestionTool{}.Schema()
+
+// Schema returns the typed input schema for AskUserQuestion.
+func (AskUserQuestionTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"question":       {Type: "string", Description: "The question to ask"},
+			"options":        {Type: "array", Description: "Optional list of choices (for single-select)", Items: &SchemaProperty{Type: "string"}},
+			"multi_select":   {Type: "boolean", Description: "Allow multiple selections (default: false)"},
+			"other":          {Type: "boolean", Description: "Allow free-text 'other' option (default: true)"},
+			"cancel_message": {Type: "string", Description: "Message to show on cancel"},
 		},
-		"required": []string{"question"},
+		Required: []string{"question"},
 	}
 }
 
@@ -51,8 +48,8 @@ type AskUserInput struct {
 }
 
 func (AskUserQuestionTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p AskUserInput
-	if err := json.Unmarshal(input, &p); err != nil {
+	p, err := DecodeInput[AskUserInput]("AskUserQuestion", input)
+	if err != nil {
 		return "", err
 	}
 	if p.Question == "" {

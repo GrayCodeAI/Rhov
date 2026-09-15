@@ -16,21 +16,33 @@ func (SleepTool) Description() string {
 	return "Pause execution for a specified number of seconds."
 }
 
-func (SleepTool) Parameters() map[string]interface{} {
-	return map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"seconds": map[string]interface{}{"type": "number", "description": "Duration to sleep in seconds (max 300)"},
+// SleepInput is the typed input for SleepTool.
+type SleepInput struct {
+	Seconds float64 `json:"seconds"`
+}
+
+// Schema returns the typed input schema. Parameters() delegates to it so the
+// two cannot diverge.
+func (SleepTool) Schema() ToolSchema {
+	return ToolSchema{
+		Type: "object",
+		Properties: map[string]SchemaProperty{
+			"seconds": {Type: "number", Description: "Duration to sleep in seconds (max 300)"},
 		},
-		"required": []string{"seconds"},
+		Required: []string{"seconds"},
 	}
 }
 
+func (SleepTool) Parameters() map[string]interface{} {
+	return sleepSchema.ToJSONSchema()
+}
+
+// sleepSchema is the single source of truth for Sleep's input schema.
+var sleepSchema = SleepTool{}.Schema()
+
 func (SleepTool) Execute(ctx context.Context, input json.RawMessage) (string, error) {
-	var p struct {
-		Seconds float64 `json:"seconds"`
-	}
-	if err := json.Unmarshal(input, &p); err != nil {
+	p, err := DecodeInput[SleepInput]("Sleep", input)
+	if err != nil {
 		return "", err
 	}
 	if p.Seconds <= 0 {
