@@ -92,34 +92,29 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 					prog.FailStep(0, pollErr.Error())
 					return pollErr
 				}
-				switch poll.Status {
-				case "pending":
+				if poll.Status == cloud.DeviceLoginPending {
 					select {
 					case <-ctx.Done():
 						prog.FailStep(0, ctx.Err().Error())
 						return fmt.Errorf("waiting for browser approval: %w", ctx.Err())
 					case <-time.After(interval):
 					}
-				case "approved":
-					if poll.Token == "" || poll.DeviceID == "" || poll.ProjectID == "" {
-						prog.FailStep(0, "incomplete device authorization")
-						return fmt.Errorf("rho cloud returned an incomplete device authorization")
-					}
-					if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
-						prog.FailStep(0, err.Error())
-						return err
-					}
-					prog.CompleteStep(0)
-					prog.Done()
-					cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
-					return nil
-				case "expired":
-					prog.FailStep(0, "device authorization expired")
-					return fmt.Errorf("rho cloud device authorization expired")
-				default:
-					prog.FailStep(0, fmt.Sprintf("unknown status %q", poll.Status))
-					return fmt.Errorf("rho cloud returned unknown device authorization status %q", poll.Status)
+					continue
 				}
+				// PollDeviceLogin reports expired, consumed and unknown states
+				// as errors, so the only remaining state is approved.
+				if poll.Token == "" || poll.DeviceID == "" || poll.ProjectID == "" {
+					prog.FailStep(0, "incomplete device authorization")
+					return fmt.Errorf("rho cloud returned an incomplete device authorization")
+				}
+				if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
+					prog.FailStep(0, err.Error())
+					return err
+				}
+				prog.CompleteStep(0)
+				prog.Done()
+				cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
+				return nil
 			}
 		},
 	}

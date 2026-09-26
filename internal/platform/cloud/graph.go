@@ -7,15 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"regexp"
-	"strings"
 )
 
-const (
-	MaxGraphSyncBodySize = 1 << 20
-	maxGraphResponseSize = 64 << 10
-)
+const MaxGraphSyncBodySize = 1 << 20
 
 var (
 	sensitiveGraphAttribute = regexp.MustCompile(`(?i)(content|prompt|secret|credential|password|api[_-]?key|query|reason|url|path|command|provider|model|repository|branch|commit|source|target|message|evidence|element|file|fix)`)
@@ -175,20 +170,11 @@ func (c *Client) SyncGraph(ctx context.Context, request GraphSyncRequest) (Graph
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	limited := io.LimitReader(resp.Body, maxGraphResponseSize)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var failure struct {
-			Error string `json:"error"`
-		}
-		_ = json.NewDecoder(limited).Decode(&failure)
-		message := strings.TrimSpace(failure.Error)
-		if message == "" {
-			message = resp.Status
-		}
-		return result, fmt.Errorf("rho cloud graph sync: %s", message)
+		return result, readAPIError("graph sync", resp)
 	}
-	if err := json.NewDecoder(limited).Decode(&result); err != nil {
-		return result, fmt.Errorf("decode graph sync response: %w", err)
+	if err := decodeResponse("graph sync", resp, &result); err != nil {
+		return result, err
 	}
 	if !result.Accepted {
 		return result, fmt.Errorf("rho cloud did not accept graph sync")

@@ -78,6 +78,23 @@ type DeviceLoginStart struct {
 	Interval        int    `json:"interval"`
 }
 
+// Device login states returned by POST /v1/auth/device/poll.
+const (
+	DeviceLoginPending  = "pending"
+	DeviceLoginApproved = "approved"
+	DeviceLoginExpired  = "expired"
+	DeviceLoginConsumed = "consumed"
+)
+
+var (
+	// ErrDeviceLoginExpired is the terminal "expired" poll state: the code was
+	// not approved in time (or is unknown to the server).
+	ErrDeviceLoginExpired = errors.New("the GrayCode Cloud device login expired before it was approved; run `rho cloud login` again")
+	// ErrDeviceLoginConsumed is the terminal "consumed" poll state (HTTP 409):
+	// the token for this login was already issued to an earlier poll.
+	ErrDeviceLoginConsumed = errors.New("this GrayCode Cloud device login was already completed and its token was issued to an earlier request; run `rho cloud login` again")
+)
+
 type DeviceLoginPoll struct {
 	Status      string `json:"status"`
 	Token       string `json:"token"`
@@ -163,9 +180,9 @@ func (c *Client) startDeviceLogin(ctx context.Context, label, platform, rhoVersi
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return result, fmt.Errorf("rho cloud device login start: %s", resp.Status)
+		return result, readAPIError("device login start", resp)
 	}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
+	return result, decodeResponse("device login start", resp, &result)
 }
 
 func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (DeviceLoginPoll, error) {
@@ -184,9 +201,25 @@ func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (Device
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return result, fmt.Errorf("rho cloud device login poll: %s", resp.Status)
+		apiErr := readAPIError("device login poll", resp)
+		if resp.StatusCode == http.StatusConflict && apiErr.State == DeviceLoginConsumed {
+			return DeviceLoginPoll{Status: DeviceLoginConsumed}, ErrDeviceLoginConsumed
+		}
+		return result, apiErr
 	}
-	return result, json.NewDecoder(resp.Body).Decode(&result)
+	if err := decodeResponse("device login poll", resp, &result); err != nil {
+		return result, err
+	}
+	switch result.Status {
+	case DeviceLoginPending, DeviceLoginApproved:
+		return result, nil
+	case DeviceLoginExpired:
+		return result, ErrDeviceLoginExpired
+	case DeviceLoginConsumed:
+		return result, ErrDeviceLoginConsumed
+	default:
+		return result, fmt.Errorf("GrayCode Cloud returned an unknown device login status %q", sanitizeServerText(result.Status))
+	}
 }
 
 func (c *Client) StartDeviceLogin(ctx context.Context, label, platform, rhoVersion string) (DeviceLoginStart, error) {
