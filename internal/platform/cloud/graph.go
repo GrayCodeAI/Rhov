@@ -64,7 +64,7 @@ type GraphSyncResult struct {
 }
 
 // PrepareGraph converts a portable graph to deterministic JSON, hashes values
-// behind cloud-sensitive attribute names, and enforces Rho Cloud's fact caps.
+// behind cloud-sensitive attribute names, and enforces GrayCode Cloud's fact caps.
 // It does not mutate the caller's graph.
 func PrepareGraph(graph any) (PreparedGraph, error) {
 	raw, err := json.Marshal(graph)
@@ -92,7 +92,7 @@ func PrepareGraph(graph any) (PreparedGraph, error) {
 	}
 	facts := len(nodes) + len(edges) + len(events)
 	if facts > 900 {
-		return PreparedGraph{}, fmt.Errorf("graph has %d facts; Rho Cloud accepts at most 900", facts)
+		return PreparedGraph{}, fmt.Errorf("graph has %d facts; GrayCode Cloud accepts at most 900", facts)
 	}
 	if err := rejectTenantScopes(document, nodes, edges, events); err != nil {
 		return PreparedGraph{}, err
@@ -132,7 +132,7 @@ func graphFacts(document map[string]any, field string, limit int) ([]any, error)
 		return nil, fmt.Errorf("graph %s must be an array", field)
 	}
 	if len(value) > limit {
-		return nil, fmt.Errorf("graph has %d %s; Rho Cloud accepts at most %d", len(value), field, limit)
+		return nil, fmt.Errorf("graph has %d %s; GrayCode Cloud accepts at most %d", len(value), field, limit)
 	}
 	return value, nil
 }
@@ -224,7 +224,7 @@ func (c *Client) SyncGraph(ctx context.Context, request GraphSyncRequest) (Graph
 		return result, fmt.Errorf("marshal graph sync: %w", err)
 	}
 	if len(body) > MaxGraphSyncBodySize {
-		return result, fmt.Errorf("graph sync body is %d bytes; Rho Cloud accepts at most %d", len(body), MaxGraphSyncBodySize)
+		return result, fmt.Errorf("graph sync body is %d bytes; GrayCode Cloud accepts at most %d", len(body), MaxGraphSyncBodySize)
 	}
 	req, err := c.newJSONRequest(ctx, "/v1/graph/sync", body, true)
 	if err != nil {
@@ -243,7 +243,7 @@ func (c *Client) SyncGraph(ctx context.Context, request GraphSyncRequest) (Graph
 		return result, err
 	}
 	if !result.Accepted {
-		return result, fmt.Errorf("rho cloud did not accept graph sync")
+		return result, fmt.Errorf("GrayCode Cloud did not accept the graph sync")
 	}
 	return result, nil
 }

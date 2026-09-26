@@ -56,7 +56,7 @@ func runSessionShare(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("could not generate a share link for session %q", s.ID)
 	}
 	fmt.Printf("Share deeplink: %s\n", link)
-	fmt.Printf("(Set RHO_SHARE_URL to a Rho Cloud share endpoint for a hosted URL.)\n")
+	fmt.Printf("(Set RHO_SHARE_URL to a share service that accepts POST /v1/shares for a hosted URL; GrayCode Cloud does not host session shares.)\n")
 	return nil
 }
 

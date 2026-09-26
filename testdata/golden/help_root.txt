@@ -60,7 +60,7 @@ Context & memory:
   taste       Manage taste profile (learned coding style preferences)
 
 Configure:
-  cloud       Manage optional Rho Cloud synchronization
+  cloud       Manage optional GrayCode Cloud synchronization
   config      Show or update settings
   credentials Manage secure API key storage (macOS Keychain / Linux secret service)
   features    List and manage feature flags

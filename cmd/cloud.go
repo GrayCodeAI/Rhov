@@ -24,12 +24,12 @@ const cloudEndpointFlagHelp = "GrayCode Cloud API endpoint (default: $" + cloud.
 // loadCloudClient loads the saved GrayCode Cloud connection; tests replace it.
 var loadCloudClient = cloud.LoadClient
 
-var cloudCmd = &cobra.Command{Use: "cloud", Short: "Manage optional Rho Cloud synchronization"}
+var cloudCmd = &cobra.Command{Use: "cloud", Short: "Manage optional GrayCode Cloud synchronization"}
 
 func newCloudConnectCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect this Rho device to Rho Cloud",
+		Short: "Connect this Rho device to GrayCode Cloud with an existing device token",
 		Long: `Save an existing GrayCode Cloud device connection. Prefer "rho cloud login",
 which needs no token. The device token is read with --token-stdin or from a
 hidden prompt, never from the command line:
@@ -57,13 +57,13 @@ hidden prompt, never from the command line:
 				return err
 			}
 			warnIfPlaintextTokenStore(cmd)
-			cmd.Println(auditTint("Rho Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
+			cmd.Println(auditTint("GrayCode Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
 			return nil
 		},
 	}
 	command.Flags().String("endpoint", "", cloudEndpointFlagHelp)
-	command.Flags().String("device-id", "", "Rho Cloud device ID")
-	command.Flags().String("project-id", "", "Rho Cloud project ID")
+	command.Flags().String("device-id", "", "GrayCode Cloud device ID")
+	command.Flags().String("project-id", "", "GrayCode Cloud project ID")
 	command.Flags().Bool("token-stdin", false, "Read the device token from standard input")
 	command.Flags().String("token", "", "Device token (deprecated: exposed in shell history and process listings)")
 	_ = command.Flags().MarkDeprecated("token", "it exposes the device token in shell history and process listings; use --token-stdin or the interactive prompt")
@@ -138,7 +138,7 @@ func readDeviceToken(cmd *cobra.Command) (string, error) {
 func newCloudLoginCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "login",
-		Short: "Sign in to Rho Cloud in a browser",
+		Short: "Sign in to GrayCode Cloud in a browser",
 		Long: `Start a browser device login against GrayCode Cloud and store the issued
 device token in the OS credential store.
 
@@ -202,7 +202,7 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 				prog.CompleteStep(0)
 				prog.Done()
 				warnIfPlaintextTokenStore(cmd)
-				cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
+				cmd.Println(auditTint("GrayCode Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
 				return nil
 			}
 		},
@@ -214,7 +214,7 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 
 func newCloudStatusCmd() *cobra.Command {
 	return &cobra.Command{
-		Use: "status", Short: "Show Rho Cloud connection status",
+		Use: "status", Short: "Show GrayCode Cloud connection status",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, cfg, err := loadCloudClient()
 			if errors.Is(err, cloud.ErrNotConnected) {
@@ -232,7 +232,7 @@ func newCloudStatusCmd() *cobra.Command {
 			if plaintext {
 				storageLine = auditTint("Device token: "+where+" (not an OS credential store)", warnAmber)
 			}
-			cmd.Println(auditTint("Rho Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
+			cmd.Println(auditTint("GrayCode Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
 			cmd.Println(storageLine)
 			return nil
 		},
@@ -242,7 +242,7 @@ func newCloudStatusCmd() *cobra.Command {
 func newCloudContextCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "context",
-		Short: "Sync repository context to Rho Cloud",
+		Short: "Sync repository context to GrayCode Cloud",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, cfg, err := loadCloudClient()
 			if err != nil {

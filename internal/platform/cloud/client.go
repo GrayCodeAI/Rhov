@@ -1,4 +1,6 @@
-// Package cloud contains Rho's optional, fail-open HTTP integration with Rho Cloud.
+// Package cloud contains Rho's optional HTTP integration with GrayCode Cloud,
+// the opt-in hosted control plane at https://cloud.graycodeai.com. Automatic
+// usage upload is fail-open; explicit commands report every failure.
 package cloud
 
 import (
@@ -220,7 +222,7 @@ func (c *Client) checkEndpoint() error {
 		return c.endpointErr
 	}
 	if c.endpoint == "" {
-		return fmt.Errorf("rho cloud endpoint is not configured")
+		return fmt.Errorf("GrayCode Cloud endpoint is not configured")
 	}
 	return nil
 }
