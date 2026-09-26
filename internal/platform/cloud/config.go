@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -32,6 +33,11 @@ func LoadDeviceConfig() (DeviceConfig, error) {
 }
 
 func SaveDeviceConfig(cfg DeviceConfig, token string) error {
+	endpoint, err := NormalizeEndpoint(cfg.Endpoint)
+	if err != nil {
+		return err
+	}
+	cfg.Endpoint = endpoint
 	if err := auth.NewSecureStorage(tokenService).Set(tokenAccount, token); err != nil {
 		return err
 	}
@@ -49,6 +55,13 @@ func LoadClient() (*Client, DeviceConfig, error) {
 	cfg, err := LoadDeviceConfig()
 	if err != nil {
 		return nil, cfg, err
+	}
+	// Refuse a saved plaintext endpoint before the token is even read, so a
+	// tampered or pre-TLS-check cloud.json cannot route the token over HTTP.
+	if cfg.Endpoint != "" {
+		if _, err := NormalizeEndpoint(cfg.Endpoint); err != nil {
+			return nil, cfg, fmt.Errorf("saved GrayCode Cloud endpoint in %s is not allowed: %w; run `rho cloud login` again", configPath(), err)
+		}
 	}
 	token, err := auth.NewSecureStorage(tokenService).Get(tokenAccount)
 	if err != nil {

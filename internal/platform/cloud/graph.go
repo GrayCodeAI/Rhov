@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -166,17 +165,10 @@ func (c *Client) SyncGraph(ctx context.Context, request GraphSyncRequest) (Graph
 	if len(body) > MaxGraphSyncBodySize {
 		return result, fmt.Errorf("graph sync body is %d bytes; Rho Cloud accepts at most %d", len(body), MaxGraphSyncBodySize)
 	}
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		c.endpoint+"/v1/graph/sync",
-		bytes.NewReader(body),
-	)
+	req, err := c.newJSONRequest(ctx, "/v1/graph/sync", body, true)
 	if err != nil {
 		return result, fmt.Errorf("create graph sync request: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return result, fmt.Errorf("sync graph: %w", err)

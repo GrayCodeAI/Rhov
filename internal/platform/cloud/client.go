@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -87,18 +88,64 @@ type DeviceLoginPoll struct {
 
 type Client struct {
 	endpoint, token string
-	http            *http.Client
+	// endpointErr records why Config.Endpoint was refused (for example a
+	// plaintext http:// URL to a remote host). A client with an endpoint
+	// error never sends a request, so the device token cannot leak.
+	endpointErr error
+	http        *http.Client
 }
+
+// errRedirect is returned by the client's CheckRedirect hook. GrayCode Cloud
+// API calls never redirect; following one could replay the device token and
+// request body to another origin or downgrade the connection to plain HTTP.
+var errRedirect = errors.New("GrayCode Cloud responded with a redirect; refusing to follow it")
 
 func New(cfg Config) *Client {
-	client := cfg.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 3 * time.Second}
+	var client http.Client
+	if cfg.HTTPClient != nil {
+		client = *cfg.HTTPClient
+	} else {
+		client.Timeout = 3 * time.Second
 	}
-	return &Client{endpoint: strings.TrimRight(cfg.Endpoint, "/"), token: cfg.DeviceToken, http: client}
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return errRedirect }
+	c := &Client{token: cfg.DeviceToken, http: &client}
+	if strings.TrimSpace(cfg.Endpoint) != "" {
+		c.endpoint, c.endpointErr = NormalizeEndpoint(cfg.Endpoint)
+	}
+	return c
 }
 
-func (c *Client) Enabled() bool { return c.endpoint != "" && c.token != "" }
+func (c *Client) Enabled() bool { return c.endpoint != "" && c.endpointErr == nil && c.token != "" }
+
+// checkEndpoint reports whether the client may send requests at all.
+func (c *Client) checkEndpoint() error {
+	if c.endpointErr != nil {
+		return c.endpointErr
+	}
+	if c.endpoint == "" {
+		return fmt.Errorf("rho cloud endpoint is not configured")
+	}
+	return nil
+}
+
+// newJSONRequest builds a POST to path on the validated endpoint. It is the
+// single place requests are created, so the TLS policy in NormalizeEndpoint
+// applies to every call, and the device token is attached only when
+// authenticated is true.
+func (c *Client) newJSONRequest(ctx context.Context, path string, body []byte, authenticated bool) (*http.Request, error) {
+	if err := c.checkEndpoint(); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+path, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if authenticated {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	return req, nil
+}
 
 func (c *Client) startDeviceLogin(ctx context.Context, label, platform, rhoVersion string) (DeviceLoginStart, error) {
 	var result DeviceLoginStart
@@ -106,11 +153,10 @@ func (c *Client) startDeviceLogin(ctx context.Context, label, platform, rhoVersi
 	if err != nil {
 		return result, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v1/auth/device/start", bytes.NewReader(body))
+	req, err := c.newJSONRequest(ctx, "/v1/auth/device/start", body, false)
 	if err != nil {
 		return result, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return result, err
@@ -128,11 +174,10 @@ func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (Device
 	if err != nil {
 		return result, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v1/auth/device/poll", bytes.NewReader(body))
+	req, err := c.newJSONRequest(ctx, "/v1/auth/device/poll", body, false)
 	if err != nil {
 		return result, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return result, err
@@ -145,15 +190,15 @@ func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (Device
 }
 
 func (c *Client) StartDeviceLogin(ctx context.Context, label, platform, rhoVersion string) (DeviceLoginStart, error) {
-	if c.endpoint == "" {
-		return DeviceLoginStart{}, fmt.Errorf("rho cloud endpoint is not configured")
+	if err := c.checkEndpoint(); err != nil {
+		return DeviceLoginStart{}, err
 	}
 	return c.startDeviceLogin(ctx, label, platform, rhoVersion)
 }
 
 func (c *Client) PollDeviceLogin(ctx context.Context, deviceCode string) (DeviceLoginPoll, error) {
-	if c.endpoint == "" {
-		return DeviceLoginPoll{}, fmt.Errorf("rho cloud endpoint is not configured")
+	if err := c.checkEndpoint(); err != nil {
+		return DeviceLoginPoll{}, err
 	}
 	return c.pollDeviceLogin(ctx, deviceCode)
 }
@@ -167,12 +212,10 @@ func (c *Client) RecordUsage(ctx context.Context, event UsageEvent) {
 	if err != nil {
 		return
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v1/usage", bytes.NewReader(body))
+	req, err := c.newJSONRequest(ctx, "/v1/usage", body, true)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err == nil && resp != nil {
 		_ = resp.Body.Close()
@@ -188,12 +231,10 @@ func (c *Client) RecordDeliveryContext(ctx context.Context, event DeliveryContex
 	if err != nil {
 		return
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/v1/delivery-context", bytes.NewReader(body))
+	req, err := c.newJSONRequest(ctx, "/v1/delivery-context", body, true)
 	if err != nil {
 		return
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err == nil && resp != nil {
 		_ = resp.Body.Close()
