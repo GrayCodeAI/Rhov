@@ -156,3 +156,25 @@ func TestLoadClientRefusesSavedPlaintextEndpoint(t *testing.T) {
 		t.Fatalf("LoadClient error = %v, want ErrInsecureEndpoint", err)
 	}
 }
+
+func TestResolveEndpointPrecedence(t *testing.T) {
+	t.Setenv(EndpointEnv, "")
+	if got, err := ResolveEndpoint(""); err != nil || got != DefaultEndpoint {
+		t.Fatalf("default = %q, %v; want %q", got, err, DefaultEndpoint)
+	}
+	t.Setenv(EndpointEnv, "http://127.0.0.1:8787/")
+	if got, err := ResolveEndpoint(""); err != nil || got != "http://127.0.0.1:8787" {
+		t.Fatalf("env = %q, %v", got, err)
+	}
+	if got, err := ResolveEndpoint("https://staging.cloud.graycodeai.com"); err != nil || got != "https://staging.cloud.graycodeai.com" {
+		t.Fatalf("flag = %q, %v; the flag must win over the environment", got, err)
+	}
+	t.Setenv(EndpointEnv, "http://cloud.graycodeai.com")
+	_, err := ResolveEndpoint("")
+	if !errors.Is(err, ErrInsecureEndpoint) || !strings.Contains(err.Error(), EndpointEnv) {
+		t.Fatalf("insecure env error = %v, want ErrInsecureEndpoint naming %s", err, EndpointEnv)
+	}
+	if _, err := ResolveEndpoint("http://cloud.graycodeai.com"); err == nil || !strings.Contains(err.Error(), "--endpoint") {
+		t.Fatalf("insecure flag error = %v, want it to name --endpoint", err)
+	}
+}

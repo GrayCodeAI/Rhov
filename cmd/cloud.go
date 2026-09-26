@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// cloudEndpointFlagHelp documents the endpoint precedence shared by the
+// commands that create a new GrayCode Cloud connection.
+const cloudEndpointFlagHelp = "GrayCode Cloud API endpoint (default: $" + cloud.EndpointEnv + ", else " + cloud.DefaultEndpoint + ")"
+
 var cloudCmd = &cobra.Command{Use: "cloud", Short: "Manage optional Rho Cloud synchronization"}
 
 func newCloudConnectCmd() *cobra.Command {
@@ -18,12 +22,16 @@ func newCloudConnectCmd() *cobra.Command {
 		Use:   "connect",
 		Short: "Connect this Rho device to Rho Cloud",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			endpoint, _ := cmd.Flags().GetString("endpoint")
+			endpointFlag, _ := cmd.Flags().GetString("endpoint")
+			endpoint, err := cloud.ResolveEndpoint(endpointFlag)
+			if err != nil {
+				return err
+			}
 			deviceID, _ := cmd.Flags().GetString("device-id")
 			projectID, _ := cmd.Flags().GetString("project-id")
 			token, _ := cmd.Flags().GetString("token")
-			if endpoint == "" || deviceID == "" || projectID == "" || token == "" {
-				return fmt.Errorf("endpoint, device-id, project-id, and token are required")
+			if deviceID == "" || projectID == "" || token == "" {
+				return fmt.Errorf("device-id, project-id, and token are required")
 			}
 			if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
 				return err
@@ -32,7 +40,7 @@ func newCloudConnectCmd() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().String("endpoint", "", "Rho Cloud endpoint")
+	command.Flags().String("endpoint", "", cloudEndpointFlagHelp)
 	command.Flags().String("device-id", "", "Rho Cloud device ID")
 	command.Flags().String("project-id", "", "Rho Cloud project ID")
 	command.Flags().String("token", "", "Rho Cloud device token")
@@ -43,15 +51,20 @@ func newCloudLoginCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "login",
 		Short: "Sign in to Rho Cloud in a browser",
+		Long: `Start a browser device login against GrayCode Cloud and store the issued
+device token in the OS credential store.
+
+The endpoint defaults to ` + cloud.DefaultEndpoint + `. Override it with
+--endpoint or ` + cloud.EndpointEnv + ` (for example a local Worker at
+http://127.0.0.1:8787). Only https:// endpoints are accepted, except plain
+http:// on localhost, 127.0.0.1 and [::1].`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			endpoint, _ := cmd.Flags().GetString("endpoint")
+			endpointFlag, _ := cmd.Flags().GetString("endpoint")
+			endpoint, err := cloud.ResolveEndpoint(endpointFlag)
+			if err != nil {
+				return err
+			}
 			label, _ := cmd.Flags().GetString("label")
-			if endpoint == "" {
-				endpoint = os.Getenv("RHO_CLOUD_URL")
-			}
-			if endpoint == "" {
-				return fmt.Errorf("rho cloud endpoint is required (use --endpoint or RHO_CLOUD_URL)")
-			}
 			if label == "" {
 				label, _ = os.Hostname()
 			}
@@ -110,7 +123,7 @@ func newCloudLoginCmd() *cobra.Command {
 			}
 		},
 	}
-	command.Flags().String("endpoint", "", "Rho Cloud endpoint (or RHO_CLOUD_URL)")
+	command.Flags().String("endpoint", "", cloudEndpointFlagHelp)
 	command.Flags().String("label", "", "Name for this Rho device")
 	return command
 }
