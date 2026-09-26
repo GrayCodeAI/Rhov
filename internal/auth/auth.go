@@ -43,9 +43,36 @@ func (t *TokenStore) Has(provider string) bool {
 	return ok
 }
 
-// SecureStorage handles secure token storage using OS keychain/keyring.
+// SecureStorage stores secrets in the OS credential store where rho has one:
+// the macOS Keychain and the Windows Credential Manager. On every other
+// platform (Linux included; there is no Secret Service integration yet) it
+// falls back to a plaintext JSON file at TokenFilePath, written atomically
+// with mode 0600 and refused if it is a symlink. Callers that store
+// long-lived credentials must check UsesPlaintextTokenFile and tell the user.
 type SecureStorage struct {
 	service string
+}
+
+// UsesPlaintextTokenFile reports whether SecureStorage keeps secrets in the
+// plaintext fallback file on this platform instead of an OS credential store.
+func UsesPlaintextTokenFile() bool { return usesPlaintextTokenFile(runtime.GOOS) }
+
+func usesPlaintextTokenFile(goos string) bool { return goos != "darwin" && goos != "windows" }
+
+// TokenFilePath returns the plaintext fallback token file.
+func TokenFilePath() string { return filepath.Join(storage.ConfigDir(), ".tokens") }
+
+// CredentialStoreName describes where SecureStorage keeps secrets on this
+// platform, for user-facing messages.
+func CredentialStoreName() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return "macOS Keychain"
+	case "windows":
+		return "Windows Credential Manager"
+	default:
+		return "plaintext file " + TokenFilePath() + " (mode 0600)"
+	}
 }
 
 // NewSecureStorage creates a new secure storage.
@@ -61,7 +88,8 @@ func (s *SecureStorage) Get(account string) (string, error) {
 	if runtime.GOOS == "windows" {
 		return s.getWindows(account)
 	}
-	// Fallback to file-based storage for Linux (keyring handled by flux layer)
+	// No OS credential store integration on this platform: use the 0600
+	// plaintext fallback file (see UsesPlaintextTokenFile).
 	return s.getFile(account)
 }
 
@@ -216,7 +244,7 @@ func (s *SecureStorage) setWindows(account, token string) error {
 }
 
 func (s *SecureStorage) getFile(account string) (string, error) {
-	path := filepath.Join(storage.ConfigDir(), ".tokens")
+	path := TokenFilePath()
 	info, err := os.Lstat(path)
 	if err != nil {
 		return "", err
@@ -243,7 +271,7 @@ func (s *SecureStorage) getFile(account string) (string, error) {
 }
 
 func (s *SecureStorage) setFile(account, token string) error {
-	path := filepath.Join(storage.ConfigDir(), ".tokens")
+	path := TokenFilePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}

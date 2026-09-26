@@ -308,3 +308,39 @@ func TestCloudConnectRejectsMissingOrInvalidTokenInput(t *testing.T) {
 		t.Fatalf("connect saved %d times for invalid input", saved.calls)
 	}
 }
+
+func useTokenStorage(t *testing.T, where string, plaintext bool) {
+	t.Helper()
+	original := cloudTokenStorage
+	t.Cleanup(func() { cloudTokenStorage = original })
+	cloudTokenStorage = func() (string, bool) { return where, plaintext }
+}
+
+func TestCloudConnectWarnsAboutPlaintextTokenStore(t *testing.T) {
+	captureCloudSave(t)
+	promptable(t, true, "hwc_prompted")
+	useTokenStorage(t, "plaintext file /home/dev/.config/rho/.tokens (mode 0600)", true)
+	out, err := runCloudCommand(t, newCloudConnectCmd(), connectIDs...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Warning:") || !strings.Contains(out, "/home/dev/.config/rho/.tokens") {
+		t.Fatalf("output = %q, want a plaintext token warning naming the file", out)
+	}
+
+	useTokenStorage(t, "macOS Keychain", false)
+	out, err = runCloudCommand(t, newCloudConnectCmd(), connectIDs...)
+	if err != nil || strings.Contains(out, "Warning:") {
+		t.Fatalf("keychain output = %q, err = %v; no warning expected", out, err)
+	}
+}
+
+func TestCloudStatusShowsTokenStorage(t *testing.T) {
+	cfg := cloud.DeviceConfig{Endpoint: cloud.DefaultEndpoint, DeviceID: "device_0123456789", ProjectID: "project_0123456789"}
+	useCloudClient(t, cloud.New(cloud.Config{Endpoint: cfg.Endpoint, DeviceToken: "hwc_test"}), cfg, nil)
+	useTokenStorage(t, "plaintext file /tmp/rho/.tokens (mode 0600)", true)
+	out, err := runCloudCommand(t, newCloudStatusCmd())
+	if err != nil || !strings.Contains(out, "Device token: plaintext file /tmp/rho/.tokens") || !strings.Contains(out, "not an OS credential store") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}

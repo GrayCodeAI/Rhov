@@ -56,6 +56,7 @@ hidden prompt, never from the command line:
 			if err := saveCloudDevice(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
 				return err
 			}
+			warnIfPlaintextTokenStore(cmd)
 			cmd.Println(auditTint("Rho Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
 			return nil
 		},
@@ -72,11 +73,24 @@ hidden prompt, never from the command line:
 // maxDeviceTokenInput bounds how much is read for a device token.
 const maxDeviceTokenInput = 4 << 10
 
-// Token-input seams; tests replace them.
+// Credential seams; tests replace them.
 var (
-	saveCloudDevice  = cloud.SaveDeviceConfig
-	readHiddenSecret = func() ([]byte, error) { return term.ReadPassword(int(os.Stdin.Fd())) }
+	saveCloudDevice   = cloud.SaveDeviceConfig
+	cloudTokenStorage = cloud.TokenStorage
+	readHiddenSecret  = func() ([]byte, error) { return term.ReadPassword(int(os.Stdin.Fd())) }
 )
+
+// warnIfPlaintextTokenStore tells the user, every time a device token is
+// saved, when this platform has no OS credential store and the token went to
+// the 0600 plaintext fallback file instead.
+func warnIfPlaintextTokenStore(cmd *cobra.Command) {
+	where, plaintext := cloudTokenStorage()
+	if !plaintext {
+		return
+	}
+	cmd.PrintErrln(auditTint("Warning: rho has no OS credential store integration on this platform, so the GrayCode Cloud device token was saved in the "+where+
+		". Any process running as your user, and any backup of that file, can read it. Keep the file private and revoke the device in GrayCode Cloud if this machine is shared or lost.", warnAmber))
+}
 
 // readDeviceToken returns the device token for `rho cloud connect` from, in
 // order: --token-stdin, the deprecated --token flag, or a hidden prompt when
@@ -181,12 +195,13 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 				}
 				// PollDeviceLogin reports expired, consumed, unknown and
 				// incomplete states as errors, so this is a complete approval.
-				if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
+				if err := saveCloudDevice(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
 					prog.FailStep(0, err.Error())
 					return err
 				}
 				prog.CompleteStep(0)
 				prog.Done()
+				warnIfPlaintextTokenStore(cmd)
 				cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
 				return nil
 			}
@@ -212,7 +227,13 @@ func newCloudStatusCmd() *cobra.Command {
 			if !client.Enabled() {
 				return cloud.ErrNotConnected
 			}
+			where, plaintext := cloudTokenStorage()
+			storageLine := auditTint("Device token: "+where, textMuted)
+			if plaintext {
+				storageLine = auditTint("Device token: "+where+" (not an OS credential store)", warnAmber)
+			}
 			cmd.Println(auditTint("Rho Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
+			cmd.Println(storageLine)
 			return nil
 		},
 	}

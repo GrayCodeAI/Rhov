@@ -31,6 +31,13 @@ type secretStore interface {
 // never touch the real OS keychain.
 var newTokenStore = func() secretStore { return auth.NewSecureStorage(tokenService) }
 
+// TokenStorage describes where the device token is kept on this platform and
+// whether that is the plaintext fallback file rather than an OS credential
+// store.
+func TokenStorage() (where string, plaintext bool) {
+	return auth.CredentialStoreName(), auth.UsesPlaintextTokenFile()
+}
+
 type DeviceConfig struct {
 	Endpoint  string `json:"endpoint"`
 	DeviceID  string `json:"device_id"`
