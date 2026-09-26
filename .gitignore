@@ -3,6 +3,8 @@
 # Ignore build output in bin/, but track committed source scripts like bin/buf.
 bin/*
 !bin/buf
+# GoReleaser output (goreleaser release --snapshot / make release).
+/dist/
 rho_bin
 *.exe
 *.dll
