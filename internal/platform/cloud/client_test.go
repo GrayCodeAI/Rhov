@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestRecordUsageSendsAggregateEvent(t *testing.T) {
@@ -72,5 +73,16 @@ func TestSendDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
 	}
 	if body.Deployment == nil || body.Deployment.Environment != "production" {
 		t.Fatalf("deployment = %+v", body.Deployment)
+	}
+}
+
+func TestNewUsesDefaultRequestTimeout(t *testing.T) {
+	if got := New(Config{Endpoint: DefaultEndpoint}).http.Timeout; got != DefaultRequestTimeout {
+		t.Fatalf("timeout = %v, want %v", got, DefaultRequestTimeout)
+	}
+	custom := &http.Client{Timeout: time.Second}
+	client := New(Config{Endpoint: DefaultEndpoint, HTTPClient: custom})
+	if client.http.Timeout != time.Second || client.http == custom || custom.CheckRedirect != nil {
+		t.Fatal("a caller-supplied HTTP client must be copied, not mutated")
 	}
 }

@@ -199,12 +199,18 @@ type Client struct {
 // request body to another origin or downgrade the connection to plain HTTP.
 var errRedirect = errors.New("GrayCode Cloud responded with a redirect; refusing to follow it")
 
+// DefaultRequestTimeout bounds one GrayCode Cloud request when Config has no
+// HTTPClient. It is sized for explicit commands (a 1 MiB graph upload or a
+// first TLS handshake on a slow link); the automatic usage upload passes its
+// own shorter context deadline, so it stays bounded regardless.
+const DefaultRequestTimeout = 15 * time.Second
+
 func New(cfg Config) *Client {
 	var client http.Client
 	if cfg.HTTPClient != nil {
 		client = *cfg.HTTPClient
 	} else {
-		client.Timeout = 3 * time.Second
+		client.Timeout = DefaultRequestTimeout
 	}
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return errRedirect }
 	c := &Client{token: cfg.DeviceToken, http: &client}
