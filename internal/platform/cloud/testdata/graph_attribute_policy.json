@@ -1,0 +1,21 @@
+{
+  "description": "Shared GrayCode Cloud graph attribute policy. cloudSafe=true means the key may be uploaded as-is; false means rho must hash it behind <key>_sha256 and the cloud rejects it verbatim. Keep identical to the GrayCode Cloud worker fixture.",
+  "cases": [
+    { "key": "entity_type", "cloudSafe": true },
+    { "key": "tool_name", "cloudSafe": true },
+    { "key": "message_count", "cloudSafe": true },
+    { "key": "FILE_COUNT", "cloudSafe": true },
+    { "key": "Model_Tokens", "cloudSafe": true },
+    { "key": "prompt_token_count", "cloudSafe": true },
+    { "key": "file_Sha256", "cloudSafe": true },
+    { "key": "evidence_DIGEST", "cloudSafe": true },
+    { "key": "sast_source", "cloudSafe": true },
+    { "key": "SAST_SOURCE", "cloudSafe": false },
+    { "key": "model", "cloudSafe": false },
+    { "key": "Provider", "cloudSafe": false },
+    { "key": "source_path", "cloudSafe": false },
+    { "key": "commit", "cloudSafe": false },
+    { "key": "api-key", "cloudSafe": false },
+    { "key": "file_count_hint", "cloudSafe": false }
+  ]
+}

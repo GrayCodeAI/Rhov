@@ -12,10 +12,34 @@ import (
 
 const MaxGraphSyncBodySize = 1 << 20
 
+// The cloud sensitive-attribute policy. It must match graphHasUnsafeCloudData
+// in GrayCode Cloud (graycode-platform apps/worker/src/domain/graph.ts) and
+// the daemon mirror in internal/daemon; testdata/graph_attribute_policy.json
+// pins the shared expectations:
+//   - a key naming sensitive content is hashed behind "<key>_sha256";
+//   - the safe-suffix check is case-insensitive on both sides, so FILE_COUNT
+//     or Model_Tokens are counts, not content;
+//   - "sast_source" (exact key) is exempt on both sides: it marks whether a
+//     finding came from static analysis and carries no source text or path;
+//   - any scope with a tenant_id is rejected on both sides (see
+//     rejectTenantScopes).
 var (
 	sensitiveGraphAttribute = regexp.MustCompile(`(?i)(content|prompt|secret|credential|password|api[_-]?key|query|reason|url|path|command|provider|model|repository|branch|commit|source|target|message|evidence|element|file|fix)`)
 	safeGraphAttribute      = regexp.MustCompile(`(?i)(_sha256|_digest|_count|_tokens?|token_count)$`)
 )
+
+const (
+	sastSourceAttribute = "sast_source"
+	// Attribute bounds of the portable graph schema (UTF-16 code units).
+	maxGraphAttributes     = 64
+	maxGraphAttributeKey   = 64
+	maxGraphAttributeValue = 512
+)
+
+// isSensitiveGraphAttribute reports whether key must be hashed before upload.
+func isSensitiveGraphAttribute(key string) bool {
+	return key != sastSourceAttribute && sensitiveGraphAttribute.MatchString(key) && !safeGraphAttribute.MatchString(key)
+}
 
 // PreparedGraph is a bounded, cloud-safe graph document and its deterministic
 // upload identity.
@@ -70,6 +94,9 @@ func PrepareGraph(graph any) (PreparedGraph, error) {
 	if facts > 900 {
 		return PreparedGraph{}, fmt.Errorf("graph has %d facts; Rho Cloud accepts at most 900", facts)
 	}
+	if err := rejectTenantScopes(document, nodes, edges, events); err != nil {
+		return PreparedGraph{}, err
+	}
 
 	for _, collection := range [][]any{nodes, edges} {
 		for _, fact := range collection {
@@ -110,6 +137,33 @@ func graphFacts(document map[string]any, field string, limit int) ([]any, error)
 	return value, nil
 }
 
+// rejectTenantScopes refuses a graph whose document scope or any fact scope
+// sets tenant_id. GrayCode Cloud rejects such graphs because the connected
+// project already scopes every upload; failing here gives a specific message
+// instead of the Worker's generic 400.
+func rejectTenantScopes(document map[string]any, collections ...[]any) error {
+	if hasTenantScope(document) {
+		return fmt.Errorf("graph scope sets tenant_id; GrayCode Cloud rejects tenant-scoped graphs because the connected project already scopes the upload")
+	}
+	for _, collection := range collections {
+		for _, fact := range collection {
+			if item, ok := fact.(map[string]any); ok && hasTenantScope(item) {
+				return fmt.Errorf("graph fact %v scope sets tenant_id; GrayCode Cloud rejects tenant-scoped facts because the connected project already scopes the upload", item["id"])
+			}
+		}
+	}
+	return nil
+}
+
+func hasTenantScope(item map[string]any) bool {
+	scope, ok := item["scope"].(map[string]any)
+	if !ok {
+		return false
+	}
+	tenant, present := scope["tenant_id"]
+	return present && tenant != nil && tenant != ""
+}
+
 func sanitizeGraphAttributes(fact map[string]any) error {
 	value, exists := fact["attributes"]
 	if !exists {
@@ -127,14 +181,23 @@ func sanitizeGraphAttributes(fact map[string]any) error {
 		}
 		safeKey := key
 		safeValue := text
-		if sensitiveGraphAttribute.MatchString(key) && !safeGraphAttribute.MatchString(key) {
+		if isSensitiveGraphAttribute(key) {
 			safeKey = key + "_sha256"
 			safeValue = sha256Hex([]byte(text))
+		}
+		if n := utf16Len(safeKey); n == 0 || n > maxGraphAttributeKey {
+			return fmt.Errorf("graph attribute key %q is %d characters after cloud sanitization; GrayCode Cloud accepts 1 to %d", safeKey, n, maxGraphAttributeKey)
+		}
+		if n := utf16Len(safeValue); n > maxGraphAttributeValue {
+			return fmt.Errorf("graph attribute %q value is %d characters; GrayCode Cloud accepts at most %d", safeKey, n, maxGraphAttributeValue)
 		}
 		if _, duplicate := sanitized[safeKey]; duplicate {
 			return fmt.Errorf("graph attributes collide after cloud sanitization at %q", safeKey)
 		}
 		sanitized[safeKey] = safeValue
+	}
+	if len(sanitized) > maxGraphAttributes {
+		return fmt.Errorf("graph fact has %d attributes; GrayCode Cloud accepts at most %d", len(sanitized), maxGraphAttributes)
 	}
 	fact["attributes"] = sanitized
 	return nil
