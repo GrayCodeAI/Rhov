@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
+	"strings"
 	"time"
 
 	cloud "github.com/GrayCodeAI/rho/internal/platform/cloud"
@@ -14,6 +16,9 @@ import (
 // cloudEndpointFlagHelp documents the endpoint precedence shared by the
 // commands that create a new GrayCode Cloud connection.
 const cloudEndpointFlagHelp = "GrayCode Cloud API endpoint (default: $" + cloud.EndpointEnv + ", else " + cloud.DefaultEndpoint + ")"
+
+// loadCloudClient loads the saved GrayCode Cloud connection; tests replace it.
+var loadCloudClient = cloud.LoadClient
 
 var cloudCmd = &cobra.Command{Use: "cloud", Short: "Manage optional Rho Cloud synchronization"}
 
@@ -143,7 +148,7 @@ func newCloudContextCmd() *cobra.Command {
 		Use:   "context",
 		Short: "Sync repository context to Rho Cloud",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, cfg, err := cloud.LoadClient()
+			client, cfg, err := loadCloudClient()
 			if err != nil || !client.Enabled() {
 				return fmt.Errorf("rho cloud is not connected")
 			}
@@ -165,6 +170,12 @@ func newCloudContextCmd() *cobra.Command {
 			deploymentID, _ := cmd.Flags().GetString("deployment")
 			deploymentStatus, _ := cmd.Flags().GetString("deployment-status")
 			deploymentEnvironment, _ := cmd.Flags().GetString("deployment-environment")
+			if err := checkFlagChoice("--ci-status", ciStatus, cloud.CIRunStatuses); err != nil {
+				return err
+			}
+			if err := checkFlagChoice("--deployment-status", deploymentStatus, cloud.DeploymentStatuses); err != nil {
+				return err
+			}
 			if contextProvider == "" {
 				contextProvider = detected.Provider
 			}
@@ -204,8 +215,10 @@ func newCloudContextCmd() *cobra.Command {
 				}
 				event.Deployment = &cloud.DeploymentContext{Provider: contextProvider, ExternalID: deploymentID, Environment: deploymentEnvironment, Status: deploymentStatus}
 			}
-			client.RecordDeliveryContext(cmd.Context(), event)
-			cmd.Println(auditTint("Repository context queued for Rho Cloud.", doneGreen))
+			if err := client.SendDeliveryContext(cmd.Context(), event); err != nil {
+				return err
+			}
+			cmd.Println(auditTint("Repository context synced to GrayCode Cloud.", doneGreen))
 			return nil
 		},
 	}
@@ -215,12 +228,21 @@ func newCloudContextCmd() *cobra.Command {
 	command.Flags().String("branch", "", "Current branch (auto-detected when omitted)")
 	command.Flags().String("commit", "", "Current commit SHA (auto-detected when omitted)")
 	command.Flags().String("ci-run", "", "CI run identifier (defaults to GITHUB_RUN_ID)")
-	command.Flags().String("ci-status", "", "CI status: queued, running, succeeded, failed, or cancelled")
+	command.Flags().String("ci-status", "", "CI status: "+strings.Join(cloud.CIRunStatuses, ", ")+" (default running)")
 	command.Flags().String("ci-workflow", "", "CI workflow name (defaults to GITHUB_WORKFLOW)")
 	command.Flags().String("deployment", "", "Deployment identifier")
-	command.Flags().String("deployment-status", "", "Deployment status")
+	command.Flags().String("deployment-status", "", "Deployment status: "+strings.Join(cloud.DeploymentStatuses, ", ")+" (default running)")
 	command.Flags().String("deployment-environment", "", "Deployment environment, for example production")
 	return command
+}
+
+// checkFlagChoice rejects a non-empty flag value outside allowed, naming the
+// flag so the user can fix the invocation before anything is sent.
+func checkFlagChoice(flag, value string, allowed []string) error {
+	if value == "" || slices.Contains(allowed, value) {
+		return nil
+	}
+	return fmt.Errorf("%s %q must be one of: %s", flag, value, strings.Join(allowed, ", "))
 }
 
 func firstValue(values ...string) string {

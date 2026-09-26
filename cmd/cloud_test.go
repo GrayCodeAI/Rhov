@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -75,5 +76,80 @@ func TestCloudConnectResolvesEndpointFromEnvironment(t *testing.T) {
 	_, err = runCloudCommand(t, newCloudConnectCmd())
 	if err == nil || strings.Contains(err.Error(), "endpoint") || !strings.Contains(err.Error(), "device-id") {
 		t.Fatalf("error = %v, want only the missing device-id/project-id/token (endpoint has a default)", err)
+	}
+}
+
+// useCloudClient points the cloud commands at client/cfg for one test.
+func useCloudClient(t *testing.T, client *cloud.Client, cfg cloud.DeviceConfig, err error) {
+	t.Helper()
+	original := loadCloudClient
+	t.Cleanup(func() { loadCloudClient = original })
+	loadCloudClient = func() (*cloud.Client, cloud.DeviceConfig, error) { return client, cfg, err }
+}
+
+// noGitRemote makes git context detection fail so tests pass --repository.
+func noGitRemote(t *testing.T) {
+	t.Helper()
+	original := runCloudGit
+	t.Cleanup(func() { runCloudGit = original })
+	runCloudGit = func(context.Context, ...string) (string, error) { return "", errors.New("no git") }
+	t.Setenv("GITHUB_RUN_ID", "")
+	t.Setenv("GITHUB_WORKFLOW", "")
+}
+
+func TestCloudContextReportsWorkerRejection(t *testing.T) {
+	noGitRemote(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"Device not found"}`))
+	}))
+	defer server.Close()
+	useCloudClient(t, cloud.New(cloud.Config{Endpoint: server.URL, DeviceToken: "hwc_test"}), cloud.DeviceConfig{ProjectID: "project_0123456789"}, nil)
+
+	out, err := runCloudCommand(t, newCloudContextCmd(), "--repository", "GrayCodeAI/rho")
+	if err == nil || !strings.Contains(err.Error(), "Device not found") {
+		t.Fatalf("error = %v, want the Worker's rejection", err)
+	}
+	if strings.Contains(out, "synced") || strings.Contains(out, "queued") {
+		t.Fatalf("output claims success after a rejection: %q", out)
+	}
+}
+
+func TestCloudContextReportsSuccessOnlyWhenAccepted(t *testing.T) {
+	noGitRemote(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte(`{"accepted":true}`))
+	}))
+	defer server.Close()
+	useCloudClient(t, cloud.New(cloud.Config{Endpoint: server.URL, DeviceToken: "hwc_test"}), cloud.DeviceConfig{ProjectID: "project_0123456789"}, nil)
+
+	out, err := runCloudCommand(t, newCloudContextCmd(), "--repository", "GrayCodeAI/rho", "--ci-run", "42", "--ci-status", "succeeded")
+	if err != nil || !strings.Contains(out, "synced to GrayCode Cloud") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}
+
+func TestCloudContextRejectsUnknownStatusFlags(t *testing.T) {
+	noGitRemote(t)
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	useCloudClient(t, cloud.New(cloud.Config{Endpoint: server.URL, DeviceToken: "hwc_test"}), cloud.DeviceConfig{ProjectID: "project_0123456789"}, nil)
+
+	_, err := runCloudCommand(t, newCloudContextCmd(), "--repository", "GrayCodeAI/rho", "--ci-run", "42", "--ci-status", "passed")
+	if err == nil || !strings.Contains(err.Error(), "--ci-status") {
+		t.Fatalf("error = %v, want a --ci-status error", err)
+	}
+	_, err = runCloudCommand(t, newCloudContextCmd(), "--repository", "GrayCodeAI/rho", "--deployment", "d1", "--deployment-environment", "prod", "--deployment-status", "done")
+	if err == nil || !strings.Contains(err.Error(), "--deployment-status") || !strings.Contains(err.Error(), "rolled_back") {
+		t.Fatalf("error = %v, want a --deployment-status error listing rolled_back", err)
+	}
+	if hits.Load() != 0 {
+		t.Fatalf("server received %d requests for invalid flags", hits.Load())
 	}
 }

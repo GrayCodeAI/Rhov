@@ -29,7 +29,7 @@ func TestDisabledClientDoesNotSend(t *testing.T) {
 	New(Config{}).RecordUsage(context.Background(), UsageEvent{})
 }
 
-func TestRecordDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
+func TestSendDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
 	var gotAuth, gotPath string
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth, gotPath = r.Header.Get("Authorization"), r.URL.Path
@@ -38,13 +38,15 @@ func TestRecordDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
 	defer s.Close()
 	event := DeliveryContext{ProjectID: "project_0123456789", Branch: "main", CommitSHA: "abc123"}
 	event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = "git", "graycode-eco", "GrayCodeAI/graycode-eco"
-	New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).RecordDeliveryContext(context.Background(), event)
+	if err := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).SendDeliveryContext(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
 	if gotPath != "/v1/delivery-context" || gotAuth != "Bearer hwc_test" {
 		t.Fatalf("path/auth = %q/%q", gotPath, gotAuth)
 	}
 }
 
-func TestRecordDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
+func TestSendDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
 	var body DeliveryContext
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -57,7 +59,9 @@ func TestRecordDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
 	event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = "github", "1", "GrayCodeAI/rho"
 	event.CIRun = &CIRunContext{Provider: "github", ExternalID: "run-1", Workflow: "test", Status: "succeeded"}
 	event.Deployment = &DeploymentContext{Provider: "github", ExternalID: "deploy-1", Environment: "production", Status: "succeeded"}
-	New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).RecordDeliveryContext(context.Background(), event)
+	if err := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).SendDeliveryContext(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
 	if body.CIRun == nil || body.CIRun.ExternalID != "run-1" {
 		t.Fatalf("CI run = %+v", body.CIRun)
 	}

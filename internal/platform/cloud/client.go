@@ -350,22 +350,3 @@ func (c *Client) RecordUsage(ctx context.Context, event UsageEvent) {
 		_ = resp.Body.Close()
 	}
 }
-
-// RecordDeliveryContext is fail-open: delivery metadata must not affect local execution.
-func (c *Client) RecordDeliveryContext(ctx context.Context, event DeliveryContext) {
-	if !c.Enabled() {
-		return
-	}
-	body, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-	req, err := c.newJSONRequest(ctx, "/v1/delivery-context", body, true)
-	if err != nil {
-		return
-	}
-	resp, err := c.http.Do(req)
-	if err == nil && resp != nil {
-		_ = resp.Body.Close()
-	}
-}
