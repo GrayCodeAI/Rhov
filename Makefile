@@ -259,8 +259,17 @@ build-static: ## Build fully static binaries for Linux (musl-compatible)
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(NAME)-linux-amd64-static $(MAIN_PKG)
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(NAME)-linux-arm64-static $(MAIN_PKG)
 
-size-check: build ## Report binary size and warn if over threshold (80MB, matching CI).
-	@SIZE=$$(stat -f%z bin/$(NAME) 2>/dev/null || stat -c%s bin/$(NAME) 2>/dev/null); \
-	MB=$$(echo "scale=1; $$SIZE / 1048576" | bc); \
-	echo "Binary size: $${MB} MB"; \
-	if [ $$SIZE -gt 83886080 ]; then echo "::warning::Binary size $${MB} MB exceeds 80 MB threshold (CI gate)"; fi
+# Size budget for the stripped release binary (MiB). CI's build job runs
+# `make size-check` on linux/amd64, which measured 59.6 MiB (62,492,834 bytes)
+# on 2026-09-27; 70 MiB leaves ~10 MiB of headroom. Raise it only in a PR that
+# explains the growth.
+SIZE_LIMIT_MB := 70
+
+size-check: build ## Fail if bin/$(NAME) (release ldflags) exceeds SIZE_LIMIT_MB.
+	@size=$$(wc -c < bin/$(NAME) | tr -d ' '); \
+	limit=$$(( $(SIZE_LIMIT_MB) * 1024 * 1024 )); \
+	echo "Binary size: $$size bytes ($$(( size / 1048576 )) MiB; budget $(SIZE_LIMIT_MB) MiB)"; \
+	if [ "$$size" -gt "$$limit" ]; then \
+		echo "::error::Binary size $$(( size / 1048576 )) MiB exceeds the $(SIZE_LIMIT_MB) MiB budget (Makefile SIZE_LIMIT_MB)"; \
+		exit 1; \
+	fi
