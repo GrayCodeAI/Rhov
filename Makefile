@@ -31,13 +31,12 @@ GOLANGCI_VERSION := v2.1.0
 GOFUMPT      := $(GOBIN_DIR)/gofumpt
 GOIMPORTS    := $(GOBIN_DIR)/goimports
 GOVULNCHECK  := $(GOBIN_DIR)/govulncheck
-GORELEASER   := $(GOBIN_DIR)/goreleaser
 
 # ---------------------------------------------------------------------------
 # Phony declarations (alphabetical).
 # ---------------------------------------------------------------------------
 .PHONY: all bench boundaries build check-replace ci clean ecosystem-guard feature-boundaries-guard flux-client-guard flux-engine-guard manifest-guard peer-guard internal-layers-guard package-boundaries-guard release-parity cover cover-new fmt help install lint lint-fix \
-        release security setup smoke path sync test test-10x test-live test-new test-race tidy version vet api-docs api-validate workspace
+        release release-check release-snapshot security setup smoke path sync test test-10x test-live test-new test-race tidy version vet api-docs api-validate workspace
 
 check-replace: ## Fail if go.mod has local replace directives (run before tagging)
 	@bash scripts/check-no-replace-directives.sh
@@ -56,9 +55,21 @@ build: ## Build the binary into bin/$(NAME).
 install: ## Install the binary to $GOBIN.
 	CGO_ENABLED=0 go install -trimpath -ldflags="$(LDFLAGS)" $(MAIN_PKG)
 
-release: ## Cut a release via goreleaser (requires a clean tree + tag).
-	@command -v $(GORELEASER) >/dev/null 2>&1 || (echo "install: go install github.com/goreleaser/goreleaser/v2@latest" && exit 1)
-	$(GORELEASER) release --clean
+# Releases are published only by .github/workflows/release.yml on a v* tag
+# (signed with the workflow's OIDC identity). Local targets validate; they
+# never publish. See docs/RELEASING.md.
+release: ## Refuse local publishing; explains the tag-driven release process.
+	@echo "Releases are CI-only: merge the release PR (VERSION + CHANGELOG), then push tag v$(VERSION)."
+	@echo "Local checks: make release-check TAG=v$(VERSION) && make release-snapshot. See docs/RELEASING.md."
+	@exit 1
+
+release-check: ## Check TAG (default v$(VERSION)) against VERSION and CHANGELOG.md, as release.yml does.
+	@bash ./scripts/check-release-tag.sh "$(or $(TAG),v$(VERSION))"
+
+release-snapshot: ## Build all release archives locally into dist/ (no publish, no signing).
+	@command -v goreleaser >/dev/null 2>&1 || (echo "install: go install github.com/goreleaser/goreleaser/v2@v2.17.0" && exit 1)
+	goreleaser check
+	GOWORK=off goreleaser release --snapshot --clean --skip=publish,sign
 
 # ---------------------------------------------------------------------------
 # Tests.

@@ -20,9 +20,10 @@ import (
 
 // Version, Commit, and BuildDate are set at build time via ldflags.
 //
-// Source of truth: the VERSION file at the repo root, and the matching git
-// tag created by release-please. The Makefile and goreleaser inject these
-// values during release builds:
+// Source of truth: the VERSION file at the repo root, and the matching
+// v<VERSION> git tag pushed by a maintainer (release.yml refuses a tag that
+// disagrees with VERSION; see docs/RELEASING.md). The Makefile and goreleaser
+// inject these values during builds:
 //
 //	-X main.Version=$(cat VERSION)
 //	-X main.Commit=$(git rev-parse --short HEAD)

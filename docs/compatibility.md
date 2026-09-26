@@ -34,8 +34,8 @@ existing consumers.
 
 ## When to update
 
-- **`next` updates automatically** — release-please bumps `main` references
-  as components advance. No manual edit needed.
+- **`next` needs no edits** — it always names each component's `main`
+  branch.
 - **`stable` is updated by hand** — when you cut a coordinated release of
   the eco. The release engineer:
   1. Verifies CI green on `next` matrix.

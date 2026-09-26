@@ -540,7 +540,7 @@ Quick start:
 3. Run `make ci` locally
 4. Open a pull request
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages — release-please uses them for versioning.
+Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. Releases are cut by hand from a release PR; see [docs/RELEASING.md](docs/RELEASING.md).
 
 ## License
 

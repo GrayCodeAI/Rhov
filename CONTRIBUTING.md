@@ -46,9 +46,10 @@ Repo-specific dev targets:
 
 ## Commit message convention
 
-We use [Conventional Commits](https://www.conventionalcommits.org/). This
-isn't cosmetic — release-please reads commit messages to bump the `VERSION`
-file and generate the CHANGELOG, so getting them right matters.
+We use [Conventional Commits](https://www.conventionalcommits.org/). Pull
+request titles and commit subjects follow it so the history reads cleanly and
+the release PR can group changes. There is no release bot: releases are cut by
+hand (see [docs/RELEASING.md](docs/RELEASING.md)).
 
 ```
 <type>(<optional scope>): <short summary>
@@ -60,19 +61,19 @@ file and generate the CHANGELOG, so getting them right matters.
 
 **Types:**
 
-- `feat:` — a new feature (triggers a minor version bump)
-- `fix:` — a bug fix (triggers a patch version bump)
+- `feat:` — a new feature
+- `fix:` — a bug fix
 - `perf:` — performance improvement
 - `refactor:` — code restructure with no behaviour change
 - `docs:` — documentation only
 - `test:` — adding or fixing tests
 - `build:` — build system or dependencies
 - `ci:` — CI configuration
-- `chore:` — anything else (no release effect)
+- `chore:` — anything else
 - `revert:` — reverts a previous commit
 
 **Breaking changes:** add `!` after the type/scope or include `BREAKING
-CHANGE:` in the footer. This triggers a major version bump.
+CHANGE:` in the footer, and call the change out in `CHANGELOG.md`.
 
 Examples:
 
@@ -120,10 +121,11 @@ Before requesting review:
 
 - [ ] `make ci` passes locally.
 - [ ] New behaviour has tests; bug fixes have a regression test.
-- [ ] `CHANGELOG.md` entries are **not** edited manually — release-please
-      generates them from your commit messages.
-- [ ] The `VERSION` file is **not** edited manually — release-please bumps
-      it on release.
+- [ ] User-visible changes have an entry under `## [Unreleased]` in
+      `CHANGELOG.md` (Keep a Changelog: Added / Changed / Fixed / Removed /
+      Security).
+- [ ] `VERSION` is left alone — it changes only in a release PR
+      ([docs/RELEASING.md](docs/RELEASING.md)).
 - [ ] Public API changes have updated doc comments.
 - [ ] No secrets, API keys, or PII in code, comments, tests, or fixtures.
 
