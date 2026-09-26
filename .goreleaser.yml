@@ -117,23 +117,9 @@ changelog:
       order: 999
 
 # ---------------------------------------------------------------------------
-# Homebrew — publishes a formula to GrayCodeAI/homebrew-tap so users can
-# `brew install graycodeai/tap/rho`. Requires HOMEBREW_TAP_TOKEN or
-# TAP_GITHUB_TOKEN in the release workflow (both already wired there).
+# Homebrew and npm are intentionally not configured: neither the
+# GrayCodeAI/homebrew-tap repository nor the @graycodeai npm packages exist.
 # ---------------------------------------------------------------------------
-brews:
-  - repository:
-      owner: GrayCodeAI
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    homepage: "https://github.com/GrayCodeAI/rho"
-    description: "AI coding agent — reads, writes, and runs code in your terminal"
-    license: "MIT"
-    install: |
-      bin.install "rho"
-    test: |
-      system "#{bin}/rho", "--version"
 
 # ---------------------------------------------------------------------------
 # Release — auto-detect prereleases (rc/beta tags). Created on the repo
