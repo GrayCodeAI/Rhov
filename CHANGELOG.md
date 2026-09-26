@@ -4,10 +4,30 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Releases are cut by hand from a release PR; see [docs/RELEASING.md](docs/RELEASING.md).
+
+> **Version history.** The next release, **v0.3.0**, is the first published
+> under the `rho` name and module path `github.com/GrayCodeAI/rho`. Sections
+> labelled `hawk` below are kept as the historical record of the project
+> before the rename: `hawk 0.2.0` is the `v0.2.0` tag, which (like `v0.1.0`
+> and `v0.1.1`) was built from the `github.com/GrayCodeAI/hawk` module and
+> ships `hawk_*` archives; the sections marked "untagged" used an earlier
+> numbering that was never tagged. Names in those sections are the names of
+> the time (for example Flux was called eyrie, and several companion repos
+> have since been retired).
 
 ## [Unreleased]
 
+### Added
+- **Release process and guards**: `docs/RELEASING.md` (release PR checklist, tag protection, what the release workflow publishes, how to verify a release, status of every distribution channel); `scripts/check-release-tag.sh`, used by the release workflow and `make release-check`, refuses a tag that is not `v` + `VERSION` or has no `CHANGELOG.md` section; `make release-snapshot` builds every archive locally without publishing or signing.
+- **windows/arm64 release archives**: GoReleaser and the CI build matrix now cover all six linux/darwin/windows × amd64/arm64 targets.
+
 ### Changed
+- **Version 0.3.0**: `VERSION` is `0.3.0`, the first release under the rho name (the Go proxy already holds the hawk-era v0.1.0–v0.2.0), and the compatibility matrix `stable` entry pins rho 0.3.0 with flux 0.0.1.
+- **Release workflow can publish**: it installs syft for the SBOMs, signs `checksums.txt` inside GoReleaser with cosign keyless signing (`checksums.txt.sigstore.json`), re-verifies the published signature, takes the release notes from this file, builds with `GOWORK=off` and `-trimpath`, and drops the unused `packages: write` permission and sibling checkout.
+- **Binary size budget enforced**: `make size-check` fails above `SIZE_LIMIT_MB` (70 MiB; linux/amd64 is 59.6 MiB today) and CI runs it instead of only warning above 98 MB.
+- **`make release` no longer publishes** from a workstation; releases come only from the tag-triggered workflow.
+- **npm scaffolding kept unpublished**: packages are marked `"private": true` with the correct MIT license, and assembly stamps the meta package and its `optionalDependencies` and reads GoReleaser v2's output paths. Nothing is published to npm.
 - **Dependency renamed eyrie → flux**: rho now depends on
   `github.com/GrayCodeAI/flux v0.0.1` (the provider runtime was renamed).
   All imports, env vars (`EYRIE_CONFIG_DIR` → `FLUX_CONFIG_DIR`,
@@ -15,8 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scripts, ecosystem manifest entries, docs, and internal identifiers were
   renamed to match. User state paths move from `~/.../eyrie/provider.json`
   to `~/.../flux/provider.json`.
+- **Makefile lint pin matches CI**: `make lint`/`lint-fix`/`setup` install `golangci-lint@v2.1.0` (was `@latest`), the same version CI enforces.
+- **Docs truth and housekeeping**: SECURITY.md/CONTRIBUTING.md now describe the actual Go toolchain (golangci-lint, go vet, govulncheck) instead of the polyglot template's ruff/mypy/pip-audit/pnpm-lock language, CONTRIBUTING documents `make setup`/`boundaries`/`test-10x`/`smoke`, and the planning docs (`SPEC_DRIVEN_PLAN.md`, `SPEC_DRIVEN_PHASE2_PLAN.md`, `internal/engine/REFACTOR_PLAN.md`) moved to `docs/plans/`.
 
 ### Security
+- **`install.sh` verifies releases fail-closed**: with cosign installed it verifies `checksums.txt.sigstore.json` against the exact release-workflow identity and aborts on a missing or invalid signature; without cosign it warns and reports the signature as not verified, and `RHO_REQUIRE_COSIGN=1` makes cosign mandatory. The SHA-256 check always runs, flags are parsed strictly (unknown flags exit 2), and releases older than v0.3.0 (hawk-era archives) are refused.
+- **GitHub Action installs signed release archives** through `install.sh` with cosign required, instead of building an unverified `curl | tar` source tarball; `rho-version` accepts `0.3.0`, `v0.3.0` or `latest`, and Go is no longer needed.
+- **systemd unit**: runs as a dedicated `rho` user with state in `StateDirectory`/`CacheDirectory` (the old `%h` paths were hidden by `ProtectHome=true`), reads the daemon API key from an `EnvironmentFile` instead of the command line, and links the troubleshooting guide instead of a dead domain.
 - **Session lock TOCTOU eliminated**: `AcquireLock`'s stat → stale-if->5min → remove → O_EXCL dance could delete a live lock on misjudged staleness and let two instances open the same session. Mutual exclusion now uses an OS advisory lock (`gofrs/flock`, promoted to a direct dependency); a crashed holder's lock is reclaimed instantly because the kernel drops the flock at process death. The lock file keeps PID/timestamps purely as diagnostics.
 - **Hardened atomic writes for state files**: global settings, checkpoint file contents and restores, handovers, and named checkpoints now go through `internal/safewrite` (same 0600 mode as before, plus fsync+rename atomicity and symlink refusal at the destination).
 - **Dead shell-injection surface removed**: `AssumptionTracker.VerifyCommandSucceeds` ran caller-supplied strings through `sh -c`, bypassing the permission stack; it had zero callers and is deleted. `SelfHealer.RunScript` no longer shell-evaluates the script path (double evaluation) and invokes it directly via `/bin/sh`.
@@ -25,21 +50,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Engine subprocesses are bounded and observable**: experiment-loop rollback, auto-commit git calls, and post-edit syntax validators (`go vet`, `python3`, `node`, `npx tsc`) ran on `context.Background()` with ignored errors; they are now time-bounded and log failures instead of discarding them.
 - **Memory and config failures no longer silently dropped**: stream-loop memory persists (assistant learnings, skills, conversation summaries, insights) and the self-improve lesson store log failures via slog, corrupt lesson stores are reported, and the config panel surfaces failed `provider` setting saves instead of ignoring them.
 
-### Changed
-- **Makefile lint pin matches CI**: `make lint`/`lint-fix`/`setup` install `golangci-lint@v2.1.0` (was `@latest`), the same version CI enforces.
-- **Docs truth and housekeeping**: SECURITY.md/CONTRIBUTING.md now describe the actual Go toolchain (golangci-lint, go vet, govulncheck) instead of the polyglot template's ruff/mypy/pip-audit/pnpm-lock language, CONTRIBUTING documents `make setup`/`boundaries`/`test-10x`/`smoke`, and the planning docs (`SPEC_DRIVEN_PLAN.md`, `SPEC_DRIVEN_PHASE2_PLAN.md`, `internal/engine/REFACTOR_PLAN.md`) moved to `docs/plans/`.
-
 ### Removed
+- **Homebrew publisher and install instructions**: the `brews` stanza (deprecated in GoReleaser v2) targeted a `GrayCodeAI/homebrew-tap` repository and token that do not exist; the README no longer offers Homebrew or npm installs.
+- **`flake.nix` and its `.envrc`**: the flake depended on five deleted repositories and could not evaluate.
+- **ast-grep configuration** (`sgconfig.yaml`, `rules/`, lefthook hook): ast-grep never discovered the config and CI never ran it.
 - **BREAKING — `rho credentials migrate` removed**: the subcommand, its man page entry, and the `MigrateEnvFileCredentials` wrappers are gone, and `rho path` no longer reports legacy `~/.rho/env` / `~/.rho/.env` files. Save keys through `/config`.
 - **BREAKING — settings model/provider migration removed**: `LoadSettings` no longer moves `model`/`provider` from `settings.json` into Flux's `provider.json`, and `SetActiveSelection` is deleted. Stale `model`/`provider` values left in `settings.json` are now ignored on load (Flux's selection wins; `--settings` overrides still apply); select the model in `/config`.
 - **BREAKING — startup provider-secrets migration removed**: print/REPL/watch/TUI startup no longer calls `MigrateProviderSecrets`, and the method is dropped from the gateway `CatalogMaintenance` interface. `rho path` still fails when `provider.json` holds secrets; remove those fields manually.
 - **BREAKING — `shared/types` guards removed**: `scripts/check-shared-types-imports.sh`, the `contracts-guard` make target, its lefthook and CI steps, and the matching testaudit checks are deleted because the package no longer exists. The ecosystem boundary guards still block `rho/internal` imports.
 
-## [0.2.0] — 2026-07-13
+## [hawk 0.2.0] — 2026-07-13
 
 ### Changed
 - **Rho/Flux production boundary completed**: Rho owns the product face,
-  sessions, tools, permissions, and public schemas while Flux v0.2.1 owns
+  sessions, tools, permissions, and public schemas while Flux v0.2.1 (then
+  named eyrie; flux itself has only tagged v0.0.1) owns
   credentials, catalog resolution, provider transport, resilience, and usage
   telemetry behind the stable `flux/engine` facade.
 - **Provider routing and usage attribution hardened**: resolved route changes,
@@ -103,17 +128,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `O_NOFOLLOW` via `golang.org/x/sys/unix`, writes to a temp file
   with mode 0600, syncs to disk, then atomically renames. `ErrSymlinkTarget`
   and `ErrPathEscape` sentinel errors.
-- **`internal/jsonc`** package: JSON-with-Comments parser and
+- **`internal/jsonc`** package (since removed): JSON-with-Comments parser and
   `ValidateClaudeSettings` validator, native GrayCode settings
   parser and `validateHookFields`. Accepts `//` and `/* */` comments
   plus trailing commas in objects and arrays. Validates Claude Code
   `settings.json` fields (model, permissions, hooks, mcpServers,
   env) with type checks and value validation.
-- **`internal/permissions/verdict.go`**: unified `PermissionVerdict`
+- **`internal/permissions/verdict.go`** (since removed): unified `PermissionVerdict`
   type with Risk levels (`RiskLow`, `RiskMedium`, `RiskHigh`,
   `RiskBlocked`). Helpers: `Allow`, `Deny`, `RequireApproval`. Additive
   change — existing `GuardianDecision` is unchanged.
-- **`internal/providers`** package: PROVIDERS matrix (34 entries)
+- **`internal/providers`** package (since removed): PROVIDERS matrix (34 entries)
   native GrayCode PROVIDERS matrix. Each
   entry describes an AI coding agent (Claude Code, Cursor, Codex,
   Aider, etc.) with install mechanism and detection probes. Probe
@@ -159,7 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `update` package coverage raised from ~22% to ~92% with full HTTP mocking, including
   error paths (server failure, invalid JSON, unreachable host) and `Summary()` rendering.
 
-## [0.4.0] — 2026-05-05
+## [hawk 0.4.0, untagged] — 2026-05-05
 
 ### Added
 - **Exec Subcommand**: `rho exec "prompt"` — full engine non-interactive mode with `--output-format json`, `--auto` autonomy levels, `--worktree` isolation, `--agent` personas, `--session-id` resume, stdin piping
@@ -184,7 +209,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode (structured compaction, snapshot system, doom loop escalation)
 - Waza by tw93 (engineering-habit workflows: think, hunt, check, design)
 
-## [0.3.0] — 2026-05-03
+## [hawk 0.3.0, untagged] — 2026-05-03
 
 ### Added
 - **Model Cascade Router**: Cost-aware routing that classifies prompts and selects optimal model tier (simple→Haiku, debug→Sonnet, generation→Opus). Supports frugal mode for aggressive cost savings. Tracks routing decisions for analytics.
@@ -203,7 +228,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `generateSummary()` now uses cheapest available model per provider instead of primary model
 - Ecosystem roadmap added: `ECOSYSTEM-ROADMAP.md` with 30-feature prioritized implementation plan
 
-## [0.1.0] — 2026-05-01
+## [hawk 0.1.0, untagged] — 2026-05-01
 
 ### Added
 - **Bash Security**: zsh bypass protection, process substitution blocking, IFS injection detection, carriage return prevention, ANSI-C quoting detection, git commit safety
@@ -241,7 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stream-JSON usage events with token tracking
 - Pre-compiled regexes for performance
 
-## [0.0.1] — 2026-04-30
+## [hawk 0.0.1, untagged] — 2026-04-30
 
 ### Added
 - Project scaffold with cobra CLI and Bubbletea TUI
