@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	cloud "github.com/GrayCodeAI/rho/internal/platform/cloud"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // cloudEndpointFlagHelp documents the endpoint precedence shared by the
@@ -27,6 +30,11 @@ func newCloudConnectCmd() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "connect",
 		Short: "Connect this Rho device to Rho Cloud",
+		Long: `Save an existing GrayCode Cloud device connection. Prefer "rho cloud login",
+which needs no token. The device token is read with --token-stdin or from a
+hidden prompt, never from the command line:
+
+  rho cloud connect --device-id <id> --project-id <id> --token-stdin < token.txt`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			endpointFlag, _ := cmd.Flags().GetString("endpoint")
 			endpoint, err := cloud.ResolveEndpoint(endpointFlag)
@@ -35,11 +43,17 @@ func newCloudConnectCmd() *cobra.Command {
 			}
 			deviceID, _ := cmd.Flags().GetString("device-id")
 			projectID, _ := cmd.Flags().GetString("project-id")
-			token, _ := cmd.Flags().GetString("token")
-			if deviceID == "" || projectID == "" || token == "" {
-				return fmt.Errorf("device-id, project-id, and token are required")
+			if deviceID == "" || projectID == "" {
+				return fmt.Errorf("device-id and project-id are required")
 			}
-			if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
+			if !cloud.ValidOpaqueID(deviceID) || !cloud.ValidOpaqueID(projectID) {
+				return fmt.Errorf("device-id and project-id must be GrayCode Cloud identifiers (16-128 letters, digits, '.', '_', ':' or '-')")
+			}
+			token, err := readDeviceToken(cmd)
+			if err != nil {
+				return err
+			}
+			if err := saveCloudDevice(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
 				return err
 			}
 			cmd.Println(auditTint("Rho Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
@@ -49,8 +63,62 @@ func newCloudConnectCmd() *cobra.Command {
 	command.Flags().String("endpoint", "", cloudEndpointFlagHelp)
 	command.Flags().String("device-id", "", "Rho Cloud device ID")
 	command.Flags().String("project-id", "", "Rho Cloud project ID")
-	command.Flags().String("token", "", "Rho Cloud device token")
+	command.Flags().Bool("token-stdin", false, "Read the device token from standard input")
+	command.Flags().String("token", "", "Device token (deprecated: exposed in shell history and process listings)")
+	_ = command.Flags().MarkDeprecated("token", "it exposes the device token in shell history and process listings; use --token-stdin or the interactive prompt")
 	return command
+}
+
+// maxDeviceTokenInput bounds how much is read for a device token.
+const maxDeviceTokenInput = 4 << 10
+
+// Token-input seams; tests replace them.
+var (
+	saveCloudDevice  = cloud.SaveDeviceConfig
+	readHiddenSecret = func() ([]byte, error) { return term.ReadPassword(int(os.Stdin.Fd())) }
+)
+
+// readDeviceToken returns the device token for `rho cloud connect` from, in
+// order: --token-stdin, the deprecated --token flag, or a hidden prompt when
+// stdin is a terminal. The token never has to appear in argv, where it would
+// land in shell history and be visible to other users via ps.
+func readDeviceToken(cmd *cobra.Command) (string, error) {
+	flagToken, _ := cmd.Flags().GetString("token")
+	fromStdin, _ := cmd.Flags().GetBool("token-stdin")
+	var raw string
+	switch {
+	case fromStdin && flagToken != "":
+		return "", errors.New("use either --token-stdin or --token, not both")
+	case fromStdin:
+		data, err := io.ReadAll(io.LimitReader(cmd.InOrStdin(), maxDeviceTokenInput+1))
+		if err != nil {
+			return "", fmt.Errorf("read device token from stdin: %w", err)
+		}
+		if len(data) > maxDeviceTokenInput {
+			return "", errors.New("device token on stdin is too long")
+		}
+		raw = string(data)
+	case flagToken != "":
+		raw = flagToken
+	case stdinIsTerminal():
+		_, _ = fmt.Fprint(cmd.ErrOrStderr(), "GrayCode Cloud device token: ")
+		data, err := readHiddenSecret()
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr())
+		if err != nil {
+			return "", fmt.Errorf("read device token: %w", err)
+		}
+		raw = string(data)
+	default:
+		return "", errors.New("a device token is required: pipe it with --token-stdin, or run in a terminal to be prompted (`rho cloud login` needs no token)")
+	}
+	token := strings.TrimSpace(raw)
+	if token == "" {
+		return "", errors.New("the device token is empty")
+	}
+	if strings.ContainsFunc(token, func(r rune) bool { return !unicode.IsGraphic(r) || unicode.IsSpace(r) }) {
+		return "", errors.New("the device token must be a single line without spaces")
+	}
+	return token, nil
 }
 
 func newCloudLoginCmd() *cobra.Command {

@@ -202,3 +202,109 @@ func TestExplicitCloudCommandsReportLoadErrors(t *testing.T) {
 		t.Fatalf("graph sync error = %v, want the load failure", err)
 	}
 }
+
+// captureCloudSave records what connect would save instead of touching the
+// real credential store.
+func captureCloudSave(t *testing.T) *struct {
+	cfg   cloud.DeviceConfig
+	token string
+	calls int
+} {
+	t.Helper()
+	saved := &struct {
+		cfg   cloud.DeviceConfig
+		token string
+		calls int
+	}{}
+	original := saveCloudDevice
+	t.Cleanup(func() { saveCloudDevice = original })
+	saveCloudDevice = func(cfg cloud.DeviceConfig, token string) error {
+		saved.cfg, saved.token = cfg, token
+		saved.calls++
+		return nil
+	}
+	return saved
+}
+
+// promptable sets whether stdin looks like a terminal and what a hidden
+// prompt returns.
+func promptable(t *testing.T, terminal bool, answer string) {
+	t.Helper()
+	originalTTY, originalRead := stdinIsTerminal, readHiddenSecret
+	t.Cleanup(func() { stdinIsTerminal, readHiddenSecret = originalTTY, originalRead })
+	stdinIsTerminal = func() bool { return terminal }
+	readHiddenSecret = func() ([]byte, error) { return []byte(answer), nil }
+}
+
+var connectIDs = []string{"--device-id", "device_0123456789", "--project-id", "project_0123456789"}
+
+func TestCloudConnectReadsTokenFromStdin(t *testing.T) {
+	t.Setenv(cloud.EndpointEnv, "")
+	saved := captureCloudSave(t)
+	promptable(t, false, "")
+	command := newCloudConnectCmd()
+	command.SetIn(strings.NewReader("hwc_from_stdin\n"))
+	if _, err := runCloudCommand(t, command, append(connectIDs, "--token-stdin")...); err != nil {
+		t.Fatal(err)
+	}
+	if saved.token != "hwc_from_stdin" || saved.cfg.Endpoint != cloud.DefaultEndpoint || saved.cfg.ProjectID != "project_0123456789" {
+		t.Fatalf("saved = %+v", saved)
+	}
+}
+
+func TestCloudConnectPromptsWithoutEchoOnTerminal(t *testing.T) {
+	saved := captureCloudSave(t)
+	promptable(t, true, " hwc_prompted \n")
+	out, err := runCloudCommand(t, newCloudConnectCmd(), connectIDs...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.token != "hwc_prompted" || !strings.Contains(out, "device token:") {
+		t.Fatalf("saved token %q, output %q", saved.token, out)
+	}
+}
+
+func TestCloudConnectTokenFlagIsDeprecated(t *testing.T) {
+	saved := captureCloudSave(t)
+	promptable(t, false, "")
+	command := newCloudConnectCmd()
+	if flag := command.Flags().Lookup("token"); flag == nil || flag.Deprecated == "" || !flag.Hidden {
+		t.Fatalf("--token flag = %+v, want deprecated and hidden", flag)
+	}
+	out, err := runCloudCommand(t, command, append(connectIDs, "--token", "hwc_argv")...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.token != "hwc_argv" || !strings.Contains(out, "deprecated") || !strings.Contains(out, "--token-stdin") {
+		t.Fatalf("saved %q, output %q; --token must keep working with a warning", saved.token, out)
+	}
+}
+
+func TestCloudConnectRejectsMissingOrInvalidTokenInput(t *testing.T) {
+	saved := captureCloudSave(t)
+	promptable(t, false, "")
+	if _, err := runCloudCommand(t, newCloudConnectCmd(), connectIDs...); err == nil || !strings.Contains(err.Error(), "--token-stdin") {
+		t.Fatalf("non-interactive error = %v, want a --token-stdin hint", err)
+	}
+	both := newCloudConnectCmd()
+	both.SetIn(strings.NewReader("hwc_a"))
+	if _, err := runCloudCommand(t, both, append(connectIDs, "--token-stdin", "--token", "hwc_b")...); err == nil {
+		t.Fatal("--token-stdin with --token was accepted")
+	}
+	spaced := newCloudConnectCmd()
+	spaced.SetIn(strings.NewReader("hwc_a hwc_b\n"))
+	if _, err := runCloudCommand(t, spaced, append(connectIDs, "--token-stdin")...); err == nil {
+		t.Fatal("a token containing spaces was accepted")
+	}
+	huge := newCloudConnectCmd()
+	huge.SetIn(strings.NewReader(strings.Repeat("a", maxDeviceTokenInput+1)))
+	if _, err := runCloudCommand(t, huge, append(connectIDs, "--token-stdin")...); err == nil {
+		t.Fatal("an oversized token was accepted")
+	}
+	if _, err := runCloudCommand(t, newCloudConnectCmd(), "--device-id", "short", "--project-id", "project_0123456789", "--token-stdin"); err == nil || !strings.Contains(err.Error(), "identifiers") {
+		t.Fatalf("invalid device-id error = %v", err)
+	}
+	if saved.calls != 0 {
+		t.Fatalf("connect saved %d times for invalid input", saved.calls)
+	}
+}
