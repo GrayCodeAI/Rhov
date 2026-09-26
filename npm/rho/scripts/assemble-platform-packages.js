@@ -106,19 +106,14 @@ async function main() {
     function gorel(platform, arch) {
         const ga = goosGoarch[platform]?.[arch];
         if (!ga) throw new Error(`no goarch mapping for ${platform}-${arch}`);
-        // No windows/arm64 build per .goreleaser.yml `ignore`, but we still ship
-        // a sub-package target (see comment below) for completeness; the env var
-        // override is the real source there.
         const os = platform === 'win32' ? 'windows' : platform;
         const bin = platform === 'win32' ? 'rho.exe' : 'rho';
         const dirName = `rho_${os}_${ga}${ga === 'arm64' ? '' : '_v1'}`;
         return path.join(distRoot, dirName, bin);
     }
 
-    // Note: rho's `.goreleaser.yml` currently ignores windows/arm64 in builds,
-    // so rho-win32-arm64 has no default GoReleaser artifact yet. The target is
-    // retained so that when the build matrix adds it (or CI supplies the
-    // binary via RHO_WIN32_ARM64), packaging works without script changes.
+    // All six targets are built by `.goreleaser.yml` (linux/darwin/windows ×
+    // amd64/arm64).
     const targets = [
         {
             platform: 'darwin', arch: 'arm64', binName: 'rho',

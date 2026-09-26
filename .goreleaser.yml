@@ -22,7 +22,7 @@ before:
     - go mod verify
 
 # ---------------------------------------------------------------------------
-# Builds — three OS × two arch (no Windows/arm64).
+# Builds — linux/darwin/windows × amd64/arm64 (six targets).
 # Reproducible: `mod_timestamp` ties the binary timestamp to the commit time
 # rather than the build host's clock.
 # ---------------------------------------------------------------------------
@@ -39,9 +39,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
     ldflags:
       - -s -w
       - -X main.Version={{.Version}}
