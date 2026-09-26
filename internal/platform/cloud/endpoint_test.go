@@ -94,7 +94,9 @@ func TestInsecureEndpointNeverSendsTheDeviceToken(t *testing.T) {
 		t.Fatal("client with a plaintext remote endpoint must not be enabled")
 	}
 	ctx := context.Background()
-	client.RecordUsage(ctx, UsageEvent{EventID: "event_0123456789", Capability: "rho"})
+	if err := client.RecordUsage(ctx, UsageEvent{EventID: "event_0123456789", Capability: "rho"}); err == nil {
+		t.Fatal("RecordUsage succeeded against a plaintext endpoint")
+	}
 	if _, err := client.SyncGraph(ctx, GraphSyncRequest{SyncID: "graph_0123456789abcdef", Graph: json.RawMessage(`{}`)}); err == nil {
 		t.Fatal("SyncGraph succeeded against a plaintext endpoint")
 	}

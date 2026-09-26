@@ -331,22 +331,3 @@ func (c *Client) PollDeviceLogin(ctx context.Context, deviceCode string) (Device
 	}
 	return c.pollDeviceLogin(ctx, deviceCode)
 }
-
-// RecordUsage intentionally discards transport failures. Cloud sync must not alter local execution.
-func (c *Client) RecordUsage(ctx context.Context, event UsageEvent) {
-	if !c.Enabled() {
-		return
-	}
-	body, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-	req, err := c.newJSONRequest(ctx, "/v1/usage", body, true)
-	if err != nil {
-		return
-	}
-	resp, err := c.http.Do(req)
-	if err == nil && resp != nil {
-		_ = resp.Body.Close()
-	}
-}

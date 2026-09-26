@@ -372,20 +372,22 @@ func runExec(_ *cobra.Command, args []string) error {
 
 	// Optional cloud accounting is best-effort and never affects local execution.
 	if client, cfg, loadErr := cloud.LoadClient(); loadErr == nil && client.Enabled() {
-		go client.RecordUsage(context.Background(), cloud.UsageEvent{
-			EventID:      fmt.Sprintf("exec-%d-%s", start.UnixMilli(), randomHex(8)),
-			DeviceID:     cfg.DeviceID,
-			ProjectID:    cfg.ProjectID,
-			SessionID:    sessionID,
-			Capability:   "rho",
-			Model:        effectiveModel,
-			InputTokens:  totalIn,
-			OutputTokens: totalOut,
-			TokensUsed:   totalIn + totalOut,
-			DurationMS:   int(time.Since(start).Milliseconds()),
-			Status:       map[bool]string{true: "failed", false: "completed"}[exitCode != 0],
-			OccurredAt:   time.Now().UTC().Format(time.RFC3339),
-		})
+		go func() {
+			_ = client.RecordUsage(context.Background(), cloud.UsageEvent{
+				EventID:      fmt.Sprintf("exec-%d-%s", start.UnixMilli(), randomHex(8)),
+				DeviceID:     cfg.DeviceID,
+				ProjectID:    cfg.ProjectID,
+				SessionID:    sessionID,
+				Capability:   cloud.CapabilityRho,
+				Model:        effectiveModel,
+				InputTokens:  totalIn,
+				OutputTokens: totalOut,
+				TokensUsed:   totalIn + totalOut,
+				DurationMS:   int(time.Since(start).Milliseconds()),
+				Status:       map[bool]string{true: "failed", false: "completed"}[exitCode != 0],
+				OccurredAt:   time.Now().UTC().Format(time.RFC3339),
+			})
+		}()
 	}
 
 	// Persist session for resume/search (skip in ephemeral/CI mode)

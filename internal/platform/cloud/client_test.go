@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,14 +20,18 @@ func TestRecordUsageSendsAggregateEvent(t *testing.T) {
 	}))
 	defer s.Close()
 	c := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"})
-	c.RecordUsage(context.Background(), UsageEvent{EventID: "event_0123456789", DeviceID: "device_0123456789", ProjectID: "project_0123456789", Capability: "rho", OccurredAt: "2026-07-10T00:00:00Z"})
+	if err := c.RecordUsage(context.Background(), UsageEvent{EventID: "event_0123456789", DeviceID: "device_0123456789", ProjectID: "project_0123456789", Capability: "rho", OccurredAt: "2026-07-10T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
 	if gotAuth != "Bearer hwc_test" {
 		t.Fatalf("authorization = %q", gotAuth)
 	}
 }
 
 func TestDisabledClientDoesNotSend(t *testing.T) {
-	New(Config{}).RecordUsage(context.Background(), UsageEvent{})
+	if err := New(Config{}).RecordUsage(context.Background(), UsageEvent{}); !errors.Is(err, ErrNotConnected) {
+		t.Fatalf("error = %v, want ErrNotConnected", err)
+	}
 }
 
 func TestSendDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
