@@ -336,33 +336,39 @@ large contexts can consume significant memory. Consider:
 
 ### "Failed to start rho-daemon.service: Unit not found"
 
-Install the unit file:
+Install the unit file, the service user and the binary it runs:
 
 ```bash
+sudo useradd --system --home-dir /var/lib/rho --shell /usr/sbin/nologin rho
+sudo install -m 0755 ~/.rho/bin/rho /usr/local/bin/rho
 sudo cp packaging/systemd/rho-daemon.service /etc/systemd/system/
+# Optional: sudo install -D -m 0600 /dev/null /etc/rho/daemon.env, then add
+# RHO_DAEMON_API_KEY=<key> (the key is read from the environment, not argv).
 sudo systemctl daemon-reload
 sudo systemctl enable --now rho-daemon
 ```
 
 ### "Permission denied" accessing state directory
 
-The systemd unit runs as user `rho` with `ProtectSystem=strict` and
-`ReadWritePaths=%h/.rho/state`. Ensure the user's home directory has
-the correct state:
-
-```bash
-sudo -u rho mkdir -p /home/rho/.rho/state
-sudo -u rho chmod 750 /home/rho/.rho/state
-```
+The unit runs as user `rho` with `ProtectSystem=strict` and
+`ProtectHome=true`, so the only writable locations are the directories
+systemd creates for it (`StateDirectory=rho`, `CacheDirectory=rho`) and a
+private `/tmp`. Config lives in `/var/lib/rho/config`, state (sessions, security
+log, `run/daemon.log`) in `/var/lib/rho/state`, and cache in `/var/cache/rho`.
+Home directories are hidden from the service, so do not point
+`ReadWritePaths=` or the `RHO_*_DIR` variables at `/home`, `/root` or `%h`
+(`%h` is always `/root` in a system unit). To let the agent edit project
+checkouts, add them explicitly, for example `ReadWritePaths=/srv/projects`
+in a drop-in (`sudo systemctl edit rho-daemon`).
 
 ### Daemon not logging to journald
 
 If using the systemd unit, logs go to both journald (stdout/stderr) and
-`~/.rho/state/daemon.log`. Check:
+`/var/lib/rho/state/run/daemon.log`. Check:
 
 ```bash
 journalctl -u rho-daemon -f
-tail -f ~/.rho/state/daemon.log
+sudo tail -f /var/lib/rho/state/run/daemon.log
 ```
 
 If journald logs are missing, verify that stdout/stderr are not being
