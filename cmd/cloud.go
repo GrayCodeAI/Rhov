@@ -13,178 +13,206 @@ import (
 
 var cloudCmd = &cobra.Command{Use: "cloud", Short: "Manage optional Rho Cloud synchronization"}
 
-var cloudConnectCmd = &cobra.Command{
-	Use:   "connect",
-	Short: "Connect this Rho device to Rho Cloud",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		endpoint, _ := cmd.Flags().GetString("endpoint")
-		deviceID, _ := cmd.Flags().GetString("device-id")
-		projectID, _ := cmd.Flags().GetString("project-id")
-		token, _ := cmd.Flags().GetString("token")
-		if endpoint == "" || deviceID == "" || projectID == "" || token == "" {
-			return fmt.Errorf("endpoint, device-id, project-id, and token are required")
-		}
-		if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
-			return err
-		}
-		cmd.Println(auditTint("Rho Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
-		return nil
-	},
-}
-
-var cloudLoginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Sign in to Rho Cloud in a browser",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		endpoint, _ := cmd.Flags().GetString("endpoint")
-		label, _ := cmd.Flags().GetString("label")
-		if endpoint == "" {
-			endpoint = os.Getenv("RHO_CLOUD_URL")
-		}
-		if endpoint == "" {
-			return fmt.Errorf("rho cloud endpoint is required (use --endpoint or RHO_CLOUD_URL)")
-		}
-		if label == "" {
-			label, _ = os.Hostname()
-		}
-		client := cloud.New(cloud.Config{Endpoint: endpoint})
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-		start, err := client.StartDeviceLogin(ctx, label, runtime.GOOS, version)
-		if err != nil {
-			return err
-		}
-		cmd.Printf("%s\n", auditTint("Open ", textPrimary)+auditTint(start.VerificationURI, infoSky)+auditTint(" and enter code ", textPrimary)+auditTint(start.UserCode, rhoColor))
-		if err := openBrowser(start.VerificationURI + "?code=" + start.UserCode); err != nil {
-			cmd.Printf("%s\n", auditTint(fmt.Sprintf("Could not open the browser automatically: %v", err), textMuted))
-		}
-		interval := time.Duration(start.Interval) * time.Second
-		if interval < time.Second {
-			interval = 5 * time.Second
-		}
-		prog := NewCLIProgress("Cloud", []string{"Waiting for browser approval"})
-		defer prog.Abort()
-		prog.StartStep(0)
-		for {
-			poll, pollErr := client.PollDeviceLogin(ctx, start.DeviceCode)
-			if pollErr != nil {
-				prog.FailStep(0, pollErr.Error())
-				return pollErr
+func newCloudConnectCmd() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "connect",
+		Short: "Connect this Rho device to Rho Cloud",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			endpoint, _ := cmd.Flags().GetString("endpoint")
+			deviceID, _ := cmd.Flags().GetString("device-id")
+			projectID, _ := cmd.Flags().GetString("project-id")
+			token, _ := cmd.Flags().GetString("token")
+			if endpoint == "" || deviceID == "" || projectID == "" || token == "" {
+				return fmt.Errorf("endpoint, device-id, project-id, and token are required")
 			}
-			switch poll.Status {
-			case "pending":
-				select {
-				case <-ctx.Done():
-					prog.FailStep(0, ctx.Err().Error())
-					return fmt.Errorf("waiting for browser approval: %w", ctx.Err())
-				case <-time.After(interval):
-				}
-			case "approved":
-				if poll.Token == "" || poll.DeviceID == "" || poll.ProjectID == "" {
-					prog.FailStep(0, "incomplete device authorization")
-					return fmt.Errorf("rho cloud returned an incomplete device authorization")
-				}
-				if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
-					prog.FailStep(0, err.Error())
-					return err
-				}
-				prog.CompleteStep(0)
-				prog.Done()
-				cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
-				return nil
-			case "expired":
-				prog.FailStep(0, "device authorization expired")
-				return fmt.Errorf("rho cloud device authorization expired")
-			default:
-				prog.FailStep(0, fmt.Sprintf("unknown status %q", poll.Status))
-				return fmt.Errorf("rho cloud returned unknown device authorization status %q", poll.Status)
+			if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: deviceID, ProjectID: projectID}, token); err != nil {
+				return err
 			}
-		}
-	},
-}
-
-var cloudStatusCmd = &cobra.Command{
-	Use: "status", Short: "Show Rho Cloud connection status",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		client, cfg, err := cloud.LoadClient()
-		if err != nil || !client.Enabled() {
-			cmd.Println(auditTint("Rho Cloud is not connected.", textMuted))
+			cmd.Println(auditTint("Rho Cloud connected. Usage synchronization is opt-in and fail-open.", doneGreen))
 			return nil
-		}
-		cmd.Println(auditTint("Rho Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
-		return nil
-	},
+		},
+	}
+	command.Flags().String("endpoint", "", "Rho Cloud endpoint")
+	command.Flags().String("device-id", "", "Rho Cloud device ID")
+	command.Flags().String("project-id", "", "Rho Cloud project ID")
+	command.Flags().String("token", "", "Rho Cloud device token")
+	return command
 }
 
-var cloudContextCmd = &cobra.Command{
-	Use:   "context",
-	Short: "Sync repository context to Rho Cloud",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		client, cfg, err := cloud.LoadClient()
-		if err != nil || !client.Enabled() {
-			return fmt.Errorf("rho cloud is not connected")
-		}
-		detected, detectErr := detectGitContext(cmd.Context())
-		repository, _ := cmd.Flags().GetString("repository")
-		if repository == "" {
-			repository = detected.Repository
-		}
-		if repository == "" {
-			return detectErr
-		}
-		contextProvider, _ := cmd.Flags().GetString("provider")
-		externalID, _ := cmd.Flags().GetString("external-id")
-		branch, _ := cmd.Flags().GetString("branch")
-		commit, _ := cmd.Flags().GetString("commit")
-		ciRunID, _ := cmd.Flags().GetString("ci-run")
-		ciStatus, _ := cmd.Flags().GetString("ci-status")
-		ciWorkflow, _ := cmd.Flags().GetString("ci-workflow")
-		deploymentID, _ := cmd.Flags().GetString("deployment")
-		deploymentStatus, _ := cmd.Flags().GetString("deployment-status")
-		deploymentEnvironment, _ := cmd.Flags().GetString("deployment-environment")
-		if contextProvider == "" {
-			contextProvider = detected.Provider
-		}
-		if contextProvider == "" {
-			contextProvider = "git"
-		}
-		if branch == "" {
-			branch = detected.Branch
-		}
-		if commit == "" {
-			commit = detected.Commit
-		}
-		if externalID == "" {
-			externalID = repository
-		}
-		event := cloud.DeliveryContext{ProjectID: cfg.ProjectID, Branch: branch, CommitSHA: commit}
-		event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = contextProvider, externalID, repository
-		if ciRunID == "" {
-			ciRunID, ciWorkflow = os.Getenv("GITHUB_RUN_ID"), firstValue(ciWorkflow, os.Getenv("GITHUB_WORKFLOW"))
-		}
-		if ciRunID != "" {
-			if ciStatus == "" {
-				ciStatus = "running"
+func newCloudLoginCmd() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "login",
+		Short: "Sign in to Rho Cloud in a browser",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			endpoint, _ := cmd.Flags().GetString("endpoint")
+			label, _ := cmd.Flags().GetString("label")
+			if endpoint == "" {
+				endpoint = os.Getenv("RHO_CLOUD_URL")
 			}
-			ciProvider := contextProvider
-			if os.Getenv("GITHUB_RUN_ID") != "" && ciProvider == "git" {
-				ciProvider = "github"
+			if endpoint == "" {
+				return fmt.Errorf("rho cloud endpoint is required (use --endpoint or RHO_CLOUD_URL)")
 			}
-			event.CIRun = &cloud.CIRunContext{Provider: ciProvider, ExternalID: ciRunID, Workflow: ciWorkflow, Status: ciStatus}
-		}
-		if deploymentID != "" {
-			if deploymentStatus == "" {
-				deploymentStatus = "running"
+			if label == "" {
+				label, _ = os.Hostname()
 			}
-			if deploymentEnvironment == "" {
-				return fmt.Errorf("deployment-environment is required with --deployment")
+			client := cloud.New(cloud.Config{Endpoint: endpoint})
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			defer cancel()
+			start, err := client.StartDeviceLogin(ctx, label, runtime.GOOS, version)
+			if err != nil {
+				return err
 			}
-			event.Deployment = &cloud.DeploymentContext{Provider: contextProvider, ExternalID: deploymentID, Environment: deploymentEnvironment, Status: deploymentStatus}
-		}
-		client.RecordDeliveryContext(cmd.Context(), event)
-		cmd.Println(auditTint("Repository context queued for Rho Cloud.", doneGreen))
-		return nil
-	},
+			cmd.Printf("%s\n", auditTint("Open ", textPrimary)+auditTint(start.VerificationURI, infoSky)+auditTint(" and enter code ", textPrimary)+auditTint(start.UserCode, rhoColor))
+			if err := openBrowser(start.VerificationURI + "?code=" + start.UserCode); err != nil {
+				cmd.Printf("%s\n", auditTint(fmt.Sprintf("Could not open the browser automatically: %v", err), textMuted))
+			}
+			interval := time.Duration(start.Interval) * time.Second
+			if interval < time.Second {
+				interval = 5 * time.Second
+			}
+			prog := NewCLIProgress("Cloud", []string{"Waiting for browser approval"})
+			defer prog.Abort()
+			prog.StartStep(0)
+			for {
+				poll, pollErr := client.PollDeviceLogin(ctx, start.DeviceCode)
+				if pollErr != nil {
+					prog.FailStep(0, pollErr.Error())
+					return pollErr
+				}
+				switch poll.Status {
+				case "pending":
+					select {
+					case <-ctx.Done():
+						prog.FailStep(0, ctx.Err().Error())
+						return fmt.Errorf("waiting for browser approval: %w", ctx.Err())
+					case <-time.After(interval):
+					}
+				case "approved":
+					if poll.Token == "" || poll.DeviceID == "" || poll.ProjectID == "" {
+						prog.FailStep(0, "incomplete device authorization")
+						return fmt.Errorf("rho cloud returned an incomplete device authorization")
+					}
+					if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
+						prog.FailStep(0, err.Error())
+						return err
+					}
+					prog.CompleteStep(0)
+					prog.Done()
+					cmd.Println(auditTint("Rho Cloud connected for project ", doneGreen) + auditTint(poll.ProjectID, textPrimary) + auditTint(".", doneGreen))
+					return nil
+				case "expired":
+					prog.FailStep(0, "device authorization expired")
+					return fmt.Errorf("rho cloud device authorization expired")
+				default:
+					prog.FailStep(0, fmt.Sprintf("unknown status %q", poll.Status))
+					return fmt.Errorf("rho cloud returned unknown device authorization status %q", poll.Status)
+				}
+			}
+		},
+	}
+	command.Flags().String("endpoint", "", "Rho Cloud endpoint (or RHO_CLOUD_URL)")
+	command.Flags().String("label", "", "Name for this Rho device")
+	return command
+}
+
+func newCloudStatusCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "status", Short: "Show Rho Cloud connection status",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			client, cfg, err := cloud.LoadClient()
+			if err != nil || !client.Enabled() {
+				cmd.Println(auditTint("Rho Cloud is not connected.", textMuted))
+				return nil
+			}
+			cmd.Println(auditTint("Rho Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
+			return nil
+		},
+	}
+}
+
+func newCloudContextCmd() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "context",
+		Short: "Sync repository context to Rho Cloud",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			client, cfg, err := cloud.LoadClient()
+			if err != nil || !client.Enabled() {
+				return fmt.Errorf("rho cloud is not connected")
+			}
+			detected, detectErr := detectGitContext(cmd.Context())
+			repository, _ := cmd.Flags().GetString("repository")
+			if repository == "" {
+				repository = detected.Repository
+			}
+			if repository == "" {
+				return detectErr
+			}
+			contextProvider, _ := cmd.Flags().GetString("provider")
+			externalID, _ := cmd.Flags().GetString("external-id")
+			branch, _ := cmd.Flags().GetString("branch")
+			commit, _ := cmd.Flags().GetString("commit")
+			ciRunID, _ := cmd.Flags().GetString("ci-run")
+			ciStatus, _ := cmd.Flags().GetString("ci-status")
+			ciWorkflow, _ := cmd.Flags().GetString("ci-workflow")
+			deploymentID, _ := cmd.Flags().GetString("deployment")
+			deploymentStatus, _ := cmd.Flags().GetString("deployment-status")
+			deploymentEnvironment, _ := cmd.Flags().GetString("deployment-environment")
+			if contextProvider == "" {
+				contextProvider = detected.Provider
+			}
+			if contextProvider == "" {
+				contextProvider = "git"
+			}
+			if branch == "" {
+				branch = detected.Branch
+			}
+			if commit == "" {
+				commit = detected.Commit
+			}
+			if externalID == "" {
+				externalID = repository
+			}
+			event := cloud.DeliveryContext{ProjectID: cfg.ProjectID, Branch: branch, CommitSHA: commit}
+			event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = contextProvider, externalID, repository
+			if ciRunID == "" {
+				ciRunID, ciWorkflow = os.Getenv("GITHUB_RUN_ID"), firstValue(ciWorkflow, os.Getenv("GITHUB_WORKFLOW"))
+			}
+			if ciRunID != "" {
+				if ciStatus == "" {
+					ciStatus = "running"
+				}
+				ciProvider := contextProvider
+				if os.Getenv("GITHUB_RUN_ID") != "" && ciProvider == "git" {
+					ciProvider = "github"
+				}
+				event.CIRun = &cloud.CIRunContext{Provider: ciProvider, ExternalID: ciRunID, Workflow: ciWorkflow, Status: ciStatus}
+			}
+			if deploymentID != "" {
+				if deploymentStatus == "" {
+					deploymentStatus = "running"
+				}
+				if deploymentEnvironment == "" {
+					return fmt.Errorf("deployment-environment is required with --deployment")
+				}
+				event.Deployment = &cloud.DeploymentContext{Provider: contextProvider, ExternalID: deploymentID, Environment: deploymentEnvironment, Status: deploymentStatus}
+			}
+			client.RecordDeliveryContext(cmd.Context(), event)
+			cmd.Println(auditTint("Repository context queued for Rho Cloud.", doneGreen))
+			return nil
+		},
+	}
+	command.Flags().String("repository", "", "Repository name (auto-detected from Git when omitted)")
+	command.Flags().String("provider", "", "Repository provider (auto-detected when omitted)")
+	command.Flags().String("external-id", "", "Provider repository identifier (defaults to repository)")
+	command.Flags().String("branch", "", "Current branch (auto-detected when omitted)")
+	command.Flags().String("commit", "", "Current commit SHA (auto-detected when omitted)")
+	command.Flags().String("ci-run", "", "CI run identifier (defaults to GITHUB_RUN_ID)")
+	command.Flags().String("ci-status", "", "CI status: queued, running, succeeded, failed, or cancelled")
+	command.Flags().String("ci-workflow", "", "CI workflow name (defaults to GITHUB_WORKFLOW)")
+	command.Flags().String("deployment", "", "Deployment identifier")
+	command.Flags().String("deployment-status", "", "Deployment status")
+	command.Flags().String("deployment-environment", "", "Deployment environment, for example production")
+	return command
 }
 
 func firstValue(values ...string) string {
@@ -197,23 +225,6 @@ func firstValue(values ...string) string {
 }
 
 func init() {
-	cloudLoginCmd.Flags().String("endpoint", "", "Rho Cloud endpoint (or RHO_CLOUD_URL)")
-	cloudLoginCmd.Flags().String("label", "", "Name for this Rho device")
-	cloudConnectCmd.Flags().String("endpoint", "", "Rho Cloud endpoint")
-	cloudConnectCmd.Flags().String("device-id", "", "Rho Cloud device ID")
-	cloudConnectCmd.Flags().String("project-id", "", "Rho Cloud project ID")
-	cloudConnectCmd.Flags().String("token", "", "Rho Cloud device token")
-	cloudContextCmd.Flags().String("repository", "", "Repository name (auto-detected from Git when omitted)")
-	cloudContextCmd.Flags().String("provider", "", "Repository provider (auto-detected when omitted)")
-	cloudContextCmd.Flags().String("external-id", "", "Provider repository identifier (defaults to repository)")
-	cloudContextCmd.Flags().String("branch", "", "Current branch (auto-detected when omitted)")
-	cloudContextCmd.Flags().String("commit", "", "Current commit SHA (auto-detected when omitted)")
-	cloudContextCmd.Flags().String("ci-run", "", "CI run identifier (defaults to GITHUB_RUN_ID)")
-	cloudContextCmd.Flags().String("ci-status", "", "CI status: queued, running, succeeded, failed, or cancelled")
-	cloudContextCmd.Flags().String("ci-workflow", "", "CI workflow name (defaults to GITHUB_WORKFLOW)")
-	cloudContextCmd.Flags().String("deployment", "", "Deployment identifier")
-	cloudContextCmd.Flags().String("deployment-status", "", "Deployment status")
-	cloudContextCmd.Flags().String("deployment-environment", "", "Deployment environment, for example production")
-	cloudCmd.AddCommand(cloudLoginCmd, cloudConnectCmd, cloudStatusCmd, cloudContextCmd)
+	cloudCmd.AddCommand(newCloudLoginCmd(), newCloudConnectCmd(), newCloudStatusCmd(), newCloudContextCmd())
 	rootCmd.AddCommand(cloudCmd)
 }
