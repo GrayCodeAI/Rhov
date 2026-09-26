@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -132,10 +133,16 @@ func newCloudStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "status", Short: "Show Rho Cloud connection status",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, cfg, err := cloud.LoadClient()
-			if err != nil || !client.Enabled() {
-				cmd.Println(auditTint("Rho Cloud is not connected.", textMuted))
+			client, cfg, err := loadCloudClient()
+			if errors.Is(err, cloud.ErrNotConnected) {
+				cmd.Println(auditTint("GrayCode Cloud is not connected. Run `rho cloud login` to connect.", textMuted))
 				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if !client.Enabled() {
+				return cloud.ErrNotConnected
 			}
 			cmd.Println(auditTint("Rho Cloud connected: ", doneGreen) + auditTint(cfg.Endpoint, textPrimary) + auditTint(fmt.Sprintf(" (device %s, project %s)", cfg.DeviceID, cfg.ProjectID), textMuted))
 			return nil
@@ -149,8 +156,8 @@ func newCloudContextCmd() *cobra.Command {
 		Short: "Sync repository context to Rho Cloud",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, cfg, err := loadCloudClient()
-			if err != nil || !client.Enabled() {
-				return fmt.Errorf("rho cloud is not connected")
+			if err != nil {
+				return err
 			}
 			detected, detectErr := detectGitContext(cmd.Context())
 			repository, _ := cmd.Flags().GetString("repository")

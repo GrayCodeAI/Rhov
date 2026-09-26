@@ -6,10 +6,13 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
 
+	"github.com/GrayCodeAI/rho/internal/executiongraph"
 	cloud "github.com/GrayCodeAI/rho/internal/platform/cloud"
 	"github.com/spf13/cobra"
 )
@@ -151,5 +154,51 @@ func TestCloudContextRejectsUnknownStatusFlags(t *testing.T) {
 	}
 	if hits.Load() != 0 {
 		t.Fatalf("server received %d requests for invalid flags", hits.Load())
+	}
+}
+
+func TestCloudStatusNotConnected(t *testing.T) {
+	useCloudClient(t, nil, cloud.DeviceConfig{}, cloud.ErrNotConnected)
+	out, err := runCloudCommand(t, newCloudStatusCmd())
+	if err != nil || !strings.Contains(out, "not connected") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}
+
+func TestCloudStatusReportsBrokenConnection(t *testing.T) {
+	broken := errors.New("read GrayCode Cloud device token from the credential store: security: exit status 51")
+	useCloudClient(t, nil, cloud.DeviceConfig{}, broken)
+	out, err := runCloudCommand(t, newCloudStatusCmd())
+	if !errors.Is(err, broken) {
+		t.Fatalf("error = %v, want the load failure", err)
+	}
+	if strings.Contains(out, "not connected") {
+		t.Fatalf("a broken connection was reported as not connected: %q", out)
+	}
+}
+
+func TestCloudStatusConnected(t *testing.T) {
+	cfg := cloud.DeviceConfig{Endpoint: cloud.DefaultEndpoint, DeviceID: "device_0123456789", ProjectID: "project_0123456789"}
+	useCloudClient(t, cloud.New(cloud.Config{Endpoint: cfg.Endpoint, DeviceToken: "hwc_test"}), cfg, nil)
+	out, err := runCloudCommand(t, newCloudStatusCmd())
+	if err != nil || !strings.Contains(out, cloud.DefaultEndpoint) || !strings.Contains(out, "project_0123456789") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}
+
+func TestExplicitCloudCommandsReportLoadErrors(t *testing.T) {
+	noGitRemote(t)
+	broken := errors.New("GrayCode Cloud configuration is incomplete")
+	useCloudClient(t, nil, cloud.DeviceConfig{}, broken)
+	if _, err := runCloudCommand(t, newCloudContextCmd(), "--repository", "GrayCodeAI/rho"); !errors.Is(err, broken) {
+		t.Fatalf("context error = %v, want the load failure", err)
+	}
+	missionDir := t.TempDir()
+	graph := `{"schema_version":"` + executiongraph.SchemaVersion + `","generated_at":"2026-09-27T12:00:00Z","scope":{},"nodes":[],"edges":[],"events":[]}`
+	if err := os.WriteFile(filepath.Join(missionDir, "mission-graph.json"), []byte(graph), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCloudCommand(t, newCloudGraphCmd(), "sync", "--mission-dir", missionDir); !errors.Is(err, broken) {
+		t.Fatalf("graph sync error = %v, want the load failure", err)
 	}
 }

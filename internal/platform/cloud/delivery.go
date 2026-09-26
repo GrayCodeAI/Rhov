@@ -23,7 +23,7 @@ func (c *Client) SendDeliveryContext(ctx context.Context, event DeliveryContext)
 		return err
 	}
 	if c.token == "" {
-		return fmt.Errorf("GrayCode Cloud is not connected; run `rho cloud login`")
+		return ErrNotConnected
 	}
 	event = event.normalized()
 	if err := event.Validate(); err != nil {

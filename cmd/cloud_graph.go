@@ -51,9 +51,9 @@ execution never depends on cloud synchronization.`,
 			if err != nil {
 				return err
 			}
-			client, cfg, err := cloud.LoadClient()
-			if err != nil || !client.Enabled() {
-				return fmt.Errorf("rho cloud is not connected")
+			client, cfg, err := loadCloudClient()
+			if err != nil {
+				return err
 			}
 			prepared, err := cloud.PrepareGraph(export)
 			if err != nil {

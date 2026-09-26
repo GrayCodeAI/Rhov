@@ -150,8 +150,11 @@ func sha256Hex(value []byte) string {
 // command, so errors are returned rather than discarded.
 func (c *Client) SyncGraph(ctx context.Context, request GraphSyncRequest) (GraphSyncResult, error) {
 	var result GraphSyncResult
-	if !c.Enabled() {
-		return result, fmt.Errorf("rho cloud is not connected")
+	if err := c.checkEndpoint(); err != nil {
+		return result, err
+	}
+	if c.token == "" {
+		return result, ErrNotConnected
 	}
 	body, err := json.Marshal(request)
 	if err != nil {
