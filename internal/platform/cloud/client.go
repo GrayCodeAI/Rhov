@@ -8,8 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf16"
 )
 
 type Config struct {
@@ -70,6 +73,23 @@ type DeploymentContext struct {
 	Status      string `json:"status"`
 }
 
+// Bounds of POST /v1/auth/device/start (strict schema; lengths are counted in
+// UTF-16 code units, as the Worker's zod schema does).
+const (
+	maxDeviceLabel     = 100
+	maxDevicePlatform  = 50
+	maxGraycodeVersion = 50
+	maxUserCode        = 32
+)
+
+// deviceStartRequest is the exact body of POST /v1/auth/device/start. The
+// schema is strict, so no other field may be sent.
+type deviceStartRequest struct {
+	Label           string `json:"label"`
+	Platform        string `json:"platform"`
+	GraycodeVersion string `json:"graycodeVersion"`
+}
+
 type DeviceLoginStart struct {
 	DeviceCode      string `json:"deviceCode"`
 	UserCode        string `json:"userCode"`
@@ -101,6 +121,66 @@ type DeviceLoginPoll struct {
 	DeviceID    string `json:"deviceId"`
 	ProjectID   string `json:"projectId"`
 	PrincipalID string `json:"principalId"`
+}
+
+// ApprovalURL returns the browser URL for approving this login: the
+// verification URI with the user code as the "code" query parameter. The
+// URI must satisfy the same TLS policy as the API endpoint, so a server
+// response can never make rho open a non-web or plaintext remote URL.
+func (s DeviceLoginStart) ApprovalURL() (string, error) {
+	u, err := url.Parse(s.VerificationURI)
+	if err != nil || u.Opaque != "" || u.Hostname() == "" || u.User != nil {
+		return "", fmt.Errorf("GrayCode Cloud returned an invalid verification URI")
+	}
+	if err := requireSecureTransport(u); err != nil {
+		return "", fmt.Errorf("GrayCode Cloud returned an unsafe verification URI: %w", err)
+	}
+	query := u.Query()
+	query.Set("code", s.UserCode)
+	u.RawQuery = query.Encode()
+	u.Fragment = ""
+	return u.String(), nil
+}
+
+func (s DeviceLoginStart) validate() error {
+	if s.DeviceCode == "" || s.VerificationURI == "" {
+		return fmt.Errorf("GrayCode Cloud returned an incomplete device login response")
+	}
+	if s.UserCode == "" || len(s.UserCode) > maxUserCode ||
+		strings.ContainsFunc(s.UserCode, func(r rune) bool { return !strings.ContainsRune(userCodeAlphabet, r) }) {
+		return fmt.Errorf("GrayCode Cloud returned an invalid device login user code")
+	}
+	_, err := s.ApprovalURL()
+	return err
+}
+
+const userCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"
+
+// boundedField prepares a free-text request field for a strict length check:
+// non-printable characters are dropped, surrounding space is trimmed, the
+// value is cut to at most maxUnits UTF-16 code units, and fallback is used
+// when nothing remains.
+func boundedField(value string, maxUnits int, fallback string) string {
+	var b strings.Builder
+	units := 0
+	for _, r := range strings.TrimSpace(value) {
+		if !unicode.IsPrint(r) {
+			continue
+		}
+		width := utf16.RuneLen(r)
+		if width < 0 {
+			continue
+		}
+		if units+width > maxUnits {
+			break
+		}
+		b.WriteRune(r)
+		units += width
+	}
+	if out := strings.TrimSpace(b.String()); out != "" {
+		return out
+	}
+	return fallback
 }
 
 type Client struct {
@@ -164,9 +244,13 @@ func (c *Client) newJSONRequest(ctx context.Context, path string, body []byte, a
 	return req, nil
 }
 
-func (c *Client) startDeviceLogin(ctx context.Context, label, platform, rhoVersion string) (DeviceLoginStart, error) {
+func (c *Client) startDeviceLogin(ctx context.Context, label, platform, version string) (DeviceLoginStart, error) {
 	var result DeviceLoginStart
-	body, err := json.Marshal(map[string]string{"label": label, "platform": platform, "rhoVersion": rhoVersion})
+	body, err := json.Marshal(deviceStartRequest{
+		Label:           boundedField(label, maxDeviceLabel, "rho"),
+		Platform:        boundedField(platform, maxDevicePlatform, "unknown"),
+		GraycodeVersion: boundedField(version, maxGraycodeVersion, "dev"),
+	})
 	if err != nil {
 		return result, err
 	}
@@ -182,7 +266,10 @@ func (c *Client) startDeviceLogin(ctx context.Context, label, platform, rhoVersi
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return result, readAPIError("device login start", resp)
 	}
-	return result, decodeResponse("device login start", resp, &result)
+	if err := decodeResponse("device login start", resp, &result); err != nil {
+		return result, err
+	}
+	return result, result.validate()
 }
 
 func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (DeviceLoginPoll, error) {
@@ -211,7 +298,13 @@ func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (Device
 		return result, err
 	}
 	switch result.Status {
-	case DeviceLoginPending, DeviceLoginApproved:
+	case DeviceLoginPending:
+		return result, nil
+	case DeviceLoginApproved:
+		if result.Token == "" || result.DeviceID == "" || result.ProjectID == "" ||
+			strings.ContainsFunc(result.Token, func(r rune) bool { return !unicode.IsGraphic(r) || unicode.IsSpace(r) }) {
+			return result, fmt.Errorf("GrayCode Cloud returned an incomplete device authorization")
+		}
 		return result, nil
 	case DeviceLoginExpired:
 		return result, ErrDeviceLoginExpired
@@ -222,11 +315,14 @@ func (c *Client) pollDeviceLogin(ctx context.Context, deviceCode string) (Device
 	}
 }
 
-func (c *Client) StartDeviceLogin(ctx context.Context, label, platform, rhoVersion string) (DeviceLoginStart, error) {
+// StartDeviceLogin begins a browser device login. version is rho's own version
+// string, sent as the contract's graycodeVersion field; label, platform and
+// version are cut to the contract's bounds.
+func (c *Client) StartDeviceLogin(ctx context.Context, label, platform, version string) (DeviceLoginStart, error) {
 	if err := c.checkEndpoint(); err != nil {
 		return DeviceLoginStart{}, err
 	}
-	return c.startDeviceLogin(ctx, label, platform, rhoVersion)
+	return c.startDeviceLogin(ctx, label, platform, version)
 }
 
 func (c *Client) PollDeviceLogin(ctx context.Context, deviceCode string) (DeviceLoginPoll, error) {

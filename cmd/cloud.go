@@ -75,12 +75,16 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 			if err != nil {
 				return err
 			}
+			approvalURL, err := start.ApprovalURL()
+			if err != nil {
+				return err
+			}
 			cmd.Printf("%s\n", auditTint("Open ", textPrimary)+auditTint(start.VerificationURI, infoSky)+auditTint(" and enter code ", textPrimary)+auditTint(start.UserCode, rhoColor))
-			if err := openBrowser(start.VerificationURI + "?code=" + start.UserCode); err != nil {
+			if err := openBrowser(approvalURL); err != nil {
 				cmd.Printf("%s\n", auditTint(fmt.Sprintf("Could not open the browser automatically: %v", err), textMuted))
 			}
 			interval := time.Duration(start.Interval) * time.Second
-			if interval < time.Second {
+			if interval < time.Second || interval > 30*time.Second {
 				interval = 5 * time.Second
 			}
 			prog := NewCLIProgress("Cloud", []string{"Waiting for browser approval"})
@@ -101,12 +105,8 @@ http:// on localhost, 127.0.0.1 and [::1].`,
 					}
 					continue
 				}
-				// PollDeviceLogin reports expired, consumed and unknown states
-				// as errors, so the only remaining state is approved.
-				if poll.Token == "" || poll.DeviceID == "" || poll.ProjectID == "" {
-					prog.FailStep(0, "incomplete device authorization")
-					return fmt.Errorf("rho cloud returned an incomplete device authorization")
-				}
+				// PollDeviceLogin reports expired, consumed, unknown and
+				// incomplete states as errors, so this is a complete approval.
 				if err := cloud.SaveDeviceConfig(cloud.DeviceConfig{Endpoint: endpoint, DeviceID: poll.DeviceID, ProjectID: poll.ProjectID}, poll.Token); err != nil {
 					prog.FailStep(0, err.Error())
 					return err

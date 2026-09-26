@@ -59,16 +59,26 @@ func NormalizeEndpoint(raw string) (string, error) {
 	if u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
 		return "", errors.New("GrayCode Cloud endpoint must not contain a query or fragment")
 	}
-	switch u.Scheme {
-	case "https":
-	case "http":
-		if !isLoopbackHost(u.Hostname()) {
-			return "", fmt.Errorf("%w: got http://%s", ErrInsecureEndpoint, u.Host)
-		}
-	default:
-		return "", fmt.Errorf("%w: got scheme %q", ErrInsecureEndpoint, u.Scheme)
+	if err := requireSecureTransport(u); err != nil {
+		return "", err
 	}
 	return strings.TrimRight(u.String(), "/"), nil
+}
+
+// requireSecureTransport enforces the TLS policy on a parsed absolute URL:
+// https://, or http:// to a loopback host.
+func requireSecureTransport(u *url.URL) error {
+	switch u.Scheme {
+	case "https":
+		return nil
+	case "http":
+		if isLoopbackHost(u.Hostname()) {
+			return nil
+		}
+		return fmt.Errorf("%w: got http://%s", ErrInsecureEndpoint, u.Host)
+	default:
+		return fmt.Errorf("%w: got scheme %q", ErrInsecureEndpoint, u.Scheme)
+	}
 }
 
 // isLoopbackHost reports whether host is one of the loopback names for which
