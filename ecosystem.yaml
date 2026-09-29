@@ -57,3 +57,29 @@ repositories:
     language: go
     module: github.com/graycodeai/across
     workspace: false
+
+  - directory: radius
+    github_repo: radius
+    product_name: Radius
+    kind: product
+    language: typescript
+    # Not a Go module: radius is a pnpm workspace, so it takes no part in
+    # rho's go.work. `workspace: true` here would make CI try to check it out
+    # as a Go sibling and fail.
+    workspace: false
+
+  - directory: trace
+    github_repo: trace
+    product_name: Trace
+    kind: product
+    language: go
+    module: github.com/GrayCodeAI/trace
+    workspace: false
+
+  - directory: trail
+    github_repo: trail
+    product_name: Trail
+    kind: product
+    language: go
+    module: github.com/graycodeai/trail
+    workspace: false
