@@ -62,3 +62,9 @@ rho-sec105b.log
 # `gitnexus analyze` regenerates a root CLAUDE.md that would shadow AGENTS.md
 # for tools that prefer it; keep the regenerated copy out of git.
 /CLAUDE.md
+
+# Local module overlay for building against a sibling checkout (e.g. flux).
+# go.local.mod carries a `replace` directive pointing at ../<repo>; committing
+# it would break CI, which builds against the pinned published module.
+/go.local.mod
+/go.local.sum
