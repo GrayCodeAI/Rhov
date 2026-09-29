@@ -1,42 +1,60 @@
 [Unit]
-Description=Rho Daemon (code intelligence server)
-Documentation=https://docs.rho.ai
+Description=Rho daemon (local HTTP API for the Rho coding agent)
+Documentation=https://github.com/GrayCodeAI/rho/blob/main/docs/troubleshooting-guide.md#systemd-issues
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-# Replace with your installed binary path. When installed via the package
-# manager, the binary is typically at /usr/local/bin/rho.
-ExecStart=/usr/local/bin/rho daemon start \
-  --host 127.0.0.1 \
-  --port 4590 \
-  --api-key ${RHO_DAEMON_API_KEY} \
-  --log-level INFO
-# For production, bind to 0.0.0.0 behind a TLS-terminating reverse proxy:
-#   ExecStart=/usr/local/bin/rho daemon start --host 0.0.0.0 --port 4590 --api-key ${RHO_DAEMON_API_KEY} --tls-cert /etc/rho/tls.crt --tls-key /etc/rho/tls.key
+# Runs as a dedicated system user. Create it once:
+#   sudo useradd --system --home-dir /var/lib/rho --shell /usr/sbin/nologin rho
+User=rho
+Group=rho
+
+# All rho data lives in directories systemd creates and chowns to User=:
+#   /var/lib/rho/config  settings (RHO_CONFIG_DIR)
+#   /var/lib/rho/state   sessions, security log, run/daemon.log (RHO_STATE_DIR)
+#   /var/cache/rho       disposable cache (RHO_CACHE_DIR)
+# HOME points at /var/lib/rho so anything else resolved from the home
+# directory (for example Flux's provider config under ~/.config/flux) lands
+# there too. Home directories stay hidden by ProtectHome=true below.
+StateDirectory=rho
+StateDirectoryMode=0750
+CacheDirectory=rho
+WorkingDirectory=/var/lib/rho
+Environment=HOME=/var/lib/rho
+Environment=RHO_CONFIG_DIR=/var/lib/rho/config
+Environment=RHO_STATE_DIR=/var/lib/rho/state
+Environment=RHO_CACHE_DIR=/var/cache/rho
+Environment=RHO_ENABLE_TELEMETRY=0
+Environment=RHO_DAEMON_MAX_CONCURRENT=4
+
+# Optional, root-owned, mode 0600: RHO_DAEMON_API_KEY=<key> and any other
+# settings. The daemon reads the key from its environment, so it never appears
+# on the command line (visible in `ps`). Without a key the daemon generates one.
+EnvironmentFile=-/etc/rho/daemon.env
+
+# Point this at your rho binary (install.sh installs to ~/.rho/bin/rho; copy
+# that file to /usr/local/bin/rho for a system service).
+ExecStart=/usr/local/bin/rho daemon start --host 127.0.0.1 --port 4590 --log-level INFO
+# To serve other hosts, prefer a TLS-terminating reverse proxy, or run
+#   rho daemon start --host 0.0.0.0 --port 4590 --tls-cert /etc/rho/tls.crt --tls-key /etc/rho/tls.key
 Restart=always
 RestartSec=5
 TimeoutStopSec=10
 
-# Security hardening (process-level confinement for the daemon).
+# Hardening. The file system is read-only except the directories above and a
+# private /tmp. Grant access to project checkouts the agent may edit with, e.g.:
+#   ReadWritePaths=/srv/projects
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=%h/.rho/state /tmp
-# Read-only access to config and tool directories.
-ReadOnlyPaths=%h/.rho
 
 # Resource limits.
 LimitNOFILE=65536
 MemoryMax=4G
 CPUQuota=200%
-
-# Environment.
-Environment=RHO_DAEMON_API_KEY=
-Environment=RHO_ENABLE_TELEMETRY=0
-Environment=RHO_DAEMON_MAX_CONCURRENT=4
 
 [Install]
 WantedBy=multi-user.target

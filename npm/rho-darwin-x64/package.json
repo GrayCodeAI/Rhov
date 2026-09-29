@@ -1,6 +1,7 @@
 {
     "version": "0.0.0-development",
-    "license": "Apache-2.0",
+    "private": true,
+    "license": "MIT",
     "files": [
         "bin/",
         "THIRD_PARTY_NOTICES.md"

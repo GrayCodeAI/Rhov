@@ -43,20 +43,36 @@ rho is an AI-powered coding agent that lives in your terminal. It reads your cod
 
 Follow [GrayCode](https://github.com/GrayCodeAI) for progress. When Rho is ready to try, we will announce it on [graycodeai.com](https://graycodeai.com/changelog).
 
-## Install (60 seconds)
+## Install
 
-Pick one — all install the same `rho` binary (versioned into `~/.rho/bin`, symlinked as `rho`):
+Prebuilt installs are **available from v0.3.0**, the first release published
+under the `rho` name. Until v0.3.0 appears on the
+[releases page](https://github.com/GrayCodeAI/rho/releases), build from source
+(see [Quick Start](#quick-start-contributors--from-source)). The older
+`v0.1.0`–`v0.2.0` tags predate the rename: they ship `hawk_*` archives under
+the old module path and cannot be installed as `rho`.
+
+From v0.3.0:
 
 ```bash
-# 1. Script (any shell, verifies checksum; cosign signature when available)
-curl -fsSL https://raw.githubusercontent.com/GrayCodeAI/rho/main/install.sh | sh
+# Script: installs ~/.rho/bin/rho-<version> and links it as ~/.rho/bin/rho.
+# Always checks the archive's SHA-256 against checksums.txt; also verifies the
+# cosign signature of checksums.txt when cosign is installed (it says so when
+# it is not). Set RHO_REQUIRE_COSIGN=1 to refuse installing without cosign.
+curl -fsSL https://raw.githubusercontent.com/GrayCodeAI/rho/v0.3.0/install.sh | sh
 
-# 2. Homebrew (macOS / Linuxbrew) — after the next tagged release
-brew install graycodeai/tap/rho
+# Pin a version or choose the install prefix (see: sh install.sh --help)
+curl -fsSL https://raw.githubusercontent.com/GrayCodeAI/rho/v0.3.0/install.sh | sh -s -- --version 0.3.0 --prefix "$HOME/.rho"
 
-# 3. npm (wraps the same release binaries)
-npm install -g @graycodeai/rho
+# Go toolchain (Go 1.26+): builds the tagged module from source
+go install github.com/GrayCodeAI/rho/cmd/rho@latest
 ```
+
+Each release carries `rho_<version>_<os>_<arch>` archives for
+linux/darwin/windows on amd64/arm64, `checksums.txt`, its cosign signature
+bundle `checksums.txt.sigstore.json`, and SPDX SBOMs; the release notes show how
+to verify them by hand. Homebrew and npm packages are **not available**: there
+is no `graycodeai/tap` tap and nothing is published under `@graycodeai` on npm.
 
 If `~/.rho/bin` is not on your `PATH`, add it to your shell profile.
 
@@ -87,10 +103,12 @@ checklist: credentials → model → catalog → ecosystem.
 See [docs/SECURITY-DEVELOPER.md](docs/SECURITY-DEVELOPER.md) for the credential model.
 Do not put API keys in shell env or `.env` for rho.
 
-Optional for contributors:
+Optional: install the current `main` with the Go toolchain. Use `@main` until
+v0.3.0 is tagged: `@latest` still resolves to the hawk-era v0.2.0, which does not
+contain `cmd/rho`.
 
 ```bash
-go install github.com/GrayCodeAI/rho/cmd/rho@latest
+go install github.com/GrayCodeAI/rho/cmd/rho@main
 ```
 
 ## Features
@@ -522,7 +540,7 @@ Quick start:
 3. Run `make ci` locally
 4. Open a pull request
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages — release-please uses them for versioning.
+Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. Releases are cut by hand from a release PR; see [docs/RELEASING.md](docs/RELEASING.md).
 
 ## License
 

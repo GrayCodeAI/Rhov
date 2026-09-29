@@ -1,28 +1,24 @@
-# Canonical GrayCodeAI goreleaser config for Go binary repos.
-# Source of truth: .shared-templates/.goreleaser.yml.tmpl
+# GoReleaser config for rho (the terminal AI coding agent).
+# Derived from .shared-templates/.goreleaser.yml.tmpl; rho-specific deltas are
+# commented inline. Run by .github/workflows/release.yml on a v* tag; see
+# docs/RELEASING.md for the release process.
 #
-# Placeholders rendered per repo:
-#   rho      — short repo name (e.g. rho, harrier, swift)
-#   ./     — main package path (e.g. ./ or ./cmd/harrier)
-#   AI coding agent — reads, writes, and runs code in your terminal  — short single-line description for brew/nfpms
-#   main   — Go package path holding Version vars
-#                      (e.g. main or github.com/GrayCodeAI/rho/internal/version)
-#
-# Repos with PRO/special features (e.g. swift's macOS notarization, shrike's
-# nfpms) extend this template with extra sections instead of replacing it.
+# Local validation (no publishing, no signing):
+#   goreleaser check
+#   goreleaser release --snapshot --clean --skip=publish,sign
 
 version: 2
 project_name: rho
 
 # ---------------------------------------------------------------------------
-# Pre-build hooks — keep go.mod tidy and verified.
+# Pre-build hooks — verify module checksums before building anything.
 # ---------------------------------------------------------------------------
 before:
   hooks:
     - go mod verify
 
 # ---------------------------------------------------------------------------
-# Builds — three OS × two arch (no Windows/arm64).
+# Builds — linux/darwin/windows × amd64/arm64 (six targets).
 # Reproducible: `mod_timestamp` ties the binary timestamp to the commit time
 # rather than the build host's clock.
 # ---------------------------------------------------------------------------
@@ -32,6 +28,10 @@ builds:
     binary: rho
     env:
       - CGO_ENABLED=0
+      # Build strictly from go.mod/go.sum, never from a developer go.work.
+      - GOWORK=off
+    flags:
+      - -trimpath
     goos:
       - linux
       - darwin
@@ -39,9 +39,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
     ldflags:
       - -s -w
       - -X main.Version={{.Version}}
@@ -50,7 +47,9 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 # ---------------------------------------------------------------------------
-# Archives — tar.gz on Unix, zip on Windows. Includes README + LICENSE.
+# Archives — tar.gz on Unix, zip on Windows. Names are
+# rho_<version>_<os>_<arch>.<ext>; install.sh and .github/actions/rho depend
+# on this exact shape.
 # ---------------------------------------------------------------------------
 archives:
   - id: default
@@ -73,11 +72,42 @@ source:
   name_template: "{{ .ProjectName }}_{{ .Version }}_source"
 
 # ---------------------------------------------------------------------------
-# Checksums — SHA-256, single file per release.
+# SBOMs — one SPDX document per archive, generated with syft. The release
+# workflow installs syft before GoReleaser runs.
+# ---------------------------------------------------------------------------
+sboms:
+  - artifacts: archive
+    documents:
+      - "${artifact}.spdx.sbom.json"
+
+# ---------------------------------------------------------------------------
+# Checksums — SHA-256 over every uploaded artifact, single file per release.
 # ---------------------------------------------------------------------------
 checksum:
   name_template: checksums.txt
   algorithm: sha256
+
+# ---------------------------------------------------------------------------
+# Signing — cosign keyless (Sigstore) signature over checksums.txt, using the
+# release workflow's GitHub OIDC identity. The output is a self-contained
+# Sigstore bundle (certificate + signature + transparency-log proof) that is
+# uploaded with the release as checksums.txt.sigstore.json. Verify with:
+#
+#   cosign verify-blob --bundle checksums.txt.sigstore.json \
+#     --certificate-identity "https://github.com/GrayCodeAI/rho/.github/workflows/release.yml@refs/tags/vX.Y.Z" \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+#     checksums.txt
+# ---------------------------------------------------------------------------
+signs:
+  - id: cosign-checksum
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
 
 # ---------------------------------------------------------------------------
 # Snapshot — unreleased dev builds get a clear synthetic version.
@@ -86,7 +116,9 @@ snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
 # ---------------------------------------------------------------------------
-# Changelog — Conventional-Commit grouped, hidden noise.
+# Changelog — used for snapshots only. Tagged releases take their notes from
+# the CHANGELOG.md section for the version (release.yml passes
+# --release-notes), so the published notes match the curated changelog.
 # ---------------------------------------------------------------------------
 changelog:
   sort: asc
@@ -119,40 +151,14 @@ changelog:
     - title: "Other"
       order: 999
 
-# ---------------------------------------------------------------------------
-# Homebrew — publishes a formula to GrayCodeAI/homebrew-tap so users can
-# `brew install graycodeai/tap/rho`. Requires HOMEBREW_TAP_TOKEN or
-# TAP_GITHUB_TOKEN in the release workflow (both already wired there).
-# ---------------------------------------------------------------------------
-brews:
-  - repository:
-      owner: GrayCodeAI
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    homepage: "https://github.com/GrayCodeAI/rho"
-    description: "AI coding agent — reads, writes, and runs code in your terminal"
-    license: "MIT"
-    install: |
-      bin.install "rho"
-    test: |
-      system "#{bin}/rho", "--version"
+# Homebrew and npm are intentionally not configured: neither the
+# GrayCodeAI/homebrew-tap repository nor the @graycodeai npm packages exist.
+# See docs/RELEASING.md ("Distribution channels") before adding either.
 
 # ---------------------------------------------------------------------------
-# Release — auto-detect prereleases (rc/beta tags). Created on the repo
-# itself (not a separate release repo).
+# Release — GitHub release on this repository; rc/beta tags are marked as
+# prereleases automatically.
 # ---------------------------------------------------------------------------
-sboms:
-  - artifacts: archive
-    documents:
-      - "${artifact}.spdx.sbom.json"
-
-# ---------------------------------------------------------------------------
-# Signing — cosign keyless signing of checksums is performed in the
-# release workflow (post-goreleaser) so the OIDC token from GitHub Actions
-# is available. The checksums.txt artifact is signed there.
-# ---------------------------------------------------------------------------
-
 release:
   draft: false
   prerelease: auto
@@ -160,7 +166,20 @@ release:
   header: |
     ## rho v{{ .Version }}
 
-    AI coding agent — reads, writes, and runs code in your terminal
+    Rho is the terminal AI coding agent from GrayCode (pre-1.0).
   footer: |
 
-    **Full changelog:** https://github.com/GrayCodeAI/rho/compare/{{ .PreviousTag }}...{{ .Tag }}
+    ### Verify this release
+
+    `checksums.txt` lists the SHA-256 of every asset and is signed with
+    cosign keyless signing by this repository's release workflow:
+
+    ```sh
+    cosign verify-blob --bundle checksums.txt.sigstore.json \
+      --certificate-identity "https://github.com/GrayCodeAI/rho/.github/workflows/release.yml@refs/tags/{{ .Tag }}" \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      checksums.txt
+    sha256sum --ignore-missing -c checksums.txt
+    ```
+
+    {{ if .PreviousTag }}**Full changelog:** https://github.com/GrayCodeAI/rho/compare/{{ .PreviousTag }}...{{ .Tag }}{{ end }}

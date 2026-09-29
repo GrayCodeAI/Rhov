@@ -1,8 +1,9 @@
 {
     "name": "@graycodeai/rho",
     "version": "0.0.0-development",
+    "private": true,
     "description": "Bring Rho into your terminal",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "os": [
         "darwin",
         "linux",

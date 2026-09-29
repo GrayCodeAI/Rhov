@@ -61,8 +61,9 @@ build: ## Build the binary into bin/$(NAME).
 install: ## Install the binary to $GOBIN.
 	go install -ldflags "$(LDFLAGS)" $(MAIN_PKG)
 
-release: ## Cut a release via goreleaser (requires a clean tree + tag).
-	goreleaser release --clean
+release: ## Refuse local publishing: releases are published by CI on a v* tag.
+	@echo "Releases are CI-only: merge the release PR (VERSION + CHANGELOG), then push tag v$(VERSION)."
+	@exit 1
 
 # ---------------------------------------------------------------------------
 # Tests.
