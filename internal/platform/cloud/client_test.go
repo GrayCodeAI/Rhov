@@ -3,9 +3,11 @@ package cloud
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestRecordUsageSendsAggregateEvent(t *testing.T) {
@@ -19,17 +21,21 @@ func TestRecordUsageSendsAggregateEvent(t *testing.T) {
 	}))
 	defer s.Close()
 	c := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"})
-	c.RecordUsage(context.Background(), UsageEvent{EventID: "event_0123456789", DeviceID: "device_0123456789", ProjectID: "project_0123456789", Capability: "rho", OccurredAt: "2026-07-10T00:00:00Z"})
+	if err := c.RecordUsage(context.Background(), UsageEvent{EventID: "event_0123456789", DeviceID: "device_0123456789", ProjectID: "project_0123456789", Capability: "rho", OccurredAt: "2026-07-10T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
 	if gotAuth != "Bearer hwc_test" {
 		t.Fatalf("authorization = %q", gotAuth)
 	}
 }
 
 func TestDisabledClientDoesNotSend(t *testing.T) {
-	New(Config{}).RecordUsage(context.Background(), UsageEvent{})
+	if err := New(Config{}).RecordUsage(context.Background(), UsageEvent{}); !errors.Is(err, ErrNotConnected) {
+		t.Fatalf("error = %v, want ErrNotConnected", err)
+	}
 }
 
-func TestRecordDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
+func TestSendDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
 	var gotAuth, gotPath string
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth, gotPath = r.Header.Get("Authorization"), r.URL.Path
@@ -38,13 +44,15 @@ func TestRecordDeliveryContextUsesDeviceScopedEndpoint(t *testing.T) {
 	defer s.Close()
 	event := DeliveryContext{ProjectID: "project_0123456789", Branch: "main", CommitSHA: "abc123"}
 	event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = "git", "graycode-eco", "GrayCodeAI/graycode-eco"
-	New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).RecordDeliveryContext(context.Background(), event)
+	if err := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).SendDeliveryContext(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
 	if gotPath != "/v1/delivery-context" || gotAuth != "Bearer hwc_test" {
 		t.Fatalf("path/auth = %q/%q", gotPath, gotAuth)
 	}
 }
 
-func TestRecordDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
+func TestSendDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
 	var body DeliveryContext
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -57,11 +65,24 @@ func TestRecordDeliveryContextIncludesCIRunAndDeployment(t *testing.T) {
 	event.Repository.Provider, event.Repository.ExternalID, event.Repository.Name = "github", "1", "GrayCodeAI/rho"
 	event.CIRun = &CIRunContext{Provider: "github", ExternalID: "run-1", Workflow: "test", Status: "succeeded"}
 	event.Deployment = &DeploymentContext{Provider: "github", ExternalID: "deploy-1", Environment: "production", Status: "succeeded"}
-	New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).RecordDeliveryContext(context.Background(), event)
+	if err := New(Config{Endpoint: s.URL, DeviceToken: "hwc_test"}).SendDeliveryContext(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
 	if body.CIRun == nil || body.CIRun.ExternalID != "run-1" {
 		t.Fatalf("CI run = %+v", body.CIRun)
 	}
 	if body.Deployment == nil || body.Deployment.Environment != "production" {
 		t.Fatalf("deployment = %+v", body.Deployment)
+	}
+}
+
+func TestNewUsesDefaultRequestTimeout(t *testing.T) {
+	if got := New(Config{Endpoint: DefaultEndpoint}).http.Timeout; got != DefaultRequestTimeout {
+		t.Fatalf("timeout = %v, want %v", got, DefaultRequestTimeout)
+	}
+	custom := &http.Client{Timeout: time.Second}
+	client := New(Config{Endpoint: DefaultEndpoint, HTTPClient: custom})
+	if client.http.Timeout != time.Second || client.http == custom || custom.CheckRedirect != nil {
+		t.Fatal("a caller-supplied HTTP client must be copied, not mutated")
 	}
 }
