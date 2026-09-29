@@ -144,10 +144,7 @@ rho cloud graph sync <session-id>
 rho cloud graph sync --mission-dir /path/to/mission
 ```
 
-Cloud commands require an endpoint. There is no default: pass `--endpoint` or
-set `RHO_CLOUD_URL` to your Rho Cloud worker URL before running
-`rho cloud login`. `https://api.graycodeai.com` is the browser BFF and
-will reject a device token.
+Syncing needs a [GrayCode Cloud](#graycode-cloud-optional) connection.
 
 The export contains metadata and hashes, not prompts, tool arguments/results,
 policy reasons, verification evidence, or runtime output. Persisted chat
@@ -155,6 +152,44 @@ sessions automatically append privacy-safe permission, enabled approval-gate,
 and `VerifyPlanExecution` summaries for subsequent graph exports. Mission runs
 also persist a portable `mission-graph.json`; the mission form is validated and
 synchronized explicitly with the `--mission-dir` variants above.
+
+### GrayCode Cloud (optional)
+
+GrayCode Cloud is the optional, opt-in hosted control plane for device login,
+usage, delivery context and graph sync. Rho works fully without it and sends
+nothing until you connect. It is alpha and still being rolled out: if
+`rho cloud login` cannot reach `cloud.graycodeai.com`, the hosted service is
+not available to you yet, and nothing else in Rho is affected.
+
+```bash
+rho cloud login                     # browser device login
+rho cloud status                    # endpoint, device, project, token storage
+rho cloud context                   # sync repository, branch, CI and deployment context
+rho cloud graph sync <session-id>   # upload a privacy-normalized execution graph
+```
+
+- **Endpoint.** New connections use `https://cloud.graycodeai.com` unless you
+  pass `--endpoint` or set `RHO_CLOUD_URL` (for example a local Worker at
+  `http://127.0.0.1:8787`). Only `https://` is accepted, except plain
+  `http://` on `localhost`, `127.0.0.1` and `[::1]`. A saved connection keeps
+  the endpoint that issued its token. `https://api.graycodeai.com` is the
+  browser API and rejects device tokens.
+- **What is sent.** Once connected, each `rho exec` run reports one usage
+  event (model, token counts, duration, status). This is fail-open: it never
+  changes the run's result, and rho waits at most 3 seconds for it after the
+  output is written. `rho cloud context` and `rho cloud graph sync` are
+  explicit, and any rejection is reported as an error.
+- **Device token.** rho keeps the token in the macOS Keychain or the Windows
+  Credential Manager. Linux and other platforms have no credential-store
+  integration yet, so the token is written to `.tokens` in the Rho config
+  directory (`~/.config/rho/.tokens` by default, or `$RHO_CONFIG_DIR/.tokens`)
+  as plaintext with mode `0600`. `rho cloud login`/`connect` print a warning
+  when that happens and `rho cloud status` shows where the token lives.
+- **Manual connection.**
+  `rho cloud connect --device-id <id> --project-id <id> --token-stdin < token.txt`
+  saves an existing device; without `--token-stdin` it prompts for the token
+  without echo. `--token <value>` still works but is
+  deprecated because it exposes the token in shell history and `ps`.
 
 ### Multi-Agent Mission Mode (optional)
 

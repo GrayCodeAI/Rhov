@@ -22,15 +22,15 @@ func newCloudGraphCmd() *cobra.Command {
 	var missionDir string
 	syncCmd := &cobra.Command{
 		Use:   "sync [session-id]",
-		Short: "Upload a privacy-normalized execution graph to Rho Cloud",
+		Short: "Upload a privacy-normalized execution graph to GrayCode Cloud",
 		Long: `Build the same read-only execution graph as "rho graph export", hash
-cloud-sensitive metadata, enforce Rho Cloud's upload bounds, and upload it
+cloud-sensitive metadata, enforce GrayCode Cloud's upload bounds, and upload it
 with a deterministic idempotency key. Sync completed session snapshots: graph
 facts are immutable after acceptance. This is explicit and opt-in; local
 execution never depends on cloud synchronization.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			prog := NewCLIProgress("Graph sync", []string{"Building execution graph", "Uploading to Rho Cloud"})
+			prog := NewCLIProgress("Graph sync", []string{"Building execution graph", "Uploading to GrayCode Cloud"})
 			defer prog.Abort()
 			prog.StartStep(0)
 			var export executiongraph.Export
@@ -51,13 +51,13 @@ execution never depends on cloud synchronization.`,
 			if err != nil {
 				return err
 			}
-			client, cfg, err := cloud.LoadClient()
-			if err != nil || !client.Enabled() {
-				return fmt.Errorf("rho cloud is not connected")
+			client, cfg, err := loadCloudClient()
+			if err != nil {
+				return err
 			}
 			prepared, err := cloud.PrepareGraph(export)
 			if err != nil {
-				return fmt.Errorf("prepare graph for Rho Cloud: %w", err)
+				return fmt.Errorf("prepare graph for GrayCode Cloud: %w", err)
 			}
 			prog.CompleteStep(0)
 			prog.StartStep(1)

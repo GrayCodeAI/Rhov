@@ -41,11 +41,12 @@ var graphSchemaVersionPattern = regexp.MustCompile(`^[a-z0-9-]+\.graph/v1$`)
 // graphSensitiveAttribute and graphSafeSensitiveAttribute mirror the cloud
 // plane's sensitive-attribute policy: a node/edge attribute key that names
 // sensitive content is rejected unless it is an explicit digest/count (or
-// sast_source). Producers that want those values to reach the cloud must
-// hash them behind a `_sha256` key (as PrepareGraph does).
+// exactly sast_source). Both checks are case-insensitive, as on GrayCode
+// Cloud and in PrepareGraph. Producers that want those values to reach the
+// cloud must hash them behind a `_sha256` key (as PrepareGraph does).
 var (
 	graphSensitiveAttribute     = regexp.MustCompile(`(?i)(?:content|prompt|secret|credential|password|api[_-]?key|query|reason|url|path|command|provider|model|repository|branch|commit|source|target|message|evidence|element|file|fix)`)
-	graphSafeSensitiveAttribute = regexp.MustCompile(`(?:_sha256|_digest|_count|_tokens?|token_count)$`)
+	graphSafeSensitiveAttribute = regexp.MustCompile(`(?i)(?:_sha256|_digest|_count|_tokens?|token_count)$`)
 )
 
 // GraphSyncRequest is the JSON body for POST /v1/graph/sync. The graph is
