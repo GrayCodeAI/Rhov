@@ -585,10 +585,9 @@ var updateCmd = &cobra.Command{
 	Long:  "Check GitHub for a newer rho release and print upgrade instructions.",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ver := version
-		if ver == "" {
-			ver = "dev"
-		}
+		// Same resolution as `rho --version`, so `go install ...@vX.Y.Z` and
+		// source builds compare their real version instead of "dev".
+		ver := DisplayVersion()
 		prog := NewCLIProgress("Update check", []string{"Checking GitHub for updates"})
 		defer prog.Abort()
 		prog.StartStep(0)

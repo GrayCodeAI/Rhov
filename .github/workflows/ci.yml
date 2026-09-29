@@ -96,7 +96,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/checkout-flux
         with:
-          ref: ${{ github.head_ref == 'feat/ecosystem-wiring-pr' && 'feat/ecosystem-wiring' || github.head_ref || github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Generate ecosystem workspace
         run: bash ./scripts/generate-workspace.sh
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -487,9 +487,6 @@ jobs:
       matrix:
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -507,26 +504,11 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
         run: go build -trimpath -v ./...
-      - name: Binary size check (linux/amd64 only)
+      - name: Binary size budget (linux/amd64 only)
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        run: |
-          # Use -ldflags="-s -w" to match release build size (Makefile LDFLAGS).
-          # This catches binary bloat regressions against the actual shipped artifact size.
-          size=$(go build -trimpath -ldflags="-s -w" -o /tmp/rho-bin ./cmd/rho && wc -c < /tmp/rho-bin)
-          size_mb=$((size / 1024 / 1024))
-          echo "Binary size: ${size_mb}MB"
-          # Threshold history: 110MB → 80MB (binary was ~76MB) → 98MB.
-          # The 80MB line became stale: the audit-sweep merges (swift
-          # rebrand, harrier at-rest encryption, engine features) grew the
-          # release binary to ~95MB (linux/amd64, -trimpath -ldflags="-s -w").
-          # Re-baselined to 98MB (3MB headroom) so this check detects new
-          # bloat regressions instead of warning on every run. A real size
-          # reduction (e.g. swapping modernc.org/sqlite for cgo sqlite,
-          # lazy-loading WASM/CEL) is tracked separately.
-          if [ "$size_mb" -gt 98 ]; then
-            echo "::warning::Binary size ${size_mb}MB exceeds 98MB threshold"
-          fi
-          rm -f /tmp/rho-bin
+        # Builds bin/rho with the release ldflags (-s -w) and fails when it
+        # exceeds SIZE_LIMIT_MB in the Makefile — the single source of the budget.
+        run: make size-check
 
   # -------------------------------------------------------------------------
   # Fuzz — short corpus runs to catch panics in fuzz targets.

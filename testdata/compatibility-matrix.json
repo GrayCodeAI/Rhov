@@ -2,7 +2,7 @@
   "$schema": "./compatibility-matrix.schema.json",
   "description": "Cross-repo compatibility tracking for GrayCodeAI repositories. Each `matrix` entry records a combination of component versions that have been tested together. CI runs the matrix on a schedule and on PR to ensure released components stay compatible.",
   "version": "1",
-  "updated": "2026-09-14",
+  "updated": "2026-09-27",
   "components": [
     "rho",
     "flux"
@@ -18,13 +18,13 @@
       "name": "stable",
       "description": "Latest tested-together stable combination across the eco. This is what new users get when installing.",
       "components": {
-        "rho": "0.0.1",
+        "rho": "0.3.0",
         "flux": "0.0.1"
       }
     },
     {
       "name": "next",
-      "description": "Combination that the upcoming release will ship — kept up to date by release-please as components advance. Tested in CI on every PR.",
+      "description": "Combination that the upcoming release will ship: each component's main branch. Tested in CI on every PR.",
       "components": {
         "rho": "main",
         "flux": "main"

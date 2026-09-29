@@ -2,6 +2,11 @@ module github.com/GrayCodeAI/rho
 
 go 1.26.6
 
+// v0.1.0, v0.1.1 and v0.2.0 were tagged before the rename: their go.mod
+// declares module github.com/GrayCodeAI/hawk and they contain no cmd/rho, so
+// they cannot be used as github.com/GrayCodeAI/rho.
+retract [v0.1.0, v0.2.0]
+
 // The charmbracelet v2 modules (bubbles, bubbletea, lipgloss, glamour, huh) have
 // moved their module paths from github.com/charmbracelet/... to charm.land/...
 // but their Go import paths still use the old github.com/charmbracelet/... paths.

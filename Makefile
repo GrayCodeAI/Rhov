@@ -31,13 +31,12 @@ GOLANGCI_VERSION := v2.1.0
 GOFUMPT      := $(GOBIN_DIR)/gofumpt
 GOIMPORTS    := $(GOBIN_DIR)/goimports
 GOVULNCHECK  := $(GOBIN_DIR)/govulncheck
-GORELEASER   := $(GOBIN_DIR)/goreleaser
 
 # ---------------------------------------------------------------------------
 # Phony declarations (alphabetical).
 # ---------------------------------------------------------------------------
 .PHONY: all bench boundaries build check-replace ci clean ecosystem-guard feature-boundaries-guard flux-client-guard flux-engine-guard manifest-guard peer-guard internal-layers-guard package-boundaries-guard release-parity cover cover-new fmt help install lint lint-fix \
-        release security setup smoke path sync test test-10x test-live test-new test-race tidy version vet api-docs api-validate workspace
+        release release-check release-snapshot security setup smoke path sync test test-10x test-live test-new test-race tidy version vet api-docs api-validate workspace
 
 check-replace: ## Fail if go.mod has local replace directives (run before tagging)
 	@bash scripts/check-no-replace-directives.sh
@@ -56,9 +55,21 @@ build: ## Build the binary into bin/$(NAME).
 install: ## Install the binary to $GOBIN.
 	CGO_ENABLED=0 go install -trimpath -ldflags="$(LDFLAGS)" $(MAIN_PKG)
 
-release: ## Cut a release via goreleaser (requires a clean tree + tag).
-	@command -v $(GORELEASER) >/dev/null 2>&1 || (echo "install: go install github.com/goreleaser/goreleaser/v2@latest" && exit 1)
-	$(GORELEASER) release --clean
+# Releases are published only by .github/workflows/release.yml on a v* tag
+# (signed with the workflow's OIDC identity). Local targets validate; they
+# never publish. See docs/RELEASING.md.
+release: ## Refuse local publishing; explains the tag-driven release process.
+	@echo "Releases are CI-only: merge the release PR (VERSION + CHANGELOG), then push tag v$(VERSION)."
+	@echo "Local checks: make release-check TAG=v$(VERSION) && make release-snapshot. See docs/RELEASING.md."
+	@exit 1
+
+release-check: ## Check TAG (default v$(VERSION)) against VERSION and CHANGELOG.md, as release.yml does.
+	@bash ./scripts/check-release-tag.sh "$(or $(TAG),v$(VERSION))"
+
+release-snapshot: ## Build all release archives locally into dist/ (no publish, no signing).
+	@command -v goreleaser >/dev/null 2>&1 || (echo "install: go install github.com/goreleaser/goreleaser/v2@v2.17.0" && exit 1)
+	goreleaser check
+	GOWORK=off goreleaser release --snapshot --clean --skip=publish,sign
 
 # ---------------------------------------------------------------------------
 # Tests.
@@ -259,8 +270,17 @@ build-static: ## Build fully static binaries for Linux (musl-compatible)
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(NAME)-linux-amd64-static $(MAIN_PKG)
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o bin/$(NAME)-linux-arm64-static $(MAIN_PKG)
 
-size-check: build ## Report binary size and warn if over threshold (80MB, matching CI).
-	@SIZE=$$(stat -f%z bin/$(NAME) 2>/dev/null || stat -c%s bin/$(NAME) 2>/dev/null); \
-	MB=$$(echo "scale=1; $$SIZE / 1048576" | bc); \
-	echo "Binary size: $${MB} MB"; \
-	if [ $$SIZE -gt 83886080 ]; then echo "::warning::Binary size $${MB} MB exceeds 80 MB threshold (CI gate)"; fi
+# Size budget for the stripped release binary (MiB). CI's build job runs
+# `make size-check` on linux/amd64, which measured 59.6 MiB (62,492,834 bytes)
+# on 2026-09-27; 70 MiB leaves ~10 MiB of headroom. Raise it only in a PR that
+# explains the growth.
+SIZE_LIMIT_MB := 70
+
+size-check: build ## Fail if bin/$(NAME) (release ldflags) exceeds SIZE_LIMIT_MB.
+	@size=$$(wc -c < bin/$(NAME) | tr -d ' '); \
+	limit=$$(( $(SIZE_LIMIT_MB) * 1024 * 1024 )); \
+	echo "Binary size: $$size bytes ($$(( size / 1048576 )) MiB; budget $(SIZE_LIMIT_MB) MiB)"; \
+	if [ "$$size" -gt "$$limit" ]; then \
+		echo "::error::Binary size $$(( size / 1048576 )) MiB exceeds the $(SIZE_LIMIT_MB) MiB budget (Makefile SIZE_LIMIT_MB)"; \
+		exit 1; \
+	fi

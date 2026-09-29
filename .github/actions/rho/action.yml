@@ -93,8 +93,8 @@ inputs:
     default: ""
   github-token:
     description: >-
-      Token used to post a PR comment when post-to is pr-comment.
-      Defaults to ${{ github.token }}.
+      Token used to look up the latest Rho release and, when post-to is
+      pr-comment, to post the PR comment. Defaults to ${{ github.token }}.
     required: false
     default: ${{ github.token }}
   working-directory:
@@ -103,12 +103,16 @@ inputs:
     default: ${{ github.workspace }}
   rho-version:
     description: >-
-      Rho release version/tag to install (e.g. v1.2.3 or latest).
-      Defaults to the ref this action was resolved at.
+      Rho release to install (e.g. 0.3.0 or v0.3.0), or latest. Defaults to
+      the release tag this action is pinned to (uses: ...@v0.3.0); a branch or
+      commit-SHA pin installs the latest release. Requires Rho v0.3.0 or later:
+      earlier tags predate the rename and have no rho_* archives.
     required: false
     default: ""
   rho-repo:
-    description: Repository to install Rho from (owner/repo).
+    description: >-
+      Repository to install Rho from (owner/repo). The release archive's
+      cosign signature must come from that repository's release workflow.
     required: false
     default: GrayCodeAI/rho
 
@@ -126,6 +130,11 @@ outputs:
 runs:
   using: composite
   steps:
+    # cosign verifies the release signature; install.sh runs with
+    # RHO_REQUIRE_COSIGN=1 so an unsigned or tampered release fails the step.
+    - name: Install cosign
+      uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
     - name: Install Rho
       id: install
       shell: bash
@@ -134,6 +143,7 @@ runs:
         RHO_VERSION_INPUT: ${{ inputs.rho-version }}
         ACTION_REF: ${{ github.action_ref }}
         ACTION_PATH: ${{ github.action_path }}
+        GH_TOKEN: ${{ inputs.github-token }}
         RUNNER_TEMP: ${{ runner.temp }}
       run: |
         set -euo pipefail
@@ -141,40 +151,35 @@ runs:
           echo "::error::The Rho action currently supports Linux and macOS runners only." >&2
           exit 1
         fi
-        # Resolve the version to install: explicit input wins; otherwise the ref
-        # this action was checked out at (a tag); otherwise the latest release.
+        if ! [[ "${RHO_REPO}" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+          echo "::error::rho-repo must look like owner/repo." >&2
+          exit 2
+        fi
+        release_re='^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+        # Resolve the version: explicit input wins; otherwise the release tag
+        # this action is pinned to; otherwise (branch or SHA pin) the latest
+        # release of rho-repo.
         version="${RHO_VERSION_INPUT}"
-        if [ -z "${version}" ]; then
+        if [ -z "${version}" ] && [[ "${ACTION_REF}" =~ ${release_re} ]]; then
           version="${ACTION_REF}"
         fi
-        # A commit-SHA pin (github.action_ref is the 40-hex SHA) is not a release
-        # tag, so fall back to latest rather than fetching releases/download/v<sha>.
-        case "${version}" in
-          ""|refs/*|*/*) version="latest" ;;
-        esac
-        if printf '%s' "${version}" | grep -qiE '^[0-9a-f]{40}$'; then
-          version="latest"
+        if [ -z "${version}" ] || [ "${version}" = "latest" ]; then
+          version="$(gh release view --repo "${RHO_REPO}" --json tagName --jq .tagName)"
         fi
-        install_dir="${RUNNER_TEMP}/rho-bin"
-        src_dir="${RUNNER_TEMP}/rho-src"
-        mkdir -p "${install_dir}" "${src_dir}"
-        # Download the Rho source archive and extract it
-        if [ "${version}" = "latest" ]; then
-          tarball_url=$(curl -sL "https://api.github.com/repos/${RHO_REPO}/releases/latest" \
-            | grep '"tarball_url":' | sed 's/.*"\([^"]*\)".*/\1/')
-        else
-          tarball_url="https://github.com/${RHO_REPO}/archive/refs/tags/v${version}.tar.gz"
+        if ! [[ "${version}" =~ ${release_re} ]]; then
+          echo "::error::rho-version must be a release version such as 0.3.0, or 'latest'." >&2
+          exit 2
         fi
-        curl -sL "${tarball_url}" | tar -xz -C "${src_dir}" --strip-components=1
-        # Build the Rho binary from source (Go must be available on the runner)
-        if ! command -v go &>/dev/null; then
-          echo "::error::Go is required but not found on the runner PATH. Add actions/setup-go before this action, or install Go manually." >&2
-          exit 1
-        fi
-        go build -o "${install_dir}/rho" "${src_dir}/cmd/rho"
-        chmod +x "${install_dir}/rho"
-        echo "${install_dir}" >> "${GITHUB_PATH}"
-        echo "Installed Rho from ${RHO_REPO}@${version}"
+        version="${version#v}"
+        # install.sh ships with this action at the same ref. It downloads the
+        # release archive and checksums.txt, verifies the cosign signature
+        # (required here) and the SHA-256, and installs under the prefix.
+        installer="$(cd "${ACTION_PATH}/../../.." && pwd)/install.sh"
+        prefix="${RUNNER_TEMP}/rho"
+        RHO_INSTALL_REPO="${RHO_REPO}" RHO_REQUIRE_COSIGN=1 \
+          sh "${installer}" --version "${version}" --prefix "${prefix}"
+        echo "${prefix}/bin" >> "${GITHUB_PATH}"
+        echo "Installed Rho ${version} from ${RHO_REPO}"
 
     - name: Run Rho
       id: run

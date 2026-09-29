@@ -3,7 +3,11 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
+
+	"golang.org/x/mod/module"
+	"golang.org/x/mod/semver"
 )
 
 // versionLine is the single user-facing version format shared by
@@ -21,11 +25,19 @@ func versionLine() string {
 }
 
 // DisplayVersion returns the user-facing version string for banners and /version.
-// Release builds inject version via ldflags; local builds fall back to VERSION file.
+//
+// In order of preference:
+//  1. the version injected via ldflags (release archives, `make build`);
+//  2. the module version recorded by `go install .../cmd/rho@vX.Y.Z`;
+//  3. the repository VERSION file (local `go build` / `go run` checkouts);
+//  4. "dev".
 func DisplayVersion() string {
 	v := strings.TrimSpace(version)
 	if v != "" && v != "dev" {
 		return v
+	}
+	if mv := releaseModuleVersion(); mv != "" {
+		return mv
 	}
 	if fromFile := readRepoVERSIONFile(); fromFile != "" {
 		return fromFile
@@ -34,6 +46,26 @@ func DisplayVersion() string {
 		return v
 	}
 	return "dev"
+}
+
+// readBuildInfo is debug.ReadBuildInfo, replaceable in tests.
+var readBuildInfo = debug.ReadBuildInfo
+
+// releaseModuleVersion returns the main module's version without the leading
+// "v" when the binary was built from a tagged module (`go install
+// github.com/GrayCodeAI/rho/cmd/rho@v0.3.0`), and "" for development builds:
+// "(devel)", pseudo-versions (untagged commits such as @main) and versions
+// with build metadata (e.g. "+dirty" from a modified checkout).
+func releaseModuleVersion() string {
+	info, ok := readBuildInfo()
+	if !ok || info == nil {
+		return ""
+	}
+	mv := info.Main.Version
+	if !semver.IsValid(mv) || module.IsPseudoVersion(mv) || semver.Build(mv) != "" {
+		return ""
+	}
+	return strings.TrimPrefix(mv, "v")
 }
 
 func readRepoVERSIONFile() string {

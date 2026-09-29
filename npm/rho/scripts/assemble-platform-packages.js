@@ -1,26 +1,29 @@
 #!/usr/bin/env node
 // Assemble the six per-platform npm packages prior to `npm publish`.
 //
+// STATUS: nothing is published to npm. Every package.json here is marked
+// "private": true so `npm publish` refuses, and no workflow publishes them.
+// See npm/README.md for what a real publish needs.
+//
 // For each supported (platform, arch) target this:
 //   1. Brotli-compresses the built Rho binary into
 //      `../rho-<platform>-<arch>/bin/<bin>.br`
-//   2. Stamps the sub-package's version to match the meta package
+//   2. Stamps the sub-package's version with the release version
 //   3. Copies the third-party notices file into the sub-package
+// and finally stamps the meta package (`@graycodeai/rho`) version and its
+// `optionalDependencies` pins with the same version, so npm resolves the
+// matching platform package.
 //
-// Each per-platform package is its own npm publish target. The meta package
-// (`@graycodeai/rho`) lists all six as `optionalDependencies` pinned to
-// the same version; npm installs only the one matching the host's
-// `os` + `cpu` filters.
+// The release version is RHO_NPM_VERSION when set, otherwise the repository's
+// VERSION file (which release.yml requires to match the tag).
 //
-// Why brotli? npm's tarball ceiling is ~200 MB and the raw Go binary is
-// 100–150 MB per platform. Brotli at max quality cuts that to 30–40 MB,
-// leaves plenty of headroom for binary growth, and is decoded by Node's
+// Why brotli? npm's tarball ceiling is ~200 MB. Brotli at max quality shrinks
+// the ~60 MB stripped Go binary substantially and is decoded by Node's
 // built-in zlib.brotliDecompressSync (no native deps required).
 //
 // Source paths come from environment variables (set in CI) and fall back to
-// the default GoReleaser build output dirs for local testing.
+// the GoReleaser v2 build output dirs for local testing.
 //
-// Source pattern: grok `npm/grok/scripts/assemble-platform-packages.js`.
 // Rho's binary is the plain Go binary named `rho` (or `rho.exe`), produced
 // by GoReleaser (`.goreleaser.yml`, main `./cmd/rho`, project_name `rho`).
 const fs = require('fs');
@@ -42,8 +45,18 @@ const NOTICES_SOURCE = process.env.RHO_THIRD_PARTY_NOTICES
 const NOTICES_NAME = 'THIRD_PARTY_NOTICES.md';
 
 const META_PKG_JSON = path.resolve(__dirname, '..', 'package.json');
-const meta = JSON.parse(fs.readFileSync(META_PKG_JSON, 'utf8'));
-const VERSION = meta.version;
+const REPO_VERSION_FILE = path.resolve(npmRoot, '..', 'VERSION');
+
+function releaseVersion() {
+    const raw = process.env.RHO_NPM_VERSION || fs.readFileSync(REPO_VERSION_FILE, 'utf8');
+    const version = raw.trim().replace(/^v/, '');
+    if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) {
+        throw new Error(`invalid release version ${JSON.stringify(raw.trim())} (want MAJOR.MINOR.PATCH)`);
+    }
+    return version;
+}
+
+const VERSION = releaseVersion();
 
 function ensureDir(p) { fs.mkdirSync(path.dirname(p), { recursive: true }); }
 
@@ -91,12 +104,12 @@ async function packPlatform({ platform, arch, envVar, defaultSource, binName }) 
 }
 
 async function main() {
-    // Default source paths follow GoReleaser v2 layout:
-    //   dist/<project>_<os>_<arch>[vN]/binary
-    // with binary `rho` (Unix) / `rho.exe` (Windows). The build ID is `rho`,
-    // so the dir is `dist/rho_<os>_<arch>_v1`. The `[vN]` arch version suffix
-    // is GoReleaser's GOAMD64 default (v1 for amd64); if your config changes
-    // this, set the RHO_* env vars instead of relying on the defaults.
+    // Default source paths follow the GoReleaser v2 layout
+    //   dist/<build id>_<os>_<arch>_<arch level>/<binary>
+    // with build id `rho`, binary `rho` (Unix) / `rho.exe` (Windows), and the
+    // default arch levels GOAMD64=v1 and GOARM64=v8.0 — e.g.
+    // dist/rho_linux_amd64_v1/rho and dist/rho_darwin_arm64_v8.0/rho. If the
+    // config changes these, set the RHO_* env vars instead.
     const goosGoarch = {
         darwin: { arm64: 'arm64', x64: 'amd64' },
         linux: { arm64: 'arm64', x64: 'amd64' },
@@ -106,19 +119,14 @@ async function main() {
     function gorel(platform, arch) {
         const ga = goosGoarch[platform]?.[arch];
         if (!ga) throw new Error(`no goarch mapping for ${platform}-${arch}`);
-        // No windows/arm64 build per .goreleaser.yml `ignore`, but we still ship
-        // a sub-package target (see comment below) for completeness; the env var
-        // override is the real source there.
         const os = platform === 'win32' ? 'windows' : platform;
         const bin = platform === 'win32' ? 'rho.exe' : 'rho';
-        const dirName = `rho_${os}_${ga}${ga === 'arm64' ? '' : '_v1'}`;
+        const dirName = `rho_${os}_${ga}_${ga === 'arm64' ? 'v8.0' : 'v1'}`;
         return path.join(distRoot, dirName, bin);
     }
 
-    // Note: rho's `.goreleaser.yml` currently ignores windows/arm64 in builds,
-    // so rho-win32-arm64 has no default GoReleaser artifact yet. The target is
-    // retained so that when the build matrix adds it (or CI supplies the
-    // binary via RHO_WIN32_ARM64), packaging works without script changes.
+    // All six targets are built by `.goreleaser.yml` (linux/darwin/windows ×
+    // amd64/arm64).
     const targets = [
         {
             platform: 'darwin', arch: 'arm64', binName: 'rho',
@@ -162,7 +170,16 @@ async function main() {
         process.exit(1);
     }
 
-    console.log(`[assemble] All 6 per-platform packages assembled at version ${VERSION}.`);
+    // Pin the meta package and its optionalDependencies to the same version;
+    // otherwise npm would resolve the sub-packages at 0.0.0-development.
+    const meta = JSON.parse(fs.readFileSync(META_PKG_JSON, 'utf8'));
+    meta.version = VERSION;
+    for (const name of Object.keys(meta.optionalDependencies || {})) {
+        meta.optionalDependencies[name] = VERSION;
+    }
+    fs.writeFileSync(META_PKG_JSON, JSON.stringify(meta, null, 4) + '\n');
+
+    console.log(`[assemble] All ${targets.length} per-platform packages and the meta package assembled at version ${VERSION}.`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

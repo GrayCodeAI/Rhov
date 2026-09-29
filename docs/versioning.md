@@ -34,8 +34,9 @@ repository that follows this layout. Adopted 2026-05-14.
       -X main.Commit=$(COMMIT) \
       -X main.BuildDate=$(DATE)
   ```
-- `goreleaser` injects from the git tag at release time (which always matches
-  the `VERSION` file because release-please bumps both atomically).
+- `goreleaser` injects from the git tag at release time. The release workflow
+  refuses a tag that is not exactly `v` + `VERSION`
+  (`scripts/check-release-tag.sh`), so the two cannot disagree.
 - This is the Kubernetes / Helm / gh-cli pattern.
 
 ### Go libraries (`flux`)
@@ -107,11 +108,11 @@ func init() {
 
 ## Bumping a version
 
-Use [release-please](https://github.com/googleapis/release-please) (per repo).
-It reads conventional commits, bumps `VERSION`, updates `CHANGELOG.md`, and
-creates a git tag — all atomically. Goreleaser then runs on the tag.
-
-For manual bumps, edit the `VERSION` file. Don't edit anything else.
+Versions are bumped by hand in a release PR: edit `VERSION`, turn the
+`## [Unreleased]` section of `CHANGELOG.md` into `## [X.Y.Z] — YYYY-MM-DD`,
+merge, then push the `vX.Y.Z` tag. There is no release-please or other bot.
+For rho the full procedure, tag protection and verification steps are in
+[RELEASING.md](RELEASING.md).
 
 ## Cross-repo compatibility
 
